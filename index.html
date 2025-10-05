@@ -332,6 +332,115 @@
             margin: 20px 0;
         }
 
+        .time-stats {
+            background: #334155;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .time-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #475569;
+        }
+
+        .time-stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .time-stat-label {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .time-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+
+        .leaderboard {
+            background: #334155;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .leaderboard-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-bottom: 15px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 5px 0;
+            background: #1e293b;
+            border-radius: 8px;
+        }
+
+        .leaderboard-rank {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fbbf24;
+            min-width: 40px;
+        }
+
+        .leaderboard-name {
+            flex: 1;
+            padding: 0 15px;
+            font-size: 14px;
+        }
+
+        .leaderboard-ops {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-left: 5px;
+        }
+
+        .leaderboard-time {
+            font-size: 16px;
+            font-weight: bold;
+            color: #10b981;
+        }
+
+        .leaderboard-date {
+            font-size: 10px;
+            color: #64748b;
+            margin-left: 10px;
+        }
+
+        .name-input {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px 15px;
+            font-size: 14px;
+            background: #1e293b;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            color: #f1f5f9;
+            text-align: center;
+            margin: 10px auto;
+            display: block;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
         .error-list {
             max-width: 800px;
             margin: 0 auto;
@@ -374,13 +483,30 @@
 <body>
     <div class="container" id="app"></div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQjIjpNYIUAnvFp1rK7agRNRWjxcee4BY",
+            authDomain: "rychlopocty.firebaseapp.com",
+            projectId: "rychlopocty",
+            storageBucket: "rychlopocty.firebasestorage.app",
+            messagingSenderId: "521437849587",
+            appId: "1:521437849587:web:849bac388f1eddb8351486",
+            measurementId: "G-PM6QYYD13L"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getFirestore(firebaseApp);
+
         class RychlopoctyApp {
             constructor() {
                 this.limit = null;
                 this.mode = null;
                 this.currentExample = null;
                 this.correctTimes = [];
+                this.allAnswerTimes = [];
                 this.correctCount = 0;
                 this.wrongCount = 0;
                 this.wrongAnswers = [];
@@ -390,8 +516,11 @@
                 this.countdownInterval = null;
                 this.progressInterval = null;
                 this.lastProcessedAnswer = null;
+                this.testStartTime = null;
+                this.testEndTime = null;
+                this.db = db;
+                this.userName = localStorage.getItem('rychlopocty_username') || '';
                 
-                // Načtení uložených preferencí
                 this.savedMultiply = true;
                 this.savedAdd = false;
                 this.savedSubtract = false;
@@ -400,12 +529,26 @@
                 this.showMainScreen();
             }
 
-            showMainScreen() {
+            getOperationsSymbols(operations) {
+                const symbols = [];
+                if (operations.includes('*')) symbols.push('×');
+                if (operations.includes('+')) symbols.push('+');
+                if (operations.includes('-')) symbols.push('−');
+                if (operations.includes('/')) symbols.push('÷');
+                return symbols.join('');
+            }
+
+            async showMainScreen() {
                 const app = document.getElementById('app');
                 app.innerHTML = `
-                    <div class="title-section">
-                        <div class="main-title">⚡ Rychlopočty</div>
-                        <div class="subtitle">Trénuj své matematické dovednosti</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
+                        <div style="text-align: left;">
+                            <div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">⚡ Rychlopočty</div>
+                            <div style="font-size: 14px; color: #94a3b8;">Trénuj a sdílej své matematické dovednosti</div>
+                        </div>
+                        <div id="total-stats" style="text-align: right;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">⏳ Načítání statistik...</div>
+                        </div>
                     </div>
 
                     <div class="two-column">
@@ -457,9 +600,120 @@
                                 <div class="info-title">💡 Tip</div>
                                 <div class="info-text">Vyber obtížnost a operace,<br>pak klikni na tlačítko start!</div>
                             </div>
+
+                            <button class="btn btn-blue" style="margin-top: 15px;" onclick="app.showLeaderboards()">🏆 Žebříčky</button>
+                        </div>
+                    </div>
+
+                    <div id="mini-leaderboards" style="margin-top: 20px;">
+                        <div style="text-align: center; padding: 20px; color: #64748b;">
+                            <div style="font-size: 14px;">⏳ Načítání žebříčků...</div>
                         </div>
                     </div>
                 `;
+
+                this.loadTotalStats();
+                this.loadMiniLeaderboards();
+            }
+
+            async loadTotalStats() {
+                try {
+                    const q = query(collection(this.db, 'leaderboard'));
+                    const querySnapshot = await getDocs(q);
+                    
+                    let totalCorrect = 0;
+                    let totalWrong = 0;
+                    
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        totalCorrect += data.correctCount || 0;
+                        totalWrong += data.wrongCount || 0;
+                    });
+                    
+                    const total = totalCorrect + totalWrong;
+                    
+                    const statsContainer = document.getElementById('total-stats');
+                    if (statsContainer) {
+                        statsContainer.innerHTML = `
+                            <div style="font-size: 16px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">
+                                📊 Celkem spočítáno ${total.toLocaleString('cs-CZ')} příkladů
+                            </div>
+                            <div style="font-size: 14px;">
+                                <span style="color: #10b981;">✅ ${totalCorrect.toLocaleString('cs-CZ')} správně</span> · 
+                                <span style="color: #ef4444;">❌ ${totalWrong.toLocaleString('cs-CZ')} špatně</span>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Chyba při načítání celkových statistik:', error);
+                    const statsContainer = document.getElementById('total-stats');
+                    if (statsContainer) {
+                        statsContainer.innerHTML = '';
+                    }
+                }
+            }
+
+            async loadMiniLeaderboards() {
+                const modes = ['🟢 Lehká', '🟡 Střední', '🟠 Obtížná', '🔴 Expert'];
+                let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">';
+
+                for (const mode of modes) {
+                    try {
+                        const q = query(
+                            collection(this.db, 'leaderboard'),
+                            limit(100)
+                        );
+                        
+                        const querySnapshot = await getDocs(q);
+                        const results = [];
+                        querySnapshot.forEach((doc) => {
+                            const data = doc.data();
+                            if (data.mode === mode) {
+                                results.push(data);
+                            }
+                        });
+
+                        results.sort((a, b) => {
+                            const opsA = (a.operations || []).length;
+                            const opsB = (b.operations || []).length;
+                            if (opsB !== opsA) return opsB - opsA;
+                            return a.time - b.time;
+                        });
+                        
+                        const top3 = results.slice(0, 3);
+
+                        leaderboardsHTML += `
+                            <div class="card" style="padding: 15px;">
+                                <div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #fbbf24;">${mode}</div>
+                                ${top3.length > 0 ? top3.map((entry, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                                    const opsSymbols = this.getOperationsSymbols(entry.operations || []);
+                                    return `
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 12px;">
+                                            <span>${medal} ${entry.username} <span style="color: #94a3b8; font-size: 10px;">${opsSymbols}</span></span>
+                                            <span style="color: #10b981; font-weight: bold;">${entry.time.toFixed(2)}s</span>
+                                        </div>
+                                    `;
+                                }).join('') : '<div style="text-align: center; padding: 10px; color: #64748b; font-size: 11px;">Zatím žádné výsledky</div>'}
+                            </div>
+                        `;
+                    } catch (error) {
+                        console.error('Chyba při načítání mini žebříčku:', error);
+                        leaderboardsHTML += `
+                            <div class="card" style="padding: 15px;">
+                                <div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #fbbf24;">${mode}</div>
+                                <div style="text-align: center; padding: 10px; color: #ef4444; font-size: 11px;">Chyba načítání</div>
+                            </div>
+                        `;
+                    }
+                }
+
+                leaderboardsHTML += '</div>';
+                
+                const container = document.getElementById('mini-leaderboards');
+                if (container) {
+                    container.innerHTML = leaderboardsHTML;
+                }
             }
 
             startCustomTime() {
@@ -474,7 +728,6 @@
             }
 
             startTest(mode, limit) {
-                // Uložení aktuálních preferencí
                 this.savedMultiply = document.getElementById('op-multiply').checked;
                 this.savedAdd = document.getElementById('op-add').checked;
                 this.savedSubtract = document.getElementById('op-subtract').checked;
@@ -483,11 +736,14 @@
                 this.mode = mode;
                 this.limit = limit;
                 this.correctTimes = [];
+                this.allAnswerTimes = [];
                 this.correctCount = 0;
                 this.wrongCount = 0;
                 this.wrongAnswers = [];
                 this.running = true;
                 this.lastProcessedAnswer = null;
+                this.testStartTime = Date.now();
+                this.testEndTime = null;
 
                 this.operations = [];
                 if (this.savedMultiply) this.operations.push('*');
@@ -591,8 +847,7 @@
 
                 const {a, b, op, display} = this.currentExample;
                 let correct;
-                
-                if (op === '*') correct = a * b;
+if (op === '*') correct = a * b;
                 else if (op === '+') correct = a + b;
                 else if (op === '-') correct = a - b;
                 else if (op === '/') correct = Math.floor(a / b);
@@ -610,6 +865,7 @@
                     this.correctCount++;
                     e.target.style.background = '#10b981';
                     this.correctTimes.push(currentTime);
+                    this.allAnswerTimes.push(currentTime);
                     if (this.correctTimes.length > 10) {
                         this.correctTimes = this.correctTimes.slice(-10);
                     }
@@ -693,8 +949,9 @@
                 this.finishTest();
             }
 
-            finishTest() {
+            async finishTest() {
                 this.running = false;
+                this.testEndTime = Date.now();
                 if (this.countdownInterval) clearInterval(this.countdownInterval);
                 if (this.progressInterval) clearInterval(this.progressInterval);
 
@@ -707,6 +964,59 @@
                 const total = this.correctCount + this.wrongCount;
                 const successRate = total > 0 ? Math.round((this.correctCount / total) * 100) : 0;
 
+                let timeStatsHTML = '';
+                let saveButtonHTML = '';
+                
+                if (this.mode === '⏱️ Na čas') {
+                    if (this.correctCount > 0) {
+                        const totalTime = (this.testEndTime - this.testStartTime) / 1000;
+                        const avgTime = (totalTime / this.correctCount).toFixed(2);
+                        timeStatsHTML = `
+                            <div class="time-stats">
+                                <div class="time-stat-row">
+                                    <span class="time-stat-label">⏱️ Průměrný čas na příklad</span>
+                                    <span class="time-stat-value">${avgTime}s</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    const totalTime = ((this.testEndTime - this.testStartTime) / 1000).toFixed(2);
+                    
+                    let last10TimeHTML = '';
+                    let last10Time = null;
+                    if (this.allAnswerTimes.length >= 10) {
+                        const last10Start = this.allAnswerTimes[this.allAnswerTimes.length - 10];
+                        const last10End = this.allAnswerTimes[this.allAnswerTimes.length - 1];
+                        last10Time = ((last10End - last10Start) / 1000).toFixed(2);
+                        last10TimeHTML = `
+                            <div class="time-stat-row">
+                                <span class="time-stat-label">🎯 Čas posledních 10 příkladů</span>
+                                <span class="time-stat-value">${last10Time}s</span>
+                            </div>
+                        `;
+                    }
+                    
+                    timeStatsHTML = `
+                        <div class="time-stats">
+                            <div class="time-stat-row">
+                                <span class="time-stat-label">⏱️ Celkový čas</span>
+                                <span class="time-stat-value">${totalTime}s</span>
+                            </div>
+                            ${last10TimeHTML}
+                        </div>
+                    `;
+                    
+                    if (last10Time && parseFloat(last10Time) <= this.limit) {
+                        saveButtonHTML = `
+                            <div style="text-align: center; margin: 20px 0;">
+                                <input type="text" id="username" class="name-input" placeholder="Zadej své jméno" value="${this.userName}">
+                                <button class="btn btn-green" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.saveToLeaderboard(${last10Time})">🏆 Uložit do žebříčku</button>
+                            </div>
+                        `;
+                    }
+                }
+
                 const app = document.getElementById('app');
                 app.innerHTML = `
                     <div class="card" style="text-align: center; padding: 40px;">
@@ -714,6 +1024,8 @@
                         <div class="result-title">Test dokončen!</div>
                         <div class="result-mode">Režim: ${this.mode}</div>
                         <div class="result-mode">Operace: ${opNames.join(', ')}</div>
+
+                        ${timeStatsHTML}
 
                         <div class="result-stats">
                             <div class="result-box correct">
@@ -730,9 +1042,116 @@
 
                         ${total > 0 ? `<div class="success-rate">Úspěšnost: ${successRate}%</div>` : ''}
 
+                        ${saveButtonHTML}
+
                         <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.showMainScreen()">🔄 Zkusit znovu</button>
                     </div>
                 `;
+            }
+
+            async saveToLeaderboard(time) {
+                const username = document.getElementById('username').value.trim();
+                if (!username) {
+                    alert('Zadej své jméno!');
+                    return;
+                }
+
+                this.userName = username;
+                localStorage.setItem('rychlopocty_username', username);
+
+                try {
+                    await addDoc(collection(this.db, 'leaderboard'), {
+                        mode: this.mode,
+                        time: parseFloat(time),
+                        username: username,
+                        date: new Date().toISOString(),
+                        correctCount: this.correctCount,
+                        wrongCount: this.wrongCount,
+                        operations: this.operations
+                    });
+
+                    alert('✅ Výsledek uložen do žebříčku!');
+                    this.showLeaderboards();
+                } catch (error) {
+                    console.error('Chyba při ukládání:', error);
+                    alert('❌ Nepodařilo se uložit do žebříčku. Zkus to znovu.');
+                }
+            }
+
+            async showLeaderboards() {
+                const app = document.getElementById('app');
+                app.innerHTML = `
+                    <div class="title-section">
+                        <div class="main-title">🏆 Žebříčky</div>
+                        <div class="subtitle">Top 10 nejlepších časů</div>
+                    </div>
+                    <div id="leaderboards-container">
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 24px;">⏳ Načítání...</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-blue" style="width: auto; padding: 12px 30px;" onclick="app.showMainScreen()">◀ Zpět</button>
+                    </div>
+                `;
+
+                const modes = ['🟢 Lehká', '🟡 Střední', '🟠 Obtížná', '🔴 Expert'];
+                let leaderboardsHTML = '';
+
+                for (const mode of modes) {
+                    try {
+                        const q = query(
+                            collection(this.db, 'leaderboard'),
+                            limit(100)
+                        );
+                        
+                        const querySnapshot = await getDocs(q);
+                        const results = [];
+                        querySnapshot.forEach((doc) => {
+                            const data = doc.data();
+                            if (data.mode === mode) {
+                                results.push(data);
+                            }
+                        });
+
+                        results.sort((a, b) => {
+                            const opsA = (a.operations || []).length;
+                            const opsB = (b.operations || []).length;
+                            if (opsB !== opsA) return opsB - opsA;
+                            return a.time - b.time;
+                        });
+                        
+                        const top10 = results.slice(0, 10);
+
+                        leaderboardsHTML += `
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div class="leaderboard-title">${mode}</div>
+                                ${top10.length > 0 ? top10.map((entry, index) => {
+                                    const date = new Date(entry.date).toLocaleDateString('cs-CZ');
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                                    const opsSymbols = this.getOperationsSymbols(entry.operations || []);
+                                    return `
+                                        <div class="leaderboard-item">
+                                            <div class="leaderboard-rank">${medal}</div>
+                                            <div class="leaderboard-name">
+                                                ${entry.username}
+                                                <span class="leaderboard-ops">${opsSymbols}</span>
+                                            </div>
+                                            <div>
+                                                <span class="leaderboard-time">${entry.time.toFixed(2)}s</span>
+                                                <span class="leaderboard-date">${date}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('') : '<div style="text-align: center; padding: 20px; color: #64748b;">Zatím žádné výsledky</div>'}
+                            </div>
+                        `;
+                    } catch (error) {
+                        console.error('Chyba při načítání žebříčku:', error);
+                    }
+                }
+
+                document.getElementById('leaderboards-container').innerHTML = leaderboardsHTML || '<div style="text-align: center; padding: 40px;">Nepodařilo se načíst žebříčky</div>';
             }
 
             showErrors() {
@@ -766,7 +1185,7 @@
             }
         }
 
-        const app = new RychlopoctyApp();
+        window.app = new RychlopoctyApp();
     </script>
 </body>
 </html>
