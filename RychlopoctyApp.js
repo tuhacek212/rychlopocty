@@ -1,6 +1,7 @@
 import { TestManager } from './test.js';
 import { loadTotalStats, updateFirebaseStats } from './stats.js';
-import { loadMiniLeaderboards, showLeaderboards, saveToLeaderboard } from './leaderboard.js';
+import { showLeaderboards, saveToLeaderboard } from './leaderboard.js';
+import { getMotivationalMessage } from './messages.js';
 
 export class RychlopoctyApp {
     constructor() {
@@ -20,6 +21,7 @@ export class RychlopoctyApp {
         this.testStartTime = null;
         this.testEndTime = null;
         this.userName = localStorage.getItem('rychlopocty_username') || '';
+        this.wasQuit = false;
         
         this.savedMultiply = true;
         this.savedAdd = false;
@@ -94,12 +96,6 @@ export class RychlopoctyApp {
                     </div>
                 </div>
             </div>
-
-            <div id="mini-leaderboards" style="margin-top: 20px;">
-                <div style="text-align: center; padding: 20px; color: #64748b;">
-                    <div style="font-size: 14px;">⏳ Načítání žebříčků...</div>
-                </div>
-            </div>
             
             <div style="text-align: center; padding: 20px 0; margin-top: 30px;">
                 <div style="font-size: 11px; color: #475569;">Made by JT</div>
@@ -107,7 +103,6 @@ export class RychlopoctyApp {
         `;
 
         loadTotalStats();
-        loadMiniLeaderboards();
     }
 
     startCustomTime() {
@@ -141,6 +136,7 @@ export class RychlopoctyApp {
         this.running = true;
         this.testStartTime = Date.now();
         this.testEndTime = null;
+        this.wasQuit = false;
 
         this.operations = [];
         if (this.savedMultiply) this.operations.push('*');
@@ -154,6 +150,10 @@ export class RychlopoctyApp {
 
     endTest() {
         this.running = false;
+        this.wasQuit = true;
+        if (this.testManager) {
+            this.testManager.clearMotivationTimers();
+        }
         this.finishTest();
     }
 
@@ -163,6 +163,9 @@ export class RychlopoctyApp {
         if (this.countdownInterval) clearInterval(this.countdownInterval);
         if (this.progressInterval) clearInterval(this.progressInterval);
         if (this.timerInterval) clearInterval(this.timerInterval);
+        if (this.testManager) {
+            this.testManager.clearMotivationTimers();
+        }
 
         const opNames = [];
         if (this.operations.includes('*')) opNames.push('Násobení');
@@ -175,6 +178,8 @@ export class RychlopoctyApp {
 
         let timeStatsHTML = '';
         let saveButtonHTML = '';
+        let motivationalText = '';
+        let wasSuccessful = false;
         
         if (this.mode === '⏱️ Na čas') {
             if (this.correctCount > 0) {
@@ -189,6 +194,18 @@ export class RychlopoctyApp {
                     </div>
                 `;
             }
+            motivationalText = getMotivationalMessage('general', true);
+        } else if (this.mode === '∞ Trénink') {
+            const totalTime = ((this.testEndTime - this.testStartTime) / 1000).toFixed(2);
+            timeStatsHTML = `
+                <div class="time-stats">
+                    <div class="time-stat-row">
+                        <span class="time-stat-label">⏱️ Celkový čas tréninku</span>
+                        <span class="time-stat-value">${totalTime}s</span>
+                    </div>
+                </div>
+            `;
+            motivationalText = getMotivationalMessage('general', true);
         } else {
             const totalTime = ((this.testEndTime - this.testStartTime) / 1000).toFixed(2);
             
@@ -204,6 +221,17 @@ export class RychlopoctyApp {
                         <span class="time-stat-value">${last10Time}s</span>
                     </div>
                 `;
+                
+                wasSuccessful = parseFloat(last10Time) <= this.limit;
+                
+                if (wasSuccessful) {
+                    saveButtonHTML = `
+                        <div style="text-align: center; margin: 20px 0;">
+                            <input type="text" id="username" class="name-input" placeholder="Zadej své jméno" value="${this.userName}">
+                            <button class="btn btn-green" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.saveToLeaderboard(${last10Time})">🏆 Uložit do žebříčku</button>
+                        </div>
+                    `;
+                }
             }
             
             timeStatsHTML = `
@@ -216,14 +244,7 @@ export class RychlopoctyApp {
                 </div>
             `;
             
-            if (last10Time && parseFloat(last10Time) <= this.limit) {
-                saveButtonHTML = `
-                    <div style="text-align: center; margin: 20px 0;">
-                        <input type="text" id="username" class="name-input" placeholder="Zadej své jméno" value="${this.userName}">
-                        <button class="btn btn-green" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.saveToLeaderboard(${last10Time})">🏆 Uložit do žebříčku</button>
-                    </div>
-                `;
-            }
+            motivationalText = getMotivationalMessage(this.mode, wasSuccessful, this.wasQuit);
         }
 
         await updateFirebaseStats(this.correctCount, this.wrongCount);
@@ -232,11 +253,15 @@ export class RychlopoctyApp {
         app.innerHTML = `
             <div class="card" style="text-align: center; padding: 40px;">
                 <div class="result-emoji">${this.correctCount > this.wrongCount ? '🎉' : '💪'}</div>
-                <div class="result-title">Test dokončen!</div>
+                <div class="result-title">${this.wasQuit ? 'Test ukončen!' : 'Test dokončen!'}</div>
                 <div class="result-mode">Režim: ${this.mode}</div>
                 <div class="result-mode">Operace: ${opNames.join(', ')}</div>
 
                 ${timeStatsHTML}
+
+                <div style="font-size: 18px; font-weight: 600; color: #fbbf24; margin: 25px 0; padding: 15px; background: #1e293b; border-radius: 4px;">
+                    💬 ${motivationalText}
+                </div>
 
                 <div class="result-stats">
                     <div class="result-box correct">

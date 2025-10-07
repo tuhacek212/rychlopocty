@@ -10,80 +10,45 @@ export function getOperationsSymbols(operations) {
     return symbols.join('');
 }
 
-export async function loadMiniLeaderboards() {
-    const modes = ['Lehká', 'Střední', 'Obtížná', 'Expert'];
-    let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">';
-
-    for (const mode of modes) {
-        try {
-            const q = query(
-                collection(db, 'leaderboard'),
-                limit(100)
-            );
-            
-            const querySnapshot = await getDocs(q);
-            const results = [];
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.mode === mode) {
-                    results.push(data);
-                }
-            });
-
-            results.sort((a, b) => {
-                const opsA = (a.operations || []).length;
-                const opsB = (b.operations || []).length;
-                if (opsB !== opsA) return opsB - opsA;
-                return a.time - b.time;
-            });
-            
-            const top3 = results.slice(0, 3);
-
-            leaderboardsHTML += `
-                <div class="card" style="padding: 12px;">
-                    <div style="text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #fbbf24;">${mode}</div>
-                    ${top3.length > 0 ? top3.map((entry, index) => {
-                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                        const opsSymbols = getOperationsSymbols(entry.operations || []);
-                        return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 11px;">
-                                <span style="display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden;">
-                                    <span style="flex-shrink: 0;">${medal}</span>
-                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85px;">${entry.username}</span>
-                                    <span style="color: #94a3b8; font-size: 9px; flex-shrink: 0;">${opsSymbols}</span>
-                                </span>
-                                <span style="color: #10b981; font-weight: bold; flex-shrink: 0; margin-left: 4px;">${entry.time.toFixed(2)}s</span>
-                            </div>
-                        `;
-                    }).join('') : '<div style="text-align: center; padding: 10px; color: #64748b; font-size: 10px;">Zatím žádné výsledky</div>'}
-                </div>
-            `;
-        } catch (error) {
-            console.error('Chyba při načítání mini žebříčku:', error);
-            leaderboardsHTML += `
-                <div class="card" style="padding: 12px;">
-                    <div style="text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #fbbf24;">${mode}</div>
-                    <div style="text-align: center; padding: 10px; color: #ef4444; font-size: 10px;">Chyba načítání</div>
-                </div>
-            `;
-        }
-    }
-
-    leaderboardsHTML += '</div>';
-    
-    const container = document.getElementById('mini-leaderboards');
-    if (container) {
-        container.innerHTML = leaderboardsHTML;
-    }
-}
+// Globální proměnné pro filtr
+let allLeaderboardResults = [];
+let currentFilters = {
+    multiply: true,
+    add: true,
+    subtract: true,
+    divide: true
+};
 
 export async function showLeaderboards() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <div class="title-section">
-            <div class="main-title">🏆 Žebříčky</div>
-            <div class="subtitle">Top 10 nejlepších časů</div>
+            <div class="main-title">🏆 Žebříček</div>
+            <div class="subtitle">Top výsledky podle času</div>
         </div>
+
+        <div class="card" style="padding: 20px; margin-bottom: 20px;">
+            <div style="text-align: center; font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #fbbf24;">🔢 Filtrovat podle operací</div>
+            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="filter-multiply" checked onchange="window.filterLeaderboard()">
+                    <label for="filter-multiply">✖️ Násobení</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="filter-add" checked onchange="window.filterLeaderboard()">
+                    <label for="filter-add">➕ Sčítání</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="filter-subtract" checked onchange="window.filterLeaderboard()">
+                    <label for="filter-subtract">➖ Odčítání</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="filter-divide" checked onchange="window.filterLeaderboard()">
+                    <label for="filter-divide">➗ Dělení</label>
+                </div>
+            </div>
+        </div>
+
         <div id="leaderboards-container">
             <div style="text-align: center; padding: 40px;">
                 <div style="font-size: 24px;">⏳ Načítání...</div>
@@ -94,66 +59,95 @@ export async function showLeaderboards() {
         </div>
     `;
 
-    const modes = ['Lehká', 'Střední', 'Obtížná', 'Expert'];
-    let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; max-width: 1400px; margin: 0 auto;">';
+    try {
+        const q = query(
+            collection(db, 'leaderboard'),
+            limit(200)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        allLeaderboardResults = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            allLeaderboardResults.push(data);
+        });
 
-    for (const mode of modes) {
-        try {
-            const q = query(
-                collection(db, 'leaderboard'),
-                limit(100)
-            );
+        // Seřadit podle času
+        allLeaderboardResults.sort((a, b) => a.time - b.time);
+
+        // Zobrazit žebříček
+        renderLeaderboard();
+
+    } catch (error) {
+        console.error('Chyba při načítání žebříčku:', error);
+        document.getElementById('leaderboards-container').innerHTML = '<div style="text-align: center; padding: 40px;">Nepodařilo se načíst žebříček</div>';
+    }
+}
+
+function renderLeaderboard() {
+    // Získat aktuální filtry
+    currentFilters.multiply = document.getElementById('filter-multiply')?.checked ?? true;
+    currentFilters.add = document.getElementById('filter-add')?.checked ?? true;
+    currentFilters.subtract = document.getElementById('filter-subtract')?.checked ?? true;
+    currentFilters.divide = document.getElementById('filter-divide')?.checked ?? true;
+
+    // Filtrovat výsledky - zobrazit pouze záznamy, které mají alespoň jednu ze zaškrtnutých operací
+    const filteredResults = allLeaderboardResults.filter(entry => {
+        const ops = entry.operations || [];
+        
+        // Pokud žádná operace není zaškrtnutá, nezobrazovat nic
+        if (!currentFilters.multiply && !currentFilters.add && !currentFilters.subtract && !currentFilters.divide) {
+            return false;
+        }
+
+        // Zobrazit pouze pokud má alespoň jednu ze zaškrtnutých operací
+        const hasValidOperation = 
+            (ops.includes('*') && currentFilters.multiply) ||
+            (ops.includes('+') && currentFilters.add) ||
+            (ops.includes('-') && currentFilters.subtract) ||
+            (ops.includes('/') && currentFilters.divide);
+
+        return hasValidOperation;
+    });
+
+    // Vzít top 50
+    const top50 = filteredResults.slice(0, 50);
+
+    let leaderboardHTML = '<div class="card" style="padding: 20px; max-width: 800px; margin: 0 auto;">';
+
+    if (top50.length > 0) {
+        leaderboardHTML += top50.map((entry, index) => {
+            const date = new Date(entry.date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            const opsSymbols = getOperationsSymbols(entry.operations || []);
+            const opsCount = (entry.operations || []).length;
             
-            const querySnapshot = await getDocs(q);
-            const results = [];
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.mode === mode) {
-                    results.push(data);
-                }
-            });
-
-            results.sort((a, b) => {
-                const opsA = (a.operations || []).length;
-                const opsB = (b.operations || []).length;
-                if (opsB !== opsA) return opsB - opsA;
-                return a.time - b.time;
-            });
-            
-            const top10 = results.slice(0, 10);
-
-            leaderboardsHTML += `
-                <div class="card" style="padding: 12px;">
-                    <div style="text-align: center; font-size: 15px; font-weight: 600; color: #fbbf24; margin-bottom: 10px;">${mode}</div>
-                    ${top10.length > 0 ? top10.map((entry, index) => {
-                        const date = new Date(entry.date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' });
-                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-                        const opsSymbols = getOperationsSymbols(entry.operations || []);
-                        return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 6px; margin: 2px 0; background: #1e293b; border-radius: 2px; font-size: 12px;">
-                                <div style="display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; overflow: hidden;">
-                                    <span style="font-size: 13px; min-width: 20px; flex-shrink: 0;">${medal}</span>
-                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px;">${entry.username}</span>
-                                    <span style="font-size: 9px; color: #64748b; flex-shrink: 0;">${opsSymbols}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                                    <span style="color: #10b981; font-weight: 600; font-size: 13px;">${entry.time.toFixed(2)}s</span>
-                                    <span style="font-size: 8px; color: #475569;">${date}</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('') : '<div style="text-align: center; padding: 12px; color: #64748b; font-size: 11px;">Zatím žádné výsledky</div>'}
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; margin: 2px 0; background: #1e293b; border-radius: 3px; font-size: 13px; border-left: 2px solid ${index < 3 ? '#fbbf24' : '#334155'};">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                        <span style="font-size: 14px; min-width: 30px; font-weight: 600; flex-shrink: 0;">${medal}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; max-width: 150px;">${entry.username}</span>
+                        <span style="font-size: 11px; color: #94a3b8; flex-shrink: 0; background: #334155; padding: 1px 6px; border-radius: 2px;">${entry.mode}</span>
+                        <span style="font-size: 15px; color: #fbbf24; flex-shrink: 0; font-weight: 600;">${opsSymbols}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <span style="color: #10b981; font-weight: 700; font-size: 16px;">${entry.time.toFixed(2)}s</span>
+                        <span style="font-size: 9px; color: #64748b; min-width: 65px; text-align: right;">${date}</span>
+                    </div>
                 </div>
             `;
-        } catch (error) {
-            console.error('Chyba při načítání žebříčku:', error);
-        }
+        }).join('');
+    } else {
+        leaderboardHTML += '<div style="text-align: center; padding: 40px; color: #64748b;">Žádné výsledky pro vybrané operace</div>';
     }
 
-    leaderboardsHTML += '</div>';
+    leaderboardHTML += '</div>';
 
-    document.getElementById('leaderboards-container').innerHTML = leaderboardsHTML || '<div style="text-align: center; padding: 40px;">Nepodařilo se načíst žebříčky</div>';
+    document.getElementById('leaderboards-container').innerHTML = leaderboardHTML;
 }
+
+// Přidat globální funkci pro filtrování
+window.filterLeaderboard = renderLeaderboard;
 
 export async function saveToLeaderboard(mode, time, userName, correctCount, wrongCount, operations) {
     const username = document.getElementById('username').value.trim();
@@ -182,5 +176,4 @@ export async function saveToLeaderboard(mode, time, userName, correctCount, wron
         alert('❌ Nepodařilo se uložit do žebříčku. Zkus to znovu.');
         return null;
     }
-
 }

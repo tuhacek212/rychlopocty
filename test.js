@@ -1,8 +1,13 @@
+import { getDuringTestMessage } from './messages.js';
+
 export class TestManager {
     constructor(app) {
         this.app = app;
         this.currentExample = null;
         this.lastProcessedAnswer = null;
+        this.motivationInterval = null;
+        this.nextMotivationDelay = 8000; // První po 8 sekundách
+        this.motivationTimeout = null;
     }
 
     startTest(mode, limit, operations) {
@@ -12,13 +17,17 @@ export class TestManager {
         if (operations.includes('-')) opNames.push('Odčítání');
         if (operations.includes('/')) opNames.push('Dělení');
 
+        // Reset pro nový test
+        this.nextMotivationDelay = 8000; // První po 8 sekundách
+        this.clearMotivationTimers();
+
         const appElement = document.getElementById('app');
         appElement.innerHTML = `
             <div class="stats-bar">
                 <div class="stat-item">🎮 ${mode}</div>
                 <div class="stat-item" style="color: #10b981;">✅ <span id="correct-count">0</span></div>
                 <div class="stat-item" style="color: #ef4444;">❌ <span id="wrong-count">0</span></div>
-                <div class="stat-item" style="color: #94a3b8; font-size: 12px;">📝 ${opNames.join(', ')}</div>
+                <div class="stat-item" style="color: #94a3b8; font-size: 12px;">🔢 ${opNames.join(', ')}</div>
             </div>
 
             <div class="card example-area">
@@ -33,6 +42,7 @@ export class TestManager {
                        autocorrect="off"
                        autocapitalize="off"
                        spellcheck="false">
+                <div id="motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
             </div>
 
             ${mode === '⏱️ Na čas' ? `
@@ -70,6 +80,9 @@ export class TestManager {
             this.app.progressInterval = setInterval(() => this.updateProgress(), 100);
             this.app.timerInterval = setInterval(() => this.updateElapsedTimer(), 100);
         }
+
+        // Spustit motivační věty
+        this.scheduleNextMotivation();
 
         this.newExample();
     }
@@ -187,6 +200,69 @@ export class TestManager {
         }
     }
 
+    clearMotivationTimers() {
+        if (this.motivationInterval) {
+            clearTimeout(this.motivationInterval);
+            this.motivationInterval = null;
+        }
+        if (this.motivationTimeout) {
+            clearTimeout(this.motivationTimeout);
+            this.motivationTimeout = null;
+        }
+    }
+
+    scheduleNextMotivation() {
+        if (!this.app.running) {
+            this.clearMotivationTimers();
+            return;
+        }
+        
+        this.motivationInterval = setTimeout(() => {
+            if (this.app.running) {
+                this.showMotivation();
+                // Naplánovat další po náhodné pauze 10-15 sekund
+                this.nextMotivationDelay = (Math.floor(Math.random() * 6) + 10) * 1000;
+                this.scheduleNextMotivation();
+            } else {
+                this.clearMotivationTimers();
+            }
+        }, this.nextMotivationDelay);
+    }
+
+    showMotivation() {
+        if (!this.app.running) {
+            this.clearMotivationTimers();
+            return;
+        }
+        
+        const motivationElement = document.getElementById('motivation-text');
+        if (motivationElement) {
+            const message = getDuringTestMessage();
+            motivationElement.textContent = `💬 ${message}`;
+            motivationElement.style.opacity = '0';
+            motivationElement.style.transition = 'opacity 0.5s';
+            
+            // Fade in efekt
+            setTimeout(() => {
+                if (motivationElement && this.app.running) {
+                    motivationElement.style.opacity = '1';
+                }
+            }, 100);
+            
+            // Fade out po PŘESNĚ 5 sekundách
+            this.motivationTimeout = setTimeout(() => {
+                if (motivationElement && this.app.running) {
+                    motivationElement.style.opacity = '0';
+                    setTimeout(() => {
+                        if (motivationElement && this.app.running) {
+                            motivationElement.textContent = '';
+                        }
+                    }, 500);
+                }
+            }, 5000);
+        }
+    }
+
     updateStats() {
         document.getElementById('correct-count').textContent = this.app.correctCount;
         document.getElementById('wrong-count').textContent = this.app.wrongCount;
@@ -239,6 +315,7 @@ export class TestManager {
         else if (this.app.remainingTime <= 10) countdown.style.color = '#f59e0b';
 
         if (this.app.remainingTime <= 0) {
+            this.clearMotivationTimers();
             this.app.finishTest();
         }
     }
