@@ -36,8 +36,8 @@ html {
 
 .card {
     background: #1e293b;
-    border: 2px solid #334155;
-    border-radius: 12px;
+    border: 1px solid #334155;
+    border-radius: 4px;
     padding: 20px;
 }
 
@@ -84,7 +84,7 @@ html {
     font-size: 14px;
     font-weight: 600;
     border: none;
-    border-radius: 8px;
+    border-radius: 2px;
     cursor: pointer;
     color: white;
     transition: all 0.2s;
@@ -101,8 +101,8 @@ html {
 }
 
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .btn-green { background: #10b981; }
@@ -134,7 +134,7 @@ html {
     font-size: 12px;
     background: #334155;
     border: none;
-    border-radius: 6px;
+    border-radius: 2px;
     color: #f1f5f9;
 }
 
@@ -164,7 +164,7 @@ html {
 .info-box {
     background: #334155;
     border: 1px solid #475569;
-    border-radius: 8px;
+    border-radius: 2px;
     padding: 12px;
     margin: 15px 20px;
     text-align: center;
@@ -185,7 +185,7 @@ html {
 .stats-bar {
     background: #1e293b;
     padding: 15px;
-    border-radius: 12px;
+    border-radius: 2px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -259,7 +259,7 @@ html {
     text-align: center;
     background: #334155;
     border: none;
-    border-radius: 12px;
+    border-radius: 2px;
     color: #f1f5f9;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -271,7 +271,7 @@ html {
         max-width: 250px;
         padding: 18px;
         font-size: 36px;
-        border-radius: 10px;
+        border-radius: 2px;
     }
 }
 
@@ -291,7 +291,7 @@ html {
     max-width: 90%;
     height: 30px;
     background: #334155;
-    border-radius: 15px;
+    border-radius: 2px;
     margin: 10px auto;
     overflow: hidden;
 }
@@ -300,13 +300,13 @@ html {
     height: 100%;
     background: #3b82f6;
     transition: width 0.3s ease, background-color 0.3s ease;
-    border-radius: 15px;
+    border-radius: 0;
 }
 
 .countdown {
     background: #1e293b;
     padding: 20px 50px;
-    border-radius: 12px;
+    border-radius: 2px;
     text-align: center;
     margin: 20px auto;
     display: inline-block;
@@ -346,8 +346,8 @@ html {
 .result-box {
     background: #334155;
     padding: 20px 40px;
-    border-radius: 12px;
-    border: 2px solid;
+    border-radius: 2px;
+    border: 1px solid;
     text-align: center;
     min-width: 120px;
 }
@@ -398,8 +398,8 @@ html {
 
 .time-stats {
     background: #334155;
-    border: 2px solid #3b82f6;
-    border-radius: 12px;
+    border: 1px solid #3b82f6;
+    border-radius: 2px;
     padding: 20px;
     margin: 20px auto;
     max-width: 600px;
@@ -430,8 +430,8 @@ html {
 
 .leaderboard {
     background: #334155;
-    border: 2px solid #fbbf24;
-    border-radius: 12px;
+    border: 1px solid #fbbf24;
+    border-radius: 2px;
     padding: 20px;
     margin: 20px auto;
     max-width: 600px;
@@ -452,7 +452,7 @@ html {
     padding: 10px 15px;
     margin: 5px 0;
     background: #1e293b;
-    border-radius: 8px;
+    border-radius: 2px;
 }
 
 .leaderboard-rank {
@@ -492,8 +492,8 @@ html {
     padding: 10px 15px;
     font-size: 14px;
     background: #1e293b;
-    border: 2px solid #475569;
-    border-radius: 8px;
+    border: 1px solid #475569;
+    border-radius: 2px;
     color: #f1f5f9;
     text-align: center;
     margin: 10px auto;
@@ -506,33 +506,37 @@ html {
 }
 
 .error-list {
-    max-width: 800px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
 .error-item {
     background: #334155;
     border: 1px solid #475569;
-    border-radius: 8px;
-    padding: 12px 15px;
-    margin: 8px 0;
+    border-radius: 2px;
+    padding: 10px 12px;
+    margin: 6px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 15px;
 }
 
 .error-problem {
     font-size: 16px;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
 .error-answers {
-    font-size: 10px;
+    font-size: 13px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 .error-your {
     color: #ef4444;
-    margin-right: 10px;
 }
 
 .error-correct {

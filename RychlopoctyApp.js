@@ -25,7 +25,6 @@ export class RychlopoctyApp {
         this.savedAdd = false;
         this.savedSubtract = false;
         this.savedDivide = false;
-        this.savedExcludeEasy = true;
 
         this.testManager = new TestManager(this);
         
@@ -49,16 +48,16 @@ export class RychlopoctyApp {
                 <div class="card">
                     <div class="section-title">🎯 Vyber obtížnost</div>
                     
-                    <button class="btn btn-green" onclick="app.startTest('🟢 Lehká', 30)">🟢 Lehká</button>
+                    <button class="btn btn-green" onclick="app.startTest('Lehká', 30)">Lehká</button>
                     <div class="time-desc">30 sekund</div>
                     
-                    <button class="btn btn-yellow" onclick="app.startTest('🟡 Střední', 22)">🟡 Střední</button>
+                    <button class="btn btn-yellow" onclick="app.startTest('Střední', 22)">Střední</button>
                     <div class="time-desc">22 sekund</div>
                     
-                    <button class="btn btn-orange" onclick="app.startTest('🟠 Obtížná', 15)">🟠 Obtížná</button>
+                    <button class="btn btn-orange" onclick="app.startTest('Obtížná', 15)">Obtížná</button>
                     <div class="time-desc">15 sekund</div>
                     
-                    <button class="btn btn-red" onclick="app.startTest('🔴 Expert', 10)">🔴 Expert</button>
+                    <button class="btn btn-red" onclick="app.startTest('Expert', 10)">Expert</button>
                     <div class="time-desc">10 sekund</div>
 
                     <div class="section-title" style="margin-top: 20px;">⏱️ Vlastní čas</div>
@@ -69,16 +68,12 @@ export class RychlopoctyApp {
                     <button class="btn btn-purple" onclick="app.startCustomTime()">🚀 Start na čas</button>
                 </div>
 
-                <div class="card">
+                <div class="card" style="display: flex; flex-direction: column;">
                     <div class="section-title">🔢 Vyber operace</div>
                     <div class="checkbox-container">
                         <div class="checkbox-item">
                             <input type="checkbox" id="op-multiply" ${this.savedMultiply ? 'checked' : ''}>
                             <label for="op-multiply">✖️ Násobení</label>
-                        </div>
-                        <div class="checkbox-item" style="margin-left: 30px;">
-                            <input type="checkbox" id="op-exclude-easy" ${this.savedExcludeEasy ? 'checked' : ''}>
-                            <label for="op-exclude-easy" style="font-size: 12px; color: #94a3b8;">↳ Odebrat ×1, ×2, ×10</label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" id="op-add" ${this.savedAdd ? 'checked' : ''}>
@@ -94,12 +89,9 @@ export class RychlopoctyApp {
                         </div>
                     </div>
 
-                    <div class="info-box">
-                        <div class="info-title">💡 Tip</div>
-                        <div class="info-text">Vyber obtížnost a operace,<br>pak klikni na tlačítko start!</div>
+                    <div style="margin-top: auto;">
+                        <button class="btn btn-blue" onclick="app.showLeaderboards()">🏆 Žebříčky</button>
                     </div>
-
-                    <button class="btn btn-blue" style="margin-top: 15px;" onclick="app.showLeaderboards()">🏆 Žebříčky</button>
                 </div>
             </div>
 
@@ -138,7 +130,6 @@ export class RychlopoctyApp {
         this.savedAdd = document.getElementById('op-add').checked;
         this.savedSubtract = document.getElementById('op-subtract').checked;
         this.savedDivide = document.getElementById('op-divide').checked;
-        this.savedExcludeEasy = document.getElementById('op-exclude-easy').checked;
         
         this.mode = mode;
         this.limit = limit;
@@ -158,7 +149,7 @@ export class RychlopoctyApp {
         if (this.savedDivide) this.operations.push('/');
         if (this.operations.length === 0) this.operations = ['*'];
 
-        this.testManager.startTest(mode, limit, this.operations, this.savedExcludeEasy);
+        this.testManager.startTest(mode, limit, this.operations);
     }
 
     endTest() {
@@ -270,7 +261,7 @@ export class RychlopoctyApp {
     }
 
     async saveToLeaderboard(time) {
-        const username = await saveToLeaderboard(this.mode, time, this.userName, this.correctCount, this.wrongCount, this.operations, this.savedExcludeEasy);
+        const username = await saveToLeaderboard(this.mode, time, this.userName, this.correctCount, this.wrongCount, this.operations, false);
         if (username) {
             this.userName = username;
             showLeaderboards();

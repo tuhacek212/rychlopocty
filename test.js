@@ -3,11 +3,9 @@ export class TestManager {
         this.app = app;
         this.currentExample = null;
         this.lastProcessedAnswer = null;
-        this.excludeEasy = false;
     }
 
-    startTest(mode, limit, operations, excludeEasy = false) {
-        this.excludeEasy = excludeEasy;
+    startTest(mode, limit, operations) {
         const opNames = [];
         if (operations.includes('*')) opNames.push('Násobení');
         if (operations.includes('+')) opNames.push('Sčítání');
@@ -94,12 +92,14 @@ export class TestManager {
             b = Math.floor(Math.random() * (100 - a)) + 1;
         } else {
             // Násobení
-            a = Math.floor(Math.random() * 10) + 1;
-            b = Math.floor(Math.random() * 10) + 1;
+            // Generujeme čísla 3-9 (vynecháváme 1, 2, 10)
+            a = Math.floor(Math.random() * 7) + 3; // 3-9
+            b = Math.floor(Math.random() * 7) + 3; // 3-9
             
-            // Pokud je zapnuté "odebrat jednoduché", vygeneruj znovu
-            if (this.excludeEasy && (a === 1 || a === 2 || a === 10 || b === 1 || b === 2 || b === 10)) {
-                return this.newExample(); // Rekurzivně vygeneruj nový příklad
+            // S 33% šancí povolíme i jednoduchá čísla (1, 2, 10)
+            if (Math.random() < 0.33) {
+                a = Math.floor(Math.random() * 10) + 1; // 1-10
+                b = Math.floor(Math.random() * 10) + 1; // 1-10
             }
         }
 

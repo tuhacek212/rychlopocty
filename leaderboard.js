@@ -1,11 +1,9 @@
 import { collection, query, limit, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 import { db } from './firebase.js';
 
-export function getOperationsSymbols(operations, excludeEasy = false) {
+export function getOperationsSymbols(operations) {
     const symbols = [];
-    if (operations.includes('*')) {
-        symbols.push(excludeEasy ? '×*' : '×');
-    }
+    if (operations.includes('*')) symbols.push('×');
     if (operations.includes('+')) symbols.push('+');
     if (operations.includes('-')) symbols.push('−');
     if (operations.includes('/')) symbols.push('÷');
@@ -14,7 +12,7 @@ export function getOperationsSymbols(operations, excludeEasy = false) {
 
 export async function loadMiniLeaderboards() {
     const modes = ['🟢 Lehká', '🟡 Střední', '🟠 Obtížná', '🔴 Expert'];
-    let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">';
+    let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">';
 
     for (const mode of modes) {
         try {
@@ -36,38 +34,36 @@ export async function loadMiniLeaderboards() {
                 const opsA = (a.operations || []).length;
                 const opsB = (b.operations || []).length;
                 if (opsB !== opsA) return opsB - opsA;
-                
-                // Při stejném počtu operací preferuj excludeEasy (těžší)
-                const excludeA = a.excludeEasy || false;
-                const excludeB = b.excludeEasy || false;
-                if (excludeB !== excludeA) return excludeB ? 1 : -1;
-                
                 return a.time - b.time;
             });
             
             const top3 = results.slice(0, 3);
 
             leaderboardsHTML += `
-                <div class="card" style="padding: 15px;">
-                    <div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #fbbf24;">${mode}</div>
+                <div class="card" style="padding: 12px;">
+                    <div style="text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #fbbf24;">${mode}</div>
                     ${top3.length > 0 ? top3.map((entry, index) => {
                         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                        const opsSymbols = getOperationsSymbols(entry.operations || [], entry.excludeEasy || false);
+                        const opsSymbols = getOperationsSymbols(entry.operations || []);
                         return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 12px;">
-                                <span>${medal} ${entry.username} <span style="color: #94a3b8; font-size: 10px;">${opsSymbols}</span></span>
-                                <span style="color: #10b981; font-weight: bold;">${entry.time.toFixed(2)}s</span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 11px;">
+                                <span style="display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden;">
+                                    <span style="flex-shrink: 0;">${medal}</span>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85px;">${entry.username}</span>
+                                    <span style="color: #94a3b8; font-size: 9px; flex-shrink: 0;">${opsSymbols}</span>
+                                </span>
+                                <span style="color: #10b981; font-weight: bold; flex-shrink: 0; margin-left: 4px;">${entry.time.toFixed(2)}s</span>
                             </div>
                         `;
-                    }).join('') : '<div style="text-align: center; padding: 10px; color: #64748b; font-size: 11px;">Zatím žádné výsledky</div>'}
+                    }).join('') : '<div style="text-align: center; padding: 10px; color: #64748b; font-size: 10px;">Zatím žádné výsledky</div>'}
                 </div>
             `;
         } catch (error) {
             console.error('Chyba při načítání mini žebříčku:', error);
             leaderboardsHTML += `
-                <div class="card" style="padding: 15px;">
-                    <div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #fbbf24;">${mode}</div>
-                    <div style="text-align: center; padding: 10px; color: #ef4444; font-size: 11px;">Chyba načítání</div>
+                <div class="card" style="padding: 12px;">
+                    <div style="text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #fbbf24;">${mode}</div>
+                    <div style="text-align: center; padding: 10px; color: #ef4444; font-size: 10px;">Chyba načítání</div>
                 </div>
             `;
         }
@@ -99,7 +95,7 @@ export async function showLeaderboards() {
     `;
 
     const modes = ['🟢 Lehká', '🟡 Střední', '🟠 Obtížná', '🔴 Expert'];
-    let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; max-width: 1400px; margin: 0 auto;">';
+    let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; max-width: 1400px; margin: 0 auto;">';
 
     for (const mode of modes) {
         try {
@@ -121,38 +117,32 @@ export async function showLeaderboards() {
                 const opsA = (a.operations || []).length;
                 const opsB = (b.operations || []).length;
                 if (opsB !== opsA) return opsB - opsA;
-                
-                // Při stejném počtu operací preferuj excludeEasy (těžší)
-                const excludeA = a.excludeEasy || false;
-                const excludeB = b.excludeEasy || false;
-                if (excludeB !== excludeA) return excludeB ? 1 : -1;
-                
                 return a.time - b.time;
             });
             
             const top10 = results.slice(0, 10);
 
             leaderboardsHTML += `
-                <div class="card" style="padding: 15px;">
-                    <div style="text-align: center; font-size: 16px; font-weight: 600; color: #fbbf24; margin-bottom: 12px;">${mode}</div>
+                <div class="card" style="padding: 12px;">
+                    <div style="text-align: center; font-size: 15px; font-weight: 600; color: #fbbf24; margin-bottom: 10px;">${mode}</div>
                     ${top10.length > 0 ? top10.map((entry, index) => {
                         const date = new Date(entry.date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' });
                         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-                        const opsSymbols = getOperationsSymbols(entry.operations || [], entry.excludeEasy || false);
+                        const opsSymbols = getOperationsSymbols(entry.operations || []);
                         return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin: 3px 0; background: #1e293b; border-radius: 6px; font-size: 13px;">
-                                <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
-                                    <span style="font-size: 14px; min-width: 22px;">${medal}</span>
-                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${entry.username}</span>
-                                    <span style="font-size: 10px; color: #64748b;">${opsSymbols}</span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 6px; margin: 2px 0; background: #1e293b; border-radius: 2px; font-size: 12px;">
+                                <div style="display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; overflow: hidden;">
+                                    <span style="font-size: 13px; min-width: 20px; flex-shrink: 0;">${medal}</span>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px;">${entry.username}</span>
+                                    <span style="font-size: 9px; color: #64748b; flex-shrink: 0;">${opsSymbols}</span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                                    <span style="color: #10b981; font-weight: 600; font-size: 14px;">${entry.time.toFixed(2)}s</span>
-                                    <span style="font-size: 9px; color: #475569;">${date}</span>
+                                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                                    <span style="color: #10b981; font-weight: 600; font-size: 13px;">${entry.time.toFixed(2)}s</span>
+                                    <span style="font-size: 8px; color: #475569;">${date}</span>
                                 </div>
                             </div>
                         `;
-                    }).join('') : '<div style="text-align: center; padding: 15px; color: #64748b; font-size: 12px;">Zatím žádné výsledky</div>'}
+                    }).join('') : '<div style="text-align: center; padding: 12px; color: #64748b; font-size: 11px;">Zatím žádné výsledky</div>'}
                 </div>
             `;
         } catch (error) {
@@ -165,7 +155,7 @@ export async function showLeaderboards() {
     document.getElementById('leaderboards-container').innerHTML = leaderboardsHTML || '<div style="text-align: center; padding: 40px;">Nepodařilo se načíst žebříčky</div>';
 }
 
-export async function saveToLeaderboard(mode, time, userName, correctCount, wrongCount, operations, excludeEasy = false) {
+export async function saveToLeaderboard(mode, time, userName, correctCount, wrongCount, operations) {
     const username = document.getElementById('username').value.trim();
     if (!username) {
         alert('Zadej své jméno!');
@@ -182,8 +172,7 @@ export async function saveToLeaderboard(mode, time, userName, correctCount, wron
             date: new Date().toISOString(),
             correctCount: correctCount,
             wrongCount: wrongCount,
-            operations: operations,
-            excludeEasy: excludeEasy
+            operations: operations
         });
 
         alert('✅ Výsledek uložen do žebříčku!');
