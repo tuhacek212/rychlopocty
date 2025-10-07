@@ -11,7 +11,7 @@ export function getOperationsSymbols(operations) {
 }
 
 export async function loadMiniLeaderboards() {
-    const modes = ['🟢 Lehká', '🟡 Střední', '🟠 Obtížná', '🔴 Expert'];
+    const modes = ['Lehká', 'Střední', 'Obtížná', 'Expert'];
     let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">';
 
     for (const mode of modes) {
@@ -94,7 +94,7 @@ export async function showLeaderboards() {
         </div>
     `;
 
-    const modes = ['🟢 Lehká', '🟡 Střední', '🟠 Obtížná', '🔴 Expert'];
+    const modes = ['Lehká', 'Střední', 'Obtížná', 'Expert'];
     let leaderboardsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; max-width: 1400px; margin: 0 auto;">';
 
     for (const mode of modes) {
@@ -182,4 +182,5 @@ export async function saveToLeaderboard(mode, time, userName, correctCount, wron
         alert('❌ Nepodařilo se uložit do žebříčku. Zkus to znovu.');
         return null;
     }
+
 }
