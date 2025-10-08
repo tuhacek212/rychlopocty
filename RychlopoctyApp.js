@@ -74,23 +74,28 @@ export class RychlopoctyApp {
 
                 <div class="card" style="display: flex; flex-direction: column;">
                     <div class="section-title">🔢 Vyber operace</div>
-                    <div class="checkbox-container">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="op-multiply" ${this.savedMultiply ? 'checked' : ''}>
-                            <label for="op-multiply">✖️ Násobení</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="op-add" ${this.savedAdd ? 'checked' : ''}>
-                            <label for="op-add">➕ Sčítání</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="op-subtract" ${this.savedSubtract ? 'checked' : ''}>
-                            <label for="op-subtract">➖ Odčítání</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="op-divide" ${this.savedDivide ? 'checked' : ''}>
-                            <label for="op-divide">➗ Dělení</label>
-                        </div>
+                    <div class="operations-grid">
+                        <button class="operation-btn ${this.savedMultiply ? 'active' : ''}" 
+                                id="op-multiply" 
+                                onclick="app.toggleOperation('multiply')">
+                            ✖️ Násobení
+                        </button>
+                        <br>
+                        <button class="operation-btn ${this.savedAdd ? 'active' : ''}" 
+                                id="op-add" 
+                                onclick="app.toggleOperation('add')">
+                            ➕ Sčítání
+                        </button><br>
+                        <button class="operation-btn ${this.savedSubtract ? 'active' : ''}" 
+                                id="op-subtract" 
+                                onclick="app.toggleOperation('subtract')">
+                            ➖ Odčítání
+                        </button><br>
+                        <button class="operation-btn ${this.savedDivide ? 'active' : ''}" 
+                                id="op-divide" 
+                                onclick="app.toggleOperation('divide')">
+                            ➗ Dělení
+                        </button>
                     </div>
 
                     <div style="margin-top: auto;">
@@ -122,11 +127,33 @@ export class RychlopoctyApp {
         loadTotalStats();
     }
 
+    toggleOperation(operation) {
+        const btn = document.getElementById(`op-${operation}`);
+        
+        switch(operation) {
+            case 'multiply':
+                this.savedMultiply = !this.savedMultiply;
+                break;
+            case 'add':
+                this.savedAdd = !this.savedAdd;
+                break;
+            case 'subtract':
+                this.savedSubtract = !this.savedSubtract;
+                break;
+            case 'divide':
+                this.savedDivide = !this.savedDivide;
+                break;
+        }
+        
+        btn.classList.toggle('active');
+    }
+
     showCreateGameScreen() {
-            this.savedMultiply = document.getElementById('op-multiply')?.checked ?? true;
-            this.savedAdd = document.getElementById('op-add')?.checked ?? false;
-            this.savedSubtract = document.getElementById('op-subtract')?.checked ?? false;
-            this.savedDivide = document.getElementById('op-divide')?.checked ?? false;
+        this.savedMultiply = document.getElementById('op-multiply')?.classList.contains('active') ?? true;
+        this.savedAdd = document.getElementById('op-add')?.classList.contains('active') ?? false;
+        this.savedSubtract = document.getElementById('op-subtract')?.classList.contains('active') ?? false;
+        this.savedDivide = document.getElementById('op-divide')?.classList.contains('active') ?? false;
+        
         const app = document.getElementById('app');
         
         app.innerHTML = `
@@ -312,10 +339,10 @@ export class RychlopoctyApp {
     }
 
     startTest(mode, limit) {
-        this.savedMultiply = document.getElementById('op-multiply').checked;
-        this.savedAdd = document.getElementById('op-add').checked;
-        this.savedSubtract = document.getElementById('op-subtract').checked;
-        this.savedDivide = document.getElementById('op-divide').checked;
+        this.savedMultiply = document.getElementById('op-multiply')?.classList.contains('active') ?? true;
+        this.savedAdd = document.getElementById('op-add')?.classList.contains('active') ?? false;
+        this.savedSubtract = document.getElementById('op-subtract')?.classList.contains('active') ?? false;
+        this.savedDivide = document.getElementById('op-divide')?.classList.contains('active') ?? false;
         
         this.mode = mode;
         this.limit = limit;

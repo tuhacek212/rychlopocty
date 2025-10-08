@@ -161,6 +161,47 @@ html {
     cursor: pointer;
 }
 
+.operations-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+}
+
+.operation-btn {
+    width: 100%;
+    padding: 11px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid #334155;
+    border-radius: 2px;
+    cursor: pointer;
+    color: #64748b;
+    background: rgba(30, 41, 59, 0.5);
+    transition: all 0.2s;
+    margin-bottom: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.operation-btn.active {
+    background: #10b981;
+    border-color: #10b98100;
+    color: white;
+}
+
+.operation-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+    .operation-btn {
+        padding: 16px 20px;
+        font-size: 16px;
+    }
+}
+
 .info-box {
     background: #334155;
     border: 1px solid #475569;
