@@ -71,12 +71,11 @@ export const motivationalMessages = {
         "Tempo! Tempo!",
         "Myslíš si, že mám celý den čas?",
         "Ty chceš, abych tady zestárnul?",
-        "Vem to dynamičtěji!",
-        "Spi doma, tady se pracuje!",
-        "Máš ruce plné, tak je ukaž!",
-        "To se nerozmýšlí, to se počítá!",
+        "Spi doma, tady se počítá!",
+        "Hledáš ta správná čísla?",
+        "Nemysli! Počítej!",
         "Hele, kalkulačka by to spočítala rychlejc!",
-        "Tak co, ještě to dneska bude?",
+        "Tak co, bude to ještě to dneska?",
         "Soustředění! To není pohádka na dobrou noc!",
         "Hurá! Ať vidím ty prsteníčky létat!",
         "Pohni kostrou!",
@@ -84,9 +83,14 @@ export const motivationalMessages = {
         "Hele, tady se nesní!",
         "Co je, ztratil ses v číslech?",
         "Budeme to mít dnes nebo zítra?",
-        "Ty už víš co máš spočítat, ne?",
-        "Ruce nahoru a do práce!",
+        "Nečti si a počítej!",
         "To není úkol na celou hodinu!"
+        "Koukám jak se u toho trápíš!"
+        "Dělej ať stihneš taky něco dalšího dneska!"
+        "To snad není nic tak složitého ne?"
+        "Klid, nespěchej ... já si počkám!"
+        "Dyť je to učivo základní školy!"
+        "Učitelka matiky měla pravdu, bude z tebe jůtuber!"
     ],
     
     quit_test: [
