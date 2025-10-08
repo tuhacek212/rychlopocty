@@ -1,3 +1,5 @@
+import { updateFirebaseStats } from './stats.js';
+
 export class MultiplayerManager {
     constructor(app) {
         this.app = app;
@@ -12,6 +14,7 @@ export class MultiplayerManager {
         this.currentQuestion = null;
         this.questionStartTime = null;
         this.gameActive = false;
+        this.operations = ['*'];
     }
 
     initializePeer() {
@@ -39,8 +42,8 @@ export class MultiplayerManager {
     }
 
     generateShortId() {
-    // Vygeneruj krátké 2-číselné ID (10-99)
-    return (Math.floor(Math.random() * 90) + 10).toString();
+        // Vygeneruj krátké 2-číselné ID (10-99)
+        return (Math.floor(Math.random() * 90) + 10).toString();
     }
 
     setupConnection() {
@@ -61,9 +64,10 @@ export class MultiplayerManager {
         });
     }
 
-    async createGame(playerName) {
+    async createGame(playerName, operations) {
         this.isHost = true;
         this.myName = playerName;
+        this.operations = operations;
         await this.initializePeer();
         return this.gameCode;
     }
@@ -80,11 +84,8 @@ export class MultiplayerManager {
                 console.log('My peer ID:', myId);
                 console.log('Connecting to game code:', gameCode);
                 
-                // Připoj se k host peer ID (což je v podstatě ten gameCode, ale lowercase)
-                // PeerJS automaticky generuje ID, takže hledáme ID které obsahuje gameCode
                 let hostPeerId = null;
                 
-                // Zkusíme různé formáty peer ID
                 const attempts = [
                     gameCode.toLowerCase(),
                     gameCode,
@@ -114,7 +115,6 @@ export class MultiplayerManager {
                         clearTimeout(connectionTimeout);
                         console.log('Connection established!');
                         this.setupConnection();
-                        // Pošli své jméno hostovi
                         this.sendData({
                             type: 'player_joined',
                             name: this.myName
@@ -151,13 +151,12 @@ export class MultiplayerManager {
             case 'player_joined':
                 console.log('Player joined:', data.name);
                 this.opponentName = data.name;
-                // Host pošle zpět své jméno a oba začnou hru
                 if (this.isHost) {
                     this.sendData({
                         type: 'game_start',
-                        hostName: this.myName
+                        hostName: this.myName,
+                        operations: this.operations
                     });
-                    // Host musí začít hru až PO odeslání zprávy
                     setTimeout(() => {
                         this.startGame();
                     }, 100);
@@ -167,7 +166,7 @@ export class MultiplayerManager {
             case 'game_start':
                 console.log('Game starting, host name:', data.hostName);
                 this.opponentName = data.hostName;
-                // Guest čeká na první otázku od hosta
+                this.operations = data.operations || ['*'];
                 this.showGameScreen();
                 break;
 
@@ -205,7 +204,6 @@ export class MultiplayerManager {
 
         this.showGameScreen();
 
-        // Pouze host generuje otázky
         if (this.isHost) {
             setTimeout(() => {
                 this.generateNewQuestion();
@@ -216,8 +214,11 @@ export class MultiplayerManager {
     generateNewQuestion() {
         if (!this.isHost) return;
 
-        const operations = ['*', '+', '-', '/'];
-        const op = operations[Math.floor(Math.random() * operations.length)];
+        if (!this.operations || this.operations.length === 0) {
+        this.operations = ['*'];
+    }
+
+        const op = this.operations[Math.floor(Math.random() * this.operations.length)];
         let a, b, result;
 
         if (op === '/') {
@@ -245,13 +246,11 @@ export class MultiplayerManager {
 
         console.log('Generated new question:', this.currentQuestion);
 
-        // Pošli otázku soupeři
         this.sendData({
             type: 'new_question',
             question: this.currentQuestion
         });
 
-        // Zobraz otázku (s checknutím že elementy existují)
         setTimeout(() => {
             this.displayQuestion();
         }, 100);
@@ -274,35 +273,30 @@ export class MultiplayerManager {
         answerElement.disabled = false;
         answerElement.style.background = '#334155';
         
-        // Znovu nastav listener pro nový příklad
         this.setupAnswerListener();
 
-// Focus s malým zpožděním aby to fungovalo spolehlivě
-setTimeout(() => {
-    const input = document.getElementById('mp-answer');
-    if (input) {
-        input.focus();
-    }
-}, 200);    
+        setTimeout(() => {
+            const input = document.getElementById('mp-answer');
+            if (input) {
+                input.focus();
+            }
+        }, 200);    
     }
 
     handleOpponentAnswer(data) {
         if (data.correct) {
-            console.log('Opponent answered correctly');
+            console.log('Opponent answered correctly first');
             
-            // Soupeř odpověděl správně, přidej mu bod
             this.opponentScore++;
             this.updateScoreDisplay();
             this.checkWinCondition();
 
-            // Zakázat input do dalšího příkladu
             const answerInput = document.getElementById('mp-answer');
             if (answerInput) {
                 answerInput.disabled = true;
-                answerInput.style.background = '#ef4444';
+                answerInput.style.background = '#64748b';
             }
 
-            // Generuj novou otázku (pouze host)
             if (this.isHost) {
                 setTimeout(() => {
                     this.generateNewQuestion();
@@ -317,6 +311,9 @@ setTimeout(() => {
         document.getElementById('opponent-score').textContent = this.opponentScore;
         document.getElementById('score-diff').textContent = 
             scoreDiff > 0 ? `+${scoreDiff}` : scoreDiff;
+
+        this.updateProgressBar(); // <--- PŘIDEJ TOHLE
+
     }
 
     checkWinCondition() {
@@ -336,89 +333,123 @@ setTimeout(() => {
         }
     }
 
-    endGame(winner) {
-        this.gameActive = false;
-        
-        const winnerName = winner === 'me' ? this.myName : this.opponentName;
-        const resultText = winner === 'me' ? '🎉 VYHRÁL JSI!' : '😢 PROHRÁL JSI';
-        
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div class="result-emoji" style="font-size: 64px; margin-bottom: 20px;">
-                    ${winner === 'me' ? '🏆' : '😔'}
-                </div>
-                <div class="result-title" style="font-size: 32px; margin-bottom: 10px;">
-                    ${resultText}
-                </div>
-                <div style="font-size: 18px; color: #94a3b8; margin-bottom: 30px;">
-                    Vítěz: ${winnerName}
-                </div>
-                
-                <div class="result-stats">
-                    <div class="result-box" style="border-color: ${winner === 'me' ? '#10b981' : '#ef4444'};">
-                        <div class="result-label">Ty</div>
-                        <div class="result-number" style="color: ${winner === 'me' ? '#10b981' : '#ef4444'};">
-                            ${this.myScore}
-                        </div>
-                    </div>
-                    <div class="result-box" style="border-color: ${winner === 'opponent' ? '#10b981' : '#ef4444'};">
-                        <div class="result-label">Soupeř</div>
-                        <div class="result-number" style="color: ${winner === 'opponent' ? '#10b981' : '#ef4444'};">
-                            ${this.opponentScore}
-                        </div>
-                    </div>
-                </div>
-
-                <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 30px;" 
-                        onclick="app.showMainScreen()">
-                    🏠 Zpět na hlavní obrazovku
-                </button>
-            </div>
-        `;
+    endGame(winnerType) {
+    if (this.motivationInterval) {
+        clearInterval(this.motivationInterval);
     }
+    this.gameActive = false;
 
-    showGameScreen() {
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="stats-bar" style="justify-content: space-between;">
-                <div class="stat-item" style="color: #3b82f6;">
-                    👤 ${this.myName}: <span id="my-score">0</span>
-                </div>
-                <div class="stat-item" style="color: #fbbf24; font-size: 20px; font-weight: bold;">
-                    <span id="score-diff">0</span>
-                </div>
-                <div class="stat-item" style="color: #ef4444;">
-                    👤 ${this.opponentName}: <span id="opponent-score">0</span>
-                </div>
-            </div>
-
-            <div class="card example-area">
-                <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">
-                    První na +10 bodů vyhrává!
-                </div>
-                <div class="example-text" id="mp-question">Čekání...</div>
-                <input type="text" 
-                       inputmode="numeric" 
-                       pattern="[0-9]*" 
-                       class="answer-input" 
-                       id="mp-answer" 
-                       autocomplete="off"
-                       autocorrect="off"
-                       autocapitalize="off"
-                       spellcheck="false">
-            </div>
-
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-red" style="width: auto; padding: 12px 30px;" 
-                        onclick="app.multiplayerManager.disconnect()">
-                    🛑 Ukončit hru
-                </button>
-            </div>
-        `;
-
-        this.setupAnswerListener();
+    if (typeof updateFirebaseStats === 'function') {
+    // V multiplayeru se počítá každý správně zodpovězený příklad jako správný
+    // Žádné špatné odpovědi se nepočítají (jen se pole zčervená)
+    updateFirebaseStats(this.myScore, 0).catch(err => {
+        console.error('Chyba při ukládání statistik:', err);
+    });
+}
+    
+    // Určíme skutečného vítěze
+    let iWon = false;
+    if (winnerType === 'me') {
+        iWon = true;
+    } else if (winnerType === 'host') {
+        iWon = this.isHost;
+    } else if (winnerType === 'guest') {
+        iWon = !this.isHost;
+    } else if (winnerType === 'opponent') {
+        iWon = false;
     }
+    
+    const winnerName = iWon ? this.myName : this.opponentName;
+    const resultText = iWon ? '🎉 VYHRÁL JSI!' : '😢 PROHRÁL JSI';
+    const resultEmoji = iWon ? '🏆' : '😔';
+    
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px;">
+            <div class="result-emoji" style="font-size: 64px; margin-bottom: 20px;">
+                ${resultEmoji}
+            </div>
+            <div class="result-title" style="font-size: 32px; margin-bottom: 10px;">
+                ${resultText}
+            </div>
+            <div style="font-size: 18px; color: #94a3b8; margin-bottom: 30px;">
+                Vítěz: ${winnerName}
+            </div>
+            
+            <div class="result-stats">
+                <div class="result-box" style="border-color: ${iWon ? '#10b981' : '#ef4444'};">
+                    <div class="result-label">Ty</div>
+                    <div class="result-number" style="color: ${iWon ? '#10b981' : '#ef4444'};">
+                        ${this.myScore}
+                    </div>
+                </div>
+                <div class="result-box" style="border-color: ${!iWon ? '#10b981' : '#ef4444'};">
+                    <div class="result-label">Soupeř</div>
+                    <div class="result-number" style="color: ${!iWon ? '#10b981' : '#ef4444'};">
+                        ${this.opponentScore}
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 30px;" 
+                    onclick="app.showMainScreen()">
+                🏠 Zpět na hlavní obrazovku
+            </button>
+        </div>
+    `;
+}
+
+showGameScreen() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="stats-bar" style="justify-content: space-between;">
+            <div class="stat-item" style="color: #3b82f6;">
+                👤 ${this.myName}: <span id="my-score">0</span>
+            </div>
+            <div class="stat-item" style="color: #fbbf24; font-size: 20px; font-weight: bold;">
+                <span id="score-diff">0</span>
+            </div>
+            <div class="stat-item" style="color: #ef4444;">
+                👤 ${this.opponentName}: <span id="opponent-score">0</span>
+            </div>
+        </div>
+
+        <div class="card example-area">
+            <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">
+                První na +10 bodů vyhrává!
+            </div>
+            <div class="example-text" id="mp-question">Čekání...</div>
+            <input type="text" 
+                   inputmode="numeric" 
+                   pattern="[0-9]*" 
+                   class="answer-input" 
+                   id="mp-answer" 
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false">
+            <div id="mp-motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
+        </div>
+
+<div class="progress-section" style="margin-top: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; position: relative; height: 30px; background: #334155; border-radius: 2px; overflow: hidden;">
+        <div style="position: absolute; right: 50%; height: 100%; background: #ef4444; transition: width 0.3s;" id="mp-progress-opponent"></div>
+        <div style="position: absolute; left: 50%; height: 100%; background: #3b82f6; transition: width 0.3s;" id="mp-progress-me"></div>
+        <div style="position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: #fbbf24; z-index: 10;"></div>
+    </div>
+</div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-red" style="width: auto; padding: 12px 30px;" 
+                    onclick="app.multiplayerManager.disconnect()">
+                🛑 Ukončit hru
+            </button>
+        </div>
+    `;
+
+    this.setupAnswerListener();
+    this.startMotivationMessages();
+}
 
     setupAnswerListener() {
         const answerInput = document.getElementById('mp-answer');
@@ -429,11 +460,9 @@ setTimeout(() => {
 
         console.log('Setting up answer listener');
 
-        // Odstraň všechny listenery použitím replace
         const newInput = answerInput.cloneNode(true);
         answerInput.parentNode.replaceChild(newInput, answerInput);
 
-        // Nastav nový listener
         const finalInput = document.getElementById('mp-answer');
         finalInput.addEventListener('input', (e) => {
             console.log('Input event triggered:', e.target.value);
@@ -471,7 +500,6 @@ setTimeout(() => {
 
         console.log('Current question:', this.currentQuestion, 'Correct answer:', correct);
 
-        // Kontrola, jestli je odpověď kompletní
         if (text.length >= correct.toString().length) {
             const userAnswer = parseInt(text);
             console.log('Checking complete answer:', userAnswer, 'vs', correct);
@@ -483,19 +511,16 @@ setTimeout(() => {
                 e.target.style.background = '#10b981';
                 e.target.disabled = true;
                 
-                // Pošli odpověď soupeři
                 this.sendData({
                     type: 'answer',
                     correct: true,
                     time: responseTime
                 });
 
-                // Přidej si bod
                 this.myScore++;
                 this.updateScoreDisplay();
                 this.checkWinCondition();
                 
-                // Pokud jsem host, vygeneruj novou otázku
                 if (this.isHost) {
                     setTimeout(() => {
                         this.generateNewQuestion();
@@ -509,7 +534,6 @@ setTimeout(() => {
                     e.target.style.background = '#334155';
                     e.target.focus();
                 }, 800);
-            
             }
         } else {
             console.log('Answer not complete yet, length:', text.length, 'needed:', correct.toString().length);
@@ -524,6 +548,9 @@ setTimeout(() => {
     }
 
     disconnect() {
+        if (this.motivationInterval) {
+        clearInterval(this.motivationInterval);
+    }
         this.gameActive = false;
         if (this.connection) {
             this.connection.close();
@@ -533,4 +560,93 @@ setTimeout(() => {
         }
         this.app.showMainScreen();
     }
+    startMotivationMessages() {
+    // Importuj funkci pro motivační zprávy
+    import('./messages.js').then(module => {
+        const showMessage = () => {
+            if (!this.gameActive) return;
+            
+            const message = module.getDuringTestMessage();
+            const motivationElement = document.getElementById('mp-motivation-text');
+            
+            if (motivationElement) {
+                motivationElement.textContent = `💬 ${message}`;
+                motivationElement.style.opacity = '0';
+                motivationElement.style.transition = 'opacity 0.5s';
+                
+                setTimeout(() => {
+                    if (motivationElement && this.gameActive) {
+                        motivationElement.style.opacity = '1';
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    if (motivationElement && this.gameActive) {
+                        motivationElement.style.opacity = '0';
+                        setTimeout(() => {
+                            if (motivationElement && this.gameActive) {
+                                motivationElement.textContent = '';
+                            }
+                        }, 500);
+                    }
+                }, 5000);
+            }
+        };
+        
+        // První zpráva po 8 sekundách
+        setTimeout(() => {
+            if (this.gameActive) {
+                showMessage();
+                // Pak každých 10-15 sekund
+                this.motivationInterval = setInterval(() => {
+                    if (this.gameActive) {
+                        showMessage();
+                    } else {
+                        clearInterval(this.motivationInterval);
+                    }
+                }, (Math.floor(Math.random() * 6) + 10) * 1000);
+            }
+        }, 8000);
+    });
+}
+
+updateProgressBar() {
+    const myProgress = document.getElementById('mp-progress-me');
+    const opponentProgress = document.getElementById('mp-progress-opponent');
+    
+    if (!myProgress || !opponentProgress) return;
+    
+    const diff = this.myScore - this.opponentScore; // rozdíl bodů
+    const maxDiff = 10; // maximum je +10 nebo -10
+    
+    if (diff > 0) {
+        // Já vedu - modrá tyčka doprava
+        const myWidth = (diff / maxDiff) * 50; // každý bod = 5%
+        myProgress.style.width = `${myWidth}%`;
+        opponentProgress.style.width = '0%';
+        
+        // Barva podle vedení
+        if (diff > 5) {
+            myProgress.style.background = '#10b981'; // zelená - velký náskok
+        } else {
+            myProgress.style.background = '#3b82f6'; // modrá - malý náskok
+        }
+    } else if (diff < 0) {
+        // Soupeř vede - červená tyčka doleva
+        const opponentWidth = (Math.abs(diff) / maxDiff) * 50;
+        opponentProgress.style.width = `${opponentWidth}%`;
+        myProgress.style.width = '0%';
+        
+        // Barva podle vedení
+        if (Math.abs(diff) > 5) {
+            opponentProgress.style.background = '#dc2626'; // tmavě červená - velký náskok soupeře
+        } else {
+            opponentProgress.style.background = '#ef4444'; // červená - malý náskok soupeře
+        }
+    } else {
+        // Remíza - obě tyčky na 0
+        myProgress.style.width = '0%';
+        opponentProgress.style.width = '0%';
+    }
+}
 }

@@ -123,7 +123,12 @@ export class RychlopoctyApp {
     }
 
     showCreateGameScreen() {
+            this.savedMultiply = document.getElementById('op-multiply')?.checked ?? true;
+            this.savedAdd = document.getElementById('op-add')?.checked ?? false;
+            this.savedSubtract = document.getElementById('op-subtract')?.checked ?? false;
+            this.savedDivide = document.getElementById('op-divide')?.checked ?? false;
         const app = document.getElementById('app');
+        
         app.innerHTML = `
             <div class="card" style="text-align: center; padding: 40px;">
                 <div style="font-size: 32px; margin-bottom: 20px;">🎯 Založit hru</div>
@@ -171,7 +176,7 @@ export class RychlopoctyApp {
                     <input type="text" 
                            id="game-code" 
                            class="name-input" 
-                           placeholder="Kód hry (např. ABC123)" 
+                           placeholder="Kód hry (např. 42)" 
                            style="font-size: 24px; padding: 15px; text-transform: uppercase; letter-spacing: 3px;">
                 </div>
 
@@ -204,6 +209,15 @@ export class RychlopoctyApp {
 
         this.userName = playerName;
         localStorage.setItem('rychlopocty_username', playerName);
+       
+        const operations = [];
+        if (this.savedMultiply) operations.push('*');
+        if (this.savedAdd) operations.push('+');
+        if (this.savedSubtract) operations.push('-');
+        if (this.savedDivide) operations.push('/');
+        if (operations.length === 0) operations.push('*');
+
+        console.log('Creating game with operations:', operations);
 
         const app = document.getElementById('app');
         app.innerHTML = `
@@ -213,7 +227,7 @@ export class RychlopoctyApp {
         `;
 
         try {
-            const gameCode = await this.multiplayerManager.createGame(playerName);
+            const gameCode = await this.multiplayerManager.createGame(playerName, operations);
             
             app.innerHTML = `
                 <div class="card" style="text-align: center; padding: 40px;">
