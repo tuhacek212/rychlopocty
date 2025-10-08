@@ -6,8 +6,9 @@ export class TestManager {
         this.currentExample = null;
         this.lastProcessedAnswer = null;
         this.motivationInterval = null;
-        this.nextMotivationDelay = 8000; // První po 8 sekundách
+        this.nextMotivationDelay = 8000;
         this.motivationTimeout = null;
+        this.lastAnswerTimes = []; // Pro výpočet průměru
     }
 
     startTest(mode, limit, operations) {
@@ -17,9 +18,9 @@ export class TestManager {
         if (operations.includes('-')) opNames.push('Odčítání');
         if (operations.includes('/')) opNames.push('Dělení');
 
-        // Reset pro nový test
-        this.nextMotivationDelay = 8000; // První po 8 sekundách
+        this.nextMotivationDelay = 8000;
         this.clearMotivationTimers();
+        this.lastAnswerTimes = [];
 
         const appElement = document.getElementById('app');
         appElement.innerHTML = `
@@ -81,9 +82,7 @@ export class TestManager {
             this.app.timerInterval = setInterval(() => this.updateElapsedTimer(), 100);
         }
 
-        // Spustit motivační věty
         this.scheduleNextMotivation();
-
         this.newExample();
     }
 
@@ -104,22 +103,19 @@ export class TestManager {
             a = Math.floor(Math.random() * 99) + 1;
             b = Math.floor(Math.random() * (100 - a)) + 1;
         } else {
-            // Násobení
-            // Generujeme čísla 3-9 (vynecháváme 1, 2, 10)
-            a = Math.floor(Math.random() * 7) + 3; // 3-9
-            b = Math.floor(Math.random() * 7) + 3; // 3-9
+            a = Math.floor(Math.random() * 7) + 3;
+            b = Math.floor(Math.random() * 7) + 3;
             
-            // S 33% šancí povolíme i jednoduchá čísla (1, 2, 10)
             if (Math.random() < 0.33) {
-                a = Math.floor(Math.random() * 10) + 1; // 1-10
-                b = Math.floor(Math.random() * 10) + 1; // 1-10
+                a = Math.floor(Math.random() * 10) + 1;
+                b = Math.floor(Math.random() * 10) + 1;
             }
         }
 
         const symbols = {'*': 'x', '+': '+', '-': '-', '/': ':'};
         const display = symbols[op];
 
-        this.currentExample = {a, b, op, display};
+        this.currentExample = {a, b, op, display, startTime: Date.now()};
         this.lastProcessedAnswer = null;
 
         document.getElementById('example').textContent = `${a} ${display} ${b}`;
@@ -134,7 +130,7 @@ export class TestManager {
         const text = e.target.value;
         if (!/^\d+$/.test(text)) return;
 
-        const {a, b, op, display} = this.currentExample;
+        const {a, b, op, display, startTime} = this.currentExample;
         let correct;
         if (op === '*') correct = a * b;
         else if (op === '+') correct = a + b;
@@ -149,12 +145,20 @@ export class TestManager {
 
         const userAnswer = parseInt(text);
         const currentTime = Date.now();
+        const answerTime = (currentTime - startTime) / 1000; // Čas na tento příklad v sekundách
 
         if (userAnswer === correct) {
             this.app.correctCount++;
             e.target.style.background = '#10b981';
             this.app.correctTimes.push(currentTime);
             this.app.allAnswerTimes.push(currentTime);
+            this.lastAnswerTimes.push(answerTime);
+            
+            // Držíme pouze posledních 5 časů pro výpočet trendu
+            if (this.lastAnswerTimes.length > 5) {
+                this.lastAnswerTimes.shift();
+            }
+            
             if (this.app.correctTimes.length > 10) {
                 this.app.correctTimes = this.app.correctTimes.slice(-10);
             }
@@ -177,8 +181,8 @@ export class TestManager {
             this.app.wrongCount++;
             e.target.style.background = '#ef4444';
             this.app.correctTimes = [];
+            this.lastAnswerTimes = []; // Reset při chybě
             
-            // Reset časomíry při chybě
             this.app.testStartTime = Date.now();
 
             const symbols = {'*': '×', '+': '+', '-': '−', '/': '÷'};
@@ -198,6 +202,125 @@ export class TestManager {
 
             setTimeout(() => this.newExample(), 1500);
         }
+    }
+
+    getPerformanceStatus() {
+        if (this.app.mode === '⏱️ Na čas' || this.app.mode === '∞ Trénink') {
+            return { trend: 'neutral', remaining: 0, avgTime: 0 };
+        }
+
+        const correctCount = this.app.correctTimes.length;
+        const remaining = 10 - correctCount;
+        
+        // Výpočet průměrného času
+        let avgTime = 0;
+        if (this.lastAnswerTimes.length > 0) {
+            avgTime = this.lastAnswerTimes.reduce((a, b) => a + b, 0) / this.lastAnswerTimes.length;
+        }
+
+        // Zjistíme trend (zlepšuje se nebo zhoršuje)
+        let trend = 'neutral';
+        if (this.lastAnswerTimes.length >= 3) {
+            const recentAvg = (this.lastAnswerTimes[this.lastAnswerTimes.length - 1] + 
+                             this.lastAnswerTimes[this.lastAnswerTimes.length - 2]) / 2;
+            const olderAvg = (this.lastAnswerTimes[0] + this.lastAnswerTimes[1]) / 2;
+            
+            if (recentAvg < olderAvg * 0.85) {
+                trend = 'improving'; // Zlepšuje se (je rychlejší)
+            } else if (recentAvg > olderAvg * 1.15) {
+                trend = 'worsening'; // Zhoršuje se (je pomalejší)
+            }
+        }
+
+        return { trend, remaining, avgTime };
+    }
+
+    getDynamicMotivationMessage() {
+        const { trend, remaining, avgTime } = this.getPerformanceStatus();
+
+        // Pokud je to neomezený trénink nebo na čas, použij původní náhodné věty
+        if (this.app.mode === '⏱️ Na čas' || this.app.mode === '∞ Trénink') {
+            return getDuringTestMessage();
+        }
+
+        // Zbývá málo příkladů (1-3) - povzbuzující věty
+        if (remaining <= 3 && remaining > 0) {
+            const encouragingMessages = [
+                "Už jen kousek! Dokážeš to!",
+                "Skoro tam jsi! Ještě chvilku!",
+                "Pár příkladů a máš to!",
+                "Finiš! Ještě trochu vydržet!",
+                "Už to vidím! Dotáhni to!",
+                "Skoro hotovo! Nepouštěj to!",
+                "Ještě kousek! Makej!",
+                "Už to máš skoro v kapse!"
+            ];
+            return encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+        }
+
+        // Zbývá hodně (7-10) a zhoršuje se - vtipné kritické věty
+        if (remaining >= 7 && trend === 'worsening') {
+            const criticalMessages = [
+                "Hele, to není závodění se šnekem!",
+                "Myslíš si, že mám celý den čas?",
+                "Hele, kalkulačka by to spočítala rychlejc!",
+                "Ty snad u toho svačíš!",
+                "Co to máš, spánkovou nemoc?",
+                "Tempo! Tempo!",
+                "Ty chceš, abych tady zestárnul?",
+                "Spi doma, tady se počítá!",
+                "Koukám jak se u toho trápíš!",
+                "To snad není nic tak složitého ne?",
+                "Klid, nespěchej ... já si počkám!",
+                "Dyť je to učivo základní školy!"
+            ];
+            return criticalMessages[Math.floor(Math.random() * criticalMessages.length)];
+        }
+
+        // Zbývá hodně (7-10) a je neutrální nebo se zlepšuje - lehce pobízející
+        if (remaining >= 7) {
+            const pushingMessages = [
+                "Zaber ty máslo!",
+                "Přidej! Makej!",
+                "Tak honem, honem!",
+                "Pohni kostrou!",
+                "Jedem! Jedem!",
+                "Hurá! Ať vidím ty prstěnky létat!",
+                "Dělej ať stihneš taky něco dalšího dneska!",
+                "Nečti si a počítej!",
+                "To není úkol na celou hodinu!"
+            ];
+            return pushingMessages[Math.floor(Math.random() * pushingMessages.length)];
+        }
+
+        // Zbývá středně (4-6) a zhoršuje se
+        if (remaining >= 4 && trend === 'worsening') {
+            const mediumCriticalMessages = [
+                "Nechceš abych ti poradil, že ne?",
+                "Soustřeď se! Tohle není procházka růžovým sadem!",
+                "Co je, ztratil ses v číslech?",
+                "Budeme to mít dnes nebo zítra?",
+                "Hele, tady se nesní!",
+                "Nemysli! Počítej!"
+            ];
+            return mediumCriticalMessages[Math.floor(Math.random() * mediumCriticalMessages.length)];
+        }
+
+        // Zbývá středně (4-6) a zlepšuje se - povzbuzující
+        if (remaining >= 4 && trend === 'improving') {
+            const improvingMessages = [
+                "Tak to je lepší tempo!",
+                "Vidíš, když chceš!",
+                "Teď to jde!",
+                "Výborně! Takhle dál!",
+                "To je parádní zrychlení!",
+                "Konečně nějaké tempo!"
+            ];
+            return improvingMessages[Math.floor(Math.random() * improvingMessages.length)];
+        }
+
+        // Ostatní případy - neutrální motivace
+        return getDuringTestMessage();
     }
 
     clearMotivationTimers() {
@@ -220,7 +343,6 @@ export class TestManager {
         this.motivationInterval = setTimeout(() => {
             if (this.app.running) {
                 this.showMotivation();
-                // Naplánovat další po náhodné pauze 10-15 sekund
                 this.nextMotivationDelay = (Math.floor(Math.random() * 6) + 10) * 1000;
                 this.scheduleNextMotivation();
             } else {
@@ -237,19 +359,17 @@ export class TestManager {
         
         const motivationElement = document.getElementById('motivation-text');
         if (motivationElement) {
-            const message = getDuringTestMessage();
+            const message = this.getDynamicMotivationMessage();
             motivationElement.textContent = `💬 ${message}`;
             motivationElement.style.opacity = '0';
             motivationElement.style.transition = 'opacity 0.5s';
             
-            // Fade in efekt
             setTimeout(() => {
                 if (motivationElement && this.app.running) {
                     motivationElement.style.opacity = '1';
                 }
             }, 100);
             
-            // Fade out po PŘESNĚ 5 sekundách
             this.motivationTimeout = setTimeout(() => {
                 if (motivationElement && this.app.running) {
                     motivationElement.style.opacity = '0';

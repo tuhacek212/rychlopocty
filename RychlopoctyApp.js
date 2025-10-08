@@ -2,6 +2,7 @@ import { TestManager } from './test.js';
 import { loadTotalStats, updateFirebaseStats } from './stats.js';
 import { showLeaderboards, saveToLeaderboard } from './leaderboard.js';
 import { getMotivationalMessage } from './messages.js';
+import { MultiplayerManager } from './multiplayer.js';
 
 export class RychlopoctyApp {
     constructor() {
@@ -29,6 +30,7 @@ export class RychlopoctyApp {
         this.savedDivide = false;
 
         this.testManager = new TestManager(this);
+        this.multiplayerManager = new MultiplayerManager(this);
         
         this.showMainScreen();
     }
@@ -96,6 +98,21 @@ export class RychlopoctyApp {
                     </div>
                 </div>
             </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <div class="section-title">🎮 Multiplayer 1v1</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <button class="btn btn-green" onclick="app.showCreateGameScreen()">
+                        🎯 Založit hru
+                    </button>
+                    <button class="btn btn-blue" onclick="app.showJoinGameScreen()">
+                        🔗 Připojit se
+                    </button>
+                </div>
+                <div style="text-align: center; font-size: 11px; color: #64748b; margin-top: 10px;">
+                    Soupeř proti kamarádovi v reálném čase!
+                </div>
+            </div>
             
             <div style="text-align: center; padding: 20px 0; margin-top: 30px;">
                 <div style="font-size: 11px; color: #475569;">Made by JT</div>
@@ -103,6 +120,166 @@ export class RychlopoctyApp {
         `;
 
         loadTotalStats();
+    }
+
+    showCreateGameScreen() {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 32px; margin-bottom: 20px;">🎯 Založit hru</div>
+                
+                <div style="margin: 30px 0;">
+                    <input type="text" 
+                           id="host-name" 
+                           class="name-input" 
+                           placeholder="Tvoje jméno" 
+                           value="${this.userName}"
+                           style="font-size: 18px; padding: 15px;">
+                </div>
+
+                <button class="btn btn-green" 
+                        style="width: auto; padding: 15px 40px; font-size: 18px;" 
+                        onclick="app.createMultiplayerGame()">
+                    🚀 Vytvořit místnost
+                </button>
+
+                <button class="btn btn-blue" 
+                        style="width: auto; padding: 12px 30px; margin-top: 20px;" 
+                        onclick="app.showMainScreen()">
+                    ◀ Zpět
+                </button>
+            </div>
+        `;
+
+        document.getElementById('host-name').focus();
+    }
+
+    showJoinGameScreen() {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 32px; margin-bottom: 20px;">🔗 Připojit se ke hře</div>
+                
+                <div style="margin: 30px 0;">
+                    <input type="text" 
+                           id="guest-name" 
+                           class="name-input" 
+                           placeholder="Tvoje jméno" 
+                           value="${this.userName}"
+                           style="font-size: 18px; padding: 15px; margin-bottom: 15px;">
+                    
+                    <input type="text" 
+                           id="game-code" 
+                           class="name-input" 
+                           placeholder="Kód hry (např. ABC123)" 
+                           style="font-size: 24px; padding: 15px; text-transform: uppercase; letter-spacing: 3px;">
+                </div>
+
+                <button class="btn btn-blue" 
+                        style="width: auto; padding: 15px 40px; font-size: 18px;" 
+                        onclick="app.joinMultiplayerGame()">
+                    🎮 Připojit se
+                </button>
+
+                <button class="btn btn-blue" 
+                        style="width: auto; padding: 12px 30px; margin-top: 20px;" 
+                        onclick="app.showMainScreen()">
+                    ◀ Zpět
+                </button>
+            </div>
+        `;
+
+        document.getElementById('guest-name').focus();
+    }
+
+    async createMultiplayerGame() {
+        const nameInput = document.getElementById('host-name');
+        const playerName = nameInput.value.trim();
+
+        if (!playerName) {
+            alert('Zadej své jméno!');
+            nameInput.focus();
+            return;
+        }
+
+        this.userName = playerName;
+        localStorage.setItem('rychlopocty_username', playerName);
+
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 24px; margin-bottom: 20px;">⏳ Vytváření hry...</div>
+            </div>
+        `;
+
+        try {
+            const gameCode = await this.multiplayerManager.createGame(playerName);
+            
+            app.innerHTML = `
+                <div class="card" style="text-align: center; padding: 40px;">
+                    <div style="font-size: 32px; margin-bottom: 20px;">✅ Hra vytvořena!</div>
+                    
+                    <div style="font-size: 18px; color: #94a3b8; margin-bottom: 20px;">
+                        Sdílej tento kód se soupeřem:
+                    </div>
+                    
+                    <div style="font-size: 48px; font-weight: bold; color: #10b981; 
+                                letter-spacing: 5px; padding: 20px; background: #1e293b; 
+                                border-radius: 4px; margin: 20px 0;">
+                        ${gameCode}
+                    </div>
+
+                    <div style="font-size: 16px; color: #fbbf24; margin: 30px 0;">
+                        ⏳ Čekání na soupeře...
+                    </div>
+
+                    <button class="btn btn-red" 
+                            style="width: auto; padding: 12px 30px;" 
+                            onclick="app.multiplayerManager.disconnect()">
+                        🛑 Zrušit hru
+                    </button>
+                </div>
+            `;
+        } catch (error) {
+            alert('Chyba při vytváření hry: ' + error.message);
+            this.showMainScreen();
+        }
+    }
+
+    async joinMultiplayerGame() {
+        const nameInput = document.getElementById('guest-name');
+        const codeInput = document.getElementById('game-code');
+        const playerName = nameInput.value.trim();
+        const gameCode = codeInput.value.trim().toUpperCase();
+
+        if (!playerName) {
+            alert('Zadej své jméno!');
+            nameInput.focus();
+            return;
+        }
+
+        if (!gameCode) {
+            alert('Zadej kód hry!');
+            codeInput.focus();
+            return;
+        }
+
+        this.userName = playerName;
+        localStorage.setItem('rychlopocty_username', playerName);
+
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 24px; margin-bottom: 20px;">⏳ Připojování ke hře...</div>
+            </div>
+        `;
+
+        try {
+            await this.multiplayerManager.joinGame(gameCode, playerName);
+        } catch (error) {
+            alert('Nepodařilo se připojit ke hře. Zkontroluj kód a zkus to znovu.');
+            this.showJoinGameScreen();
+        }
     }
 
     startCustomTime() {

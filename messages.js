@@ -84,12 +84,12 @@ export const motivationalMessages = {
         "Co je, ztratil ses v číslech?",
         "Budeme to mít dnes nebo zítra?",
         "Nečti si a počítej!",
-        "To není úkol na celou hodinu!"
-        "Koukám jak se u toho trápíš!"
-        "Dělej ať stihneš taky něco dalšího dneska!"
-        "To snad není nic tak složitého ne?"
-        "Klid, nespěchej ... já si počkám!"
-        "Dyť je to učivo základní školy!"
+        "To není úkol na celou hodinu!",
+        "Koukám jak se u toho trápíš!",
+        "Dělej ať stihneš taky něco dalšího dneska!",
+        "To snad není nic tak složitého ne?",
+        "Klid, nespěchej ... já si počkám!",
+        "Dyť je to učivo základní školy!",
         "Učitelka matiky měla pravdu, bude z tebe jůtuber!"
     ],
     
