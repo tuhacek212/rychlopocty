@@ -6,9 +6,42 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>⚡ Rychlopočty</title>
+    
+    <!-- SEO -->
+    <title>Rychlopočty - Procvičování násobilky a počítání online zdarma</title>
+    <meta name="description" content="Rychlopočty - Zdarma procvičuj násobilku, sčítání, odčítání a dělení online. Interaktivní matematický trenažér pro žáky ZŠ s žebříčky a multiplayerem.">
+    <meta name="keywords" content="matematika online, procvičování matematiky, násobilka online, počítání online, matematika pro děti, matematika zš, procvičování násobilky, sčítání odčítání online, matematické příklady, matematika zdarma, rychlé počty, matematika česky">
+    <meta name="author" content="JT">
+    <meta name="robots" content="index, follow">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalApplication",
+      "name": "Rychlopočty",
+      "description": "Interaktivní nástroj pro procvičování matematiky pro žáky základních škol",
+      "applicationCategory": "EducationalApplication",
+      "educationalLevel": "Elementary School",
+      "educationalUse": "Practice",
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "student"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CZK"
+      }
+    }
+    </script>
 </head>
 <body>
     <div class="container" id="app"></div>

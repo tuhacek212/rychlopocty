@@ -279,31 +279,19 @@ export class MultiplayerManager {
         
         this.setupAnswerListener();
         
-        // VYLEPŠENÝ FOCUS PRO MOBILNÍ ZAŘÍZENÍ
-        this.focusInput();
+        // FOCUS - STEJNÝ JAKO V test.js
+        const input = document.getElementById('mp-answer');
+        if (input) {
+            input.focus();
+        }
     }
 
     focusInput() {
+        // Tato metoda už není potřeba, focus se dělá přímo
         const input = document.getElementById('mp-answer');
-        if (!input) return;
-
-        // Několikanásobný pokus o focus s různým časováním
-        const focusAttempts = [0, 50, 100, 200, 300];
-        
-        focusAttempts.forEach(delay => {
-            setTimeout(() => {
-                if (input && this.gameActive) {
-                    // Odebrání a přidání readonly může pomoci na iOS
-                    input.removeAttribute('readonly');
-                    input.focus();
-                    
-                    // Na iOS je někdy nutné kliknout programově
-                    if (document.activeElement !== input) {
-                        input.click();
-                    }
-                }
-            }, delay);
-        });
+        if (input) {
+            input.focus();
+        }
     }
 
     handleOpponentAnswer(data) {
@@ -648,11 +636,11 @@ export class MultiplayerManager {
             </div>
         `;
 
-        this.setupAnswerListener();
+        // FOCUS - STEJNÝ JAKO V test.js
+        document.getElementById('mp-answer').focus();
+        document.getElementById('mp-answer').addEventListener('input', (e) => this.handleAnswerInput(e));
+
         this.startMotivationMessages();
-        
-        // Okamžitý pokus o focus po vytvoření obrazovky
-        this.focusInput();
     }
 
     setupAnswerListener() {
@@ -668,11 +656,6 @@ export class MultiplayerManager {
         answerInput.parentNode.replaceChild(newInput, answerInput);
 
         const finalInput = document.getElementById('mp-answer');
-        
-        // Přidání touchstart listeneru pro mobilní zařízení
-        finalInput.addEventListener('touchstart', () => {
-            this.focusInput();
-        });
         
         finalInput.addEventListener('input', (e) => {
             console.log('Input event triggered:', e.target.value);
@@ -742,7 +725,7 @@ export class MultiplayerManager {
                 setTimeout(() => {
                     e.target.value = '';
                     e.target.style.background = '#334155';
-                    this.focusInput();
+                    e.target.focus();
                 }, 800);
             }
         } else {

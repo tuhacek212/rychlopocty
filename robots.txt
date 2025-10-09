@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://rychlopocty.cz/sitemap.xml
