@@ -32,7 +32,66 @@ export class RychlopoctyApp {
         this.testManager = new TestManager(this);
         this.multiplayerManager = new MultiplayerManager(this);
         
-        this.showMainScreen();
+        // Zkontroluj, jestli URL obsahuje pozvánku
+        this.checkForInvite();
+    }
+
+    checkForInvite() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const joinCode = urlParams.get('join');
+        
+        if (joinCode) {
+            // Odstranit parametr z URL bez reloadu
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Zobrazit obrazovku pro připojení s předvyplněným kódem
+            this.showJoinGameScreenWithCode(joinCode);
+        } else {
+            this.showMainScreen();
+        }
+    }
+
+    showJoinGameScreenWithCode(gameCode) {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 32px; margin-bottom: 20px;">🔗 Připojit se ke hře</div>
+                
+                <div style="font-size: 16px; color: #10b981; margin-bottom: 20px;">
+                    ✅ Kód hry byl automaticky vyplněn!
+                </div>
+                
+                <div style="margin: 30px 0;">
+                    <input type="text" 
+                           id="guest-name" 
+                           class="name-input" 
+                           placeholder="Tvoje jméno" 
+                           value="${this.userName}"
+                           style="font-size: 18px; padding: 15px; margin-bottom: 15px;">
+                    
+                    <input type="text" 
+                           id="game-code" 
+                           class="name-input" 
+                           placeholder="Kód hry" 
+                           value="${gameCode}"
+                           style="font-size: 24px; padding: 15px; text-transform: uppercase; letter-spacing: 3px;">
+                </div>
+
+                <button class="btn btn-blue" 
+                        style="width: auto; padding: 15px 40px; font-size: 18px;" 
+                        onclick="app.joinMultiplayerGame()">
+                    🎮 Připojit se
+                </button>
+
+                <button class="btn btn-blue" 
+                        style="width: auto; padding: 12px 30px; margin-top: 20px;" 
+                        onclick="app.showMainScreen()">
+                    ◀ Zpět
+                </button>
+            </div>
+        `;
+
+        document.getElementById('guest-name').focus();
     }
 
     async showMainScreen() {
@@ -268,6 +327,29 @@ export class RychlopoctyApp {
                                 letter-spacing: 5px; padding: 20px; background: #1e293b; 
                                 border-radius: 4px; margin: 20px 0;">
                         ${gameCode}
+                    </div>
+
+                    <div style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 20px 0;">
+                        📤 Nebo pošli pozvánku:
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; max-width: 600px; margin-left: auto; margin-right: auto;">
+                        <button class="btn btn-green" style="padding: 12px; font-size: 13px;" 
+                                onclick="app.multiplayerManager.shareViaWhatsApp('${gameCode}')">
+                            💬 WhatsApp
+                        </button>
+                        <button class="btn btn-blue" style="padding: 12px; font-size: 13px;" 
+                                onclick="app.multiplayerManager.shareViaMessenger('${gameCode}')">
+                            💬 Messenger
+                        </button>
+                        <button class="btn btn-purple" style="padding: 12px; font-size: 13px;" 
+                                onclick="app.multiplayerManager.copyInviteLink('${gameCode}')">
+                            🔗 Kopírovat odkaz
+                        </button>
+                        <button class="btn btn-orange" style="padding: 12px; font-size: 13px;" 
+                                onclick="app.multiplayerManager.shareNative('${gameCode}')">
+                            📱 Sdílet
+                        </button>
                     </div>
 
                     <div style="font-size: 16px; color: #fbbf24; margin: 30px 0;">

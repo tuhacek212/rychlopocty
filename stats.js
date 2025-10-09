@@ -11,8 +11,8 @@ export async function loadTotalStats() {
         let totalWrong = 0;
         
         if (!querySnapshot.empty) {
-            const doc = querySnapshot.docs[0];
-            const data = doc.data();
+            const docSnap = querySnapshot.docs[0];
+            const data = docSnap.data();
             totalCorrect = data.totalCorrect || 0;
             totalWrong = data.totalWrong || 0;
         }
@@ -41,41 +41,51 @@ export async function loadTotalStats() {
 }
 
 export async function updateFirebaseStats(correctCount, wrongCount) {
-    try {
-        const statsRef = collection(db, 'stats');
-        const q = query(statsRef, limit(1));
-        const querySnapshot = await getDocs(q);
-        
-        let currentCorrect = 0;
-        let currentWrong = 0;
-        let docId = null;
-        
-        if (!querySnapshot.empty) {
-            const docSnap = querySnapshot.docs[0];
-            docId = docSnap.id;
-            const data = docSnap.data();
-            currentCorrect = data.totalCorrect || 0;
-            currentWrong = data.totalWrong || 0;
-        }
-        
-        const newCorrect = currentCorrect + correctCount;
-        const newWrong = currentWrong + wrongCount;
-        
-        if (docId) {
-            const statsDocRef = doc(db, 'stats', docId);
-            await updateDoc(statsDocRef, {
-                totalCorrect: newCorrect,
-                totalWrong: newWrong,
-                lastUpdated: new Date().toISOString()
-            });
-        } else {
-            await addDoc(statsRef, {
-                totalCorrect: newCorrect,
-                totalWrong: newWrong,
-                lastUpdated: new Date().toISOString()
-            });
-        }
-    } catch (error) {
-        console.error('Chyba při aktualizaci stats:', error);
+    console.log('📊 updateFirebaseStats called with:', correctCount, 'correct,', wrongCount, 'wrong');
+    
+    // DŮLEŽITÉ: Odstranili jsme try-catch, aby se chyby propagovaly do volající funkce
+    const statsRef = collection(db, 'stats');
+    const q = query(statsRef, limit(1));
+    
+    console.log('🔍 Načítám existující stats...');
+    const querySnapshot = await getDocs(q);
+    
+    let currentCorrect = 0;
+    let currentWrong = 0;
+    let docId = null;
+    
+    if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        docId = docSnap.id;
+        const data = docSnap.data();
+        currentCorrect = data.totalCorrect || 0;
+        currentWrong = data.totalWrong || 0;
+        console.log('📖 Existující data:', currentCorrect, 'správně,', currentWrong, 'špatně');
+    } else {
+        console.log('📝 Žádná existující data, vytvářím nový dokument');
     }
+    
+    const newCorrect = currentCorrect + correctCount;
+    const newWrong = currentWrong + wrongCount;
+    
+    console.log('💾 Ukládám nové hodnoty:', newCorrect, 'správně,', newWrong, 'špatně');
+    
+    if (docId) {
+        const statsDocRef = doc(db, 'stats', docId);
+        await updateDoc(statsDocRef, {
+            totalCorrect: newCorrect,
+            totalWrong: newWrong,
+            lastUpdated: new Date().toISOString()
+        });
+        console.log('✅ Dokument aktualizován!');
+    } else {
+        await addDoc(statsRef, {
+            totalCorrect: newCorrect,
+            totalWrong: newWrong,
+            lastUpdated: new Date().toISOString()
+        });
+        console.log('✅ Nový dokument vytvořen!');
+    }
+    
+    console.log('🎉 updateFirebaseStats dokončena úspěšně');
 }

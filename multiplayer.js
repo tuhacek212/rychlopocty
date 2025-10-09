@@ -1,4 +1,5 @@
 import { updateFirebaseStats } from './stats.js';
+import { shareViaWhatsApp, shareViaMessenger, copyInviteLink, shareNative } from './share.js';
 
 export class MultiplayerManager {
     constructor(app) {
@@ -279,15 +280,22 @@ export class MultiplayerManager {
         
         this.setupAnswerListener();
         
-        // FOCUS - STEJNÝ JAKO V test.js
-        const input = document.getElementById('mp-answer');
-        if (input) {
-            input.focus();
-        }
+        // Vylepšený focus pro mobil
+        setTimeout(() => {
+            const input = document.getElementById('mp-answer');
+            if (input) {
+                input.focus();
+                // Pro iOS - zkus kliknout programově
+                input.click();
+                // Další pokus po malém delay
+                setTimeout(() => {
+                    input.focus();
+                }, 100);
+            }
+        }, 150);
     }
 
     focusInput() {
-        // Tato metoda už není potřeba, focus se dělá přímo
         const input = document.getElementById('mp-answer');
         if (input) {
             input.focus();
@@ -343,16 +351,23 @@ export class MultiplayerManager {
         }
     }
 
-    endGame(winnerType) {
+    async endGame(winnerType) {
         if (this.motivationInterval) {
             clearInterval(this.motivationInterval);
         }
         this.gameActive = false;
 
-        if (typeof updateFirebaseStats === 'function') {
-            updateFirebaseStats(this.myScore, 0).catch(err => {
-                console.error('Chyba při ukládání statistik:', err);
-            });
+        console.log('🎮 endGame zavolána, myScore:', this.myScore);
+        console.log('🔍 typeof updateFirebaseStats:', typeof updateFirebaseStats);
+
+        // Uložit statistiky do Firebase - pouze správné odpovědi
+        try {
+            console.log('📤 Pokouším se uložit do Firebase...');
+            await updateFirebaseStats(this.myScore, 0);
+            console.log('✅ Statistiky úspěšně uloženy:', this.myScore, 'správných');
+        } catch (err) {
+            console.error('❌ Chyba při ukládání statistik:', err);
+            console.error('❌ Error stack:', err.stack);
         }
         
         let iWon = false;
@@ -413,10 +428,8 @@ export class MultiplayerManager {
     }
 
     async rematch() {
-        // Nastavíme příznak že probíhá odveta
         this.isRematchInProgress = true;
 
-        // Zobrazíme loading screen
         const app = document.getElementById('app');
         app.innerHTML = `
             <div class="card" style="text-align: center; padding: 40px;">
@@ -427,14 +440,11 @@ export class MultiplayerManager {
 
         try {
             if (this.isHost) {
-                // Host vytvoří novou hru
                 const oldConnection = this.connection;
                 const oldPeer = this.peer;
 
-                // Vytvoříme novou hru PŘED uzavřením starého připojení
                 const gameCode = await this.createGame(this.myName, this.operations);
                 
-                // Pošleme soupeři kód nové hry
                 if (oldConnection && oldConnection.open) {
                     oldConnection.send({
                         type: 'rematch_request',
@@ -442,10 +452,8 @@ export class MultiplayerManager {
                     });
                 }
 
-                // Počkáme chvíli, aby zpráva dorazila
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Teď můžeme uzavřít staré připojení
                 if (oldConnection) {
                     oldConnection.close();
                 }
@@ -453,7 +461,6 @@ export class MultiplayerManager {
                     oldPeer.destroy();
                 }
 
-                // Reset stavu
                 this.myScore = 0;
                 this.opponentScore = 0;
                 this.gameActive = false;
@@ -488,7 +495,6 @@ export class MultiplayerManager {
                 
                 this.isRematchInProgress = false;
             } else {
-                // Guest čeká na kód od hosta
                 app.innerHTML = `
                     <div class="card" style="text-align: center; padding: 40px;">
                         <div style="font-size: 32px; margin-bottom: 20px;">⏳ Čekání na novou hru</div>
@@ -508,9 +514,6 @@ export class MultiplayerManager {
                         </button>
                     </div>
                 `;
-                
-                // Guest počká na zprávu s kódem hry
-                // Ta přijde přes handleRematchRequest()
             }
         } catch (error) {
             this.isRematchInProgress = false;
@@ -530,7 +533,6 @@ export class MultiplayerManager {
             </div>
         `;
 
-        // Uzavřeme staré připojení
         if (this.connection) {
             this.connection.close();
         }
@@ -538,14 +540,12 @@ export class MultiplayerManager {
             this.peer.destroy();
         }
 
-        // Reset stavu
         this.myScore = 0;
         this.opponentScore = 0;
         this.gameActive = false;
         this.currentQuestion = null;
         this.questionStartTime = null;
 
-        // Počkáme chvíli, než se spojení úplně uzavře
         await new Promise(resolve => setTimeout(resolve, 500));
 
         try {
@@ -636,7 +636,6 @@ export class MultiplayerManager {
             </div>
         `;
 
-        // FOCUS - STEJNÝ JAKO V test.js
         document.getElementById('mp-answer').focus();
         document.getElementById('mp-answer').addEventListener('input', (e) => this.handleAnswerInput(e));
 
@@ -752,6 +751,22 @@ export class MultiplayerManager {
             this.peer.destroy();
         }
         this.app.showMainScreen();
+    }
+
+    shareViaWhatsApp(gameCode) {
+        shareViaWhatsApp(gameCode, this.myName);
+    }
+
+    shareViaMessenger(gameCode) {
+        shareViaMessenger(gameCode, this.myName);
+    }
+
+    async copyInviteLink(gameCode) {
+        await copyInviteLink(gameCode, this.myName);
+    }
+
+    async shareNative(gameCode) {
+        await shareNative(gameCode, this.myName);
     }
 
     startMotivationMessages() {
