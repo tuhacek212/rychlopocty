@@ -1,5 +1,4 @@
 import { updateFirebaseStats } from './stats.js';
-import { shareViaWhatsApp, shareViaMessenger, copyInviteLink, shareNative } from './share.js';
 
 export class MultiplayerManager {
     constructor(app) {
@@ -16,60 +15,26 @@ export class MultiplayerManager {
         this.questionStartTime = null;
         this.gameActive = false;
         this.operations = ['*'];
-        this.isRematchInProgress = false;
     }
 
     initializePeer() {
         return new Promise((resolve, reject) => {
+            // Vygeneruj krátké custom ID místo náhodného
             const customId = this.generateShortId();
-            
-            // Vrátíme se k výchozímu serveru, ale s lepší konfigurací
-            this.peer = new Peer(customId, {
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' },
-                        {
-                            urls: 'turn:numb.viagenie.ca',
-                            username: 'webrtc@live.com',
-                            credential: 'muazkh'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
-                    ]
-                },
-                debug: 2
-            });
+            this.peer = new Peer(customId);
             
             this.peer.on('open', (id) => {
-                console.log('✅ Peer připojen! ID:', id);
+                console.log('Peer ID:', id);
                 this.gameCode = id.toUpperCase();
                 resolve(this.gameCode);
             });
 
             this.peer.on('error', (err) => {
-                console.error('❌ Peer chyba:', err);
+                console.error('Peer error:', err);
                 reject(err);
             });
 
             this.peer.on('connection', (conn) => {
-                console.log('📞 Příchozí spojení!');
                 this.connection = conn;
                 this.setupConnection();
             });
@@ -77,6 +42,7 @@ export class MultiplayerManager {
     }
 
     generateShortId() {
+        // Vygeneruj krátké 2-číselné ID (10-99)
         return (Math.floor(Math.random() * 90) + 10).toString();
     }
 
@@ -90,9 +56,7 @@ export class MultiplayerManager {
         });
 
         this.connection.on('close', () => {
-            if (!this.isRematchInProgress) {
-                this.handleDisconnect();
-            }
+            this.handleDisconnect();
         });
 
         this.connection.on('error', (err) => {
@@ -114,42 +78,13 @@ export class MultiplayerManager {
         this.gameCode = gameCode;
 
         return new Promise((resolve, reject) => {
-            this.peer = new Peer({
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' },
-                        {
-                            urls: 'turn:numb.viagenie.ca',
-                            username: 'webrtc@live.com',
-                            credential: 'muazkh'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
-                    ]
-                },
-                debug: 2
-            });
+            this.peer = new Peer();
 
             this.peer.on('open', (myId) => {
-                console.log('✅ Můj peer ID:', myId);
-                console.log('🔍 Připojuji se ke kódu:', gameCode);
+                console.log('My peer ID:', myId);
+                console.log('Connecting to game code:', gameCode);
+                
+                let hostPeerId = null;
                 
                 const attempts = [
                     gameCode.toLowerCase(),
@@ -163,24 +98,22 @@ export class MultiplayerManager {
                         return;
                     }
                     
-                    const hostPeerId = attempts[attemptIndex];
-                    console.log(`📞 Pokus ${attemptIndex + 1}/2:`, hostPeerId);
+                    hostPeerId = attempts[attemptIndex];
+                    console.log('Attempting connection to:', hostPeerId);
                     
-                    this.connection = this.peer.connect(hostPeerId, {
-                        reliable: true
-                    });
+                    this.connection = this.peer.connect(hostPeerId);
                     
                     const connectionTimeout = setTimeout(() => {
                         if (this.connection && this.connection.open === false) {
-                            console.log('⏱️ Timeout, další pokus...');
+                            console.log('Connection timeout, trying next...');
                             attemptIndex++;
                             tryConnect();
                         }
-                    }, 5000);
+                    }, 3000);
                     
                     this.connection.on('open', () => {
                         clearTimeout(connectionTimeout);
-                        console.log('✅ SPOJENO!');
+                        console.log('Connection established!');
                         this.setupConnection();
                         this.sendData({
                             type: 'player_joined',
@@ -191,7 +124,7 @@ export class MultiplayerManager {
 
                     this.connection.on('error', (err) => {
                         clearTimeout(connectionTimeout);
-                        console.error('❌ Chyba spojení:', err);
+                        console.error('Connection error:', err);
                         attemptIndex++;
                         if (attemptIndex < attempts.length) {
                             tryConnect();
@@ -205,7 +138,7 @@ export class MultiplayerManager {
             });
 
             this.peer.on('error', (err) => {
-                console.error('❌ Peer chyba:', err);
+                console.error('Peer error:', err);
                 reject(err);
             });
         });
@@ -254,11 +187,6 @@ export class MultiplayerManager {
             case 'game_over':
                 this.endGame(data.winner);
                 break;
-
-            case 'rematch_request':
-                console.log('Rematch request received with game code:', data.gameCode);
-                this.handleRematchRequest(data.gameCode);
-                break;
         }
     }
 
@@ -287,8 +215,8 @@ export class MultiplayerManager {
         if (!this.isHost) return;
 
         if (!this.operations || this.operations.length === 0) {
-            this.operations = ['*'];
-        }
+        this.operations = ['*'];
+    }
 
         const op = this.operations[Math.floor(Math.random() * this.operations.length)];
         let a, b, result;
@@ -346,27 +274,13 @@ export class MultiplayerManager {
         answerElement.style.background = '#334155';
         
         this.setupAnswerListener();
-        
-        // Vylepšený focus pro mobil
+
         setTimeout(() => {
             const input = document.getElementById('mp-answer');
             if (input) {
                 input.focus();
-                // Pro iOS - zkus kliknout programově
-                input.click();
-                // Další pokus po malém delay
-                setTimeout(() => {
-                    input.focus();
-                }, 100);
             }
-        }, 150);
-    }
-
-    focusInput() {
-        const input = document.getElementById('mp-answer');
-        if (input) {
-            input.focus();
-        }
+        }, 200);    
     }
 
     handleOpponentAnswer(data) {
@@ -398,7 +312,8 @@ export class MultiplayerManager {
         document.getElementById('score-diff').textContent = 
             scoreDiff > 0 ? `+${scoreDiff}` : scoreDiff;
 
-        this.updateProgressBar();
+        this.updateProgressBar(); // <--- PŘIDEJ TOHLE
+
     }
 
     checkWinCondition() {
@@ -418,311 +333,123 @@ export class MultiplayerManager {
         }
     }
 
-    async endGame(winnerType) {
-        if (this.motivationInterval) {
-            clearInterval(this.motivationInterval);
-        }
-        this.gameActive = false;
+    endGame(winnerType) {
+    if (this.motivationInterval) {
+        clearInterval(this.motivationInterval);
+    }
+    this.gameActive = false;
 
-        console.log('🎮 endGame zavolána, myScore:', this.myScore);
-        console.log('🔍 typeof updateFirebaseStats:', typeof updateFirebaseStats);
-
-        // Uložit statistiky do Firebase - pouze správné odpovědi
-        try {
-            console.log('📤 Pokouším se uložit do Firebase...');
-            await updateFirebaseStats(this.myScore, 0);
-            console.log('✅ Statistiky úspěšně uloženy:', this.myScore, 'správných');
-        } catch (err) {
-            console.error('❌ Chyba při ukládání statistik:', err);
-            console.error('❌ Error stack:', err.stack);
-        }
-        
-        let iWon = false;
-        if (winnerType === 'me') {
-            iWon = true;
-        } else if (winnerType === 'host') {
-            iWon = this.isHost;
-        } else if (winnerType === 'guest') {
-            iWon = !this.isHost;
-        } else if (winnerType === 'opponent') {
-            iWon = false;
-        }
-        
-        const winnerName = iWon ? this.myName : this.opponentName;
-        const resultText = iWon ? '🎉 VYHRÁL JSI!' : '😢 PROHRÁL JSI';
-        const resultEmoji = iWon ? '🏆' : '😔';
-        
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div class="result-emoji" style="font-size: 64px; margin-bottom: 20px;">
-                    ${resultEmoji}
-                </div>
-                <div class="result-title" style="font-size: 32px; margin-bottom: 10px;">
-                    ${resultText}
-                </div>
-                <div style="font-size: 18px; color: #94a3b8; margin-bottom: 30px;">
-                    Vítěz: ${winnerName}
-                </div>
-                
-                <div class="result-stats">
-                    <div class="result-box" style="border-color: ${iWon ? '#10b981' : '#ef4444'};">
-                        <div class="result-label">Ty</div>
-                        <div class="result-number" style="color: ${iWon ? '#10b981' : '#ef4444'};">
-                            ${this.myScore}
-                        </div>
-                    </div>
-                    <div class="result-box" style="border-color: ${!iWon ? '#10b981' : '#ef4444'};">
-                        <div class="result-label">Soupeř</div>
-                        <div class="result-number" style="color: ${!iWon ? '#10b981' : '#ef4444'};">
-                            ${this.opponentScore}
-                        </div>
+    if (typeof updateFirebaseStats === 'function') {
+    // V multiplayeru se počítá každý správně zodpovězený příklad jako správný
+    // Žádné špatné odpovědi se nepočítají (jen se pole zčervená)
+    updateFirebaseStats(this.myScore, 0).catch(err => {
+        console.error('Chyba při ukládání statistik:', err);
+    });
+}
+    
+    // Určíme skutečného vítěze
+    let iWon = false;
+    if (winnerType === 'me') {
+        iWon = true;
+    } else if (winnerType === 'host') {
+        iWon = this.isHost;
+    } else if (winnerType === 'guest') {
+        iWon = !this.isHost;
+    } else if (winnerType === 'opponent') {
+        iWon = false;
+    }
+    
+    const winnerName = iWon ? this.myName : this.opponentName;
+    const resultText = iWon ? '🎉 VYHRÁL JSI!' : '😢 PROHRÁL JSI';
+    const resultEmoji = iWon ? '🏆' : '😔';
+    
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px;">
+            <div class="result-emoji" style="font-size: 64px; margin-bottom: 20px;">
+                ${resultEmoji}
+            </div>
+            <div class="result-title" style="font-size: 32px; margin-bottom: 10px;">
+                ${resultText}
+            </div>
+            <div style="font-size: 18px; color: #94a3b8; margin-bottom: 30px;">
+                Vítěz: ${winnerName}
+            </div>
+            
+            <div class="result-stats">
+                <div class="result-box" style="border-color: ${iWon ? '#10b981' : '#ef4444'};">
+                    <div class="result-label">Ty</div>
+                    <div class="result-number" style="color: ${iWon ? '#10b981' : '#ef4444'};">
+                        ${this.myScore}
                     </div>
                 </div>
-
-                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-                    <button class="btn btn-green" style="width: auto; padding: 12px 30px;" 
-                            onclick="app.multiplayerManager.rematch()">
-                        🔄 Odveta!
-                    </button>
-                    <button class="btn btn-blue" style="width: auto; padding: 12px 30px;" 
-                            onclick="app.showMainScreen()">
-                        🏠 Hlavní menu
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    async rematch() {
-        this.isRematchInProgress = true;
-
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div style="font-size: 24px; margin-bottom: 20px;">⏳ Vytváření nové hry...</div>
-                <div style="font-size: 16px; color: #94a3b8;">Čekání na připojení soupeře</div>
-            </div>
-        `;
-
-        try {
-            if (this.isHost) {
-                const oldConnection = this.connection;
-                const oldPeer = this.peer;
-
-                const gameCode = await this.createGame(this.myName, this.operations);
-                
-                if (oldConnection && oldConnection.open) {
-                    oldConnection.send({
-                        type: 'rematch_request',
-                        gameCode: gameCode
-                    });
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                if (oldConnection) {
-                    oldConnection.close();
-                }
-                if (oldPeer) {
-                    oldPeer.destroy();
-                }
-
-                this.myScore = 0;
-                this.opponentScore = 0;
-                this.gameActive = false;
-                this.currentQuestion = null;
-                this.questionStartTime = null;
-                
-                app.innerHTML = `
-                    <div class="card" style="text-align: center; padding: 40px;">
-                        <div style="font-size: 32px; margin-bottom: 20px;">✅ Hra vytvořena!</div>
-                        
-                        <div style="font-size: 18px; color: #94a3b8; margin-bottom: 20px;">
-                            Kód hry byl automaticky odeslán soupeři
-                        </div>
-                        
-                        <div style="font-size: 48px; font-weight: bold; color: #10b981; 
-                                    letter-spacing: 5px; padding: 20px; background: #1e293b; 
-                                    border-radius: 4px; margin: 20px 0;">
-                            ${gameCode}
-                        </div>
-
-                        <div style="font-size: 16px; color: #fbbf24; margin: 30px 0;">
-                            ⏳ Čekání na ${this.opponentName}...
-                        </div>
-
-                        <button class="btn btn-red" 
-                                style="width: auto; padding: 12px 30px;" 
-                                onclick="app.multiplayerManager.cancelRematch()">
-                            🛑 Zrušit hru
-                        </button>
+                <div class="result-box" style="border-color: ${!iWon ? '#10b981' : '#ef4444'};">
+                    <div class="result-label">Soupeř</div>
+                    <div class="result-number" style="color: ${!iWon ? '#10b981' : '#ef4444'};">
+                        ${this.opponentScore}
                     </div>
-                `;
-                
-                this.isRematchInProgress = false;
-            } else {
-                app.innerHTML = `
-                    <div class="card" style="text-align: center; padding: 40px;">
-                        <div style="font-size: 32px; margin-bottom: 20px;">⏳ Čekání na novou hru</div>
-                        
-                        <div style="font-size: 18px; color: #94a3b8; margin-bottom: 20px;">
-                            ${this.opponentName} vytváří novou místnost...
-                        </div>
-                        
-                        <div style="font-size: 16px; color: #fbbf24; margin: 30px 0;">
-                            Automaticky se připojíš, jakmile bude hra připravena
-                        </div>
-
-                        <button class="btn btn-red" 
-                                style="width: auto; padding: 12px 30px;" 
-                                onclick="app.multiplayerManager.cancelRematch()">
-                            🛑 Zrušit
-                        </button>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            this.isRematchInProgress = false;
-            alert('Chyba při vytváření nové hry: ' + error.message);
-            this.app.showMainScreen();
-        }
-    }
-
-    async handleRematchRequest(gameCode) {
-        console.log('Handling rematch request, joining game:', gameCode);
-        
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div style="font-size: 24px; margin-bottom: 20px;">⏳ Připojování ke hře...</div>
-                <div style="font-size: 16px; color: #94a3b8;">Kód hry: ${gameCode}</div>
-            </div>
-        `;
-
-        if (this.connection) {
-            this.connection.close();
-        }
-        if (this.peer) {
-            this.peer.destroy();
-        }
-
-        this.myScore = 0;
-        this.opponentScore = 0;
-        this.gameActive = false;
-        this.currentQuestion = null;
-        this.questionStartTime = null;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        try {
-            await this.joinGame(gameCode, this.myName);
-            this.isRematchInProgress = false;
-        } catch (error) {
-            this.isRematchInProgress = false;
-            alert('Nepodařilo se připojit k odvetě: ' + error.message);
-            this.app.showMainScreen();
-        }
-    }
-
-    cancelRematch() {
-        this.isRematchInProgress = false;
-        this.disconnect();
-    }
-
-    async joinRematch() {
-        const codeInput = document.getElementById('rematch-code');
-        const gameCode = codeInput.value.trim().toUpperCase();
-
-        if (!gameCode) {
-            alert('Zadej kód hry!');
-            codeInput.focus();
-            return;
-        }
-
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div style="font-size: 24px; margin-bottom: 20px;">⏳ Připojování ke hře...</div>
-            </div>
-        `;
-
-        try {
-            await this.joinGame(gameCode, this.myName);
-        } catch (error) {
-            alert('Nepodařilo se připojit ke hře. Zkontroluj kód a zkus to znovu.');
-            this.rematch();
-        }
-    }
-
-    showGameScreen() {
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="stats-bar" style="justify-content: space-between;">
-                <div class="stat-item" style="color: #3b82f6;">
-                    👤 ${this.myName}: <span id="my-score">0</span>
-                </div>
-                <div class="stat-item" style="color: #fbbf24; font-size: 20px; font-weight: bold;">
-                    <span id="score-diff">0</span>
-                </div>
-                <div class="stat-item" style="color: #ef4444;">
-                    👤 ${this.opponentName}: <span id="opponent-score">0</span>
                 </div>
             </div>
 
-            <div class="card example-area">
-                <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">
-                    První na +10 bodů vyhrává!
-                </div>
-                <div class="example-text" id="mp-question">Čekání...</div>
-                <input type="text" 
-                       inputmode="numeric" 
-                       pattern="[0-9]*" 
-                       class="answer-input" 
-                       id="mp-answer" 
-                       autocomplete="off"
-                       autocorrect="off"
-                       autocapitalize="off"
-                       spellcheck="false">
-                <div id="mp-motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
+            <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 30px;" 
+                    onclick="app.showMainScreen()">
+                🏠 Zpět na hlavní obrazovku
+            </button>
+        </div>
+    `;
+}
+
+showGameScreen() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="stats-bar" style="justify-content: space-between;">
+            <div class="stat-item" style="color: #3b82f6;">
+                👤 ${this.myName}: <span id="my-score">0</span>
             </div>
-
-            <div class="progress-section" style="margin-top: 20px;">
-                <div style="width: 100%; max-width: 600px; margin: 0 auto; position: relative; height: 30px; background: #334155; border-radius: 2px; overflow: hidden;">
-                    <div style="position: absolute; right: 50%; height: 100%; background: #ef4444; transition: width 0.3s;" id="mp-progress-opponent"></div>
-                    <div style="position: absolute; left: 50%; height: 100%; background: #3b82f6; transition: width 0.3s;" id="mp-progress-me"></div>
-                    <div style="position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: #fbbf24; z-index: 10;"></div>
-                </div>
+            <div class="stat-item" style="color: #fbbf24; font-size: 20px; font-weight: bold;">
+                <span id="score-diff">0</span>
             </div>
-
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-red" style="width: auto; padding: 12px 30px;" 
-                        onclick="app.multiplayerManager.disconnect()">
-                    🛑 Ukončit hru
-                </button>
+            <div class="stat-item" style="color: #ef4444;">
+                👤 ${this.opponentName}: <span id="opponent-score">0</span>
             </div>
-        `;
+        </div>
 
-        // Vylepšený focus pro mobil - vícenásobné pokusy
-        const tryFocus = () => {
-            const input = document.getElementById('mp-answer');
-            if (input) {
-                input.focus();
-                input.click();
-            }
-        };
+        <div class="card example-area">
+            <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">
+                První na +10 bodů vyhrává!
+            </div>
+            <div class="example-text" id="mp-question">Čekání...</div>
+            <input type="text" 
+                   inputmode="numeric" 
+                   pattern="[0-9]*" 
+                   class="answer-input" 
+                   id="mp-answer" 
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false">
+            <div id="mp-motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
+        </div>
 
-        // První pokus okamžitě
-        setTimeout(tryFocus, 100);
-        // Druhý pokus po 300ms
-        setTimeout(tryFocus, 300);
-        // Třetí pokus po 500ms
-        setTimeout(tryFocus, 500);
+<div class="progress-section" style="margin-top: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; position: relative; height: 30px; background: #334155; border-radius: 2px; overflow: hidden;">
+        <div style="position: absolute; right: 50%; height: 100%; background: #ef4444; transition: width 0.3s;" id="mp-progress-opponent"></div>
+        <div style="position: absolute; left: 50%; height: 100%; background: #3b82f6; transition: width 0.3s;" id="mp-progress-me"></div>
+        <div style="position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: #fbbf24; z-index: 10;"></div>
+    </div>
+</div>
 
-        document.getElementById('mp-answer').addEventListener('input', (e) => this.handleAnswerInput(e));
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-red" style="width: auto; padding: 12px 30px;" 
+                    onclick="app.multiplayerManager.disconnect()">
+                🛑 Ukončit hru
+            </button>
+        </div>
+    `;
 
-        this.startMotivationMessages();
-    }
+    this.setupAnswerListener();
+    this.startMotivationMessages();
+}
 
     setupAnswerListener() {
         const answerInput = document.getElementById('mp-answer');
@@ -737,7 +464,6 @@ export class MultiplayerManager {
         answerInput.parentNode.replaceChild(newInput, answerInput);
 
         const finalInput = document.getElementById('mp-answer');
-        
         finalInput.addEventListener('input', (e) => {
             console.log('Input event triggered:', e.target.value);
             this.handleAnswerInput(e);
@@ -806,11 +532,7 @@ export class MultiplayerManager {
                 setTimeout(() => {
                     e.target.value = '';
                     e.target.style.background = '#334155';
-                    // Vylepšený focus po chybě
-                    setTimeout(() => {
-                        e.target.focus();
-                        e.target.click();
-                    }, 100);
+                    e.target.focus();
                 }, 800);
             }
         } else {
@@ -827,8 +549,8 @@ export class MultiplayerManager {
 
     disconnect() {
         if (this.motivationInterval) {
-            clearInterval(this.motivationInterval);
-        }
+        clearInterval(this.motivationInterval);
+    }
         this.gameActive = false;
         if (this.connection) {
             this.connection.close();
@@ -838,102 +560,93 @@ export class MultiplayerManager {
         }
         this.app.showMainScreen();
     }
-
-    shareViaWhatsApp(gameCode) {
-        shareViaWhatsApp(gameCode, this.myName);
-    }
-
-    shareViaMessenger(gameCode) {
-        shareViaMessenger(gameCode, this.myName);
-    }
-
-    async copyInviteLink(gameCode) {
-        await copyInviteLink(gameCode, this.myName);
-    }
-
-    async shareNative(gameCode) {
-        await shareNative(gameCode, this.myName);
-    }
-
     startMotivationMessages() {
-        import('./messages.js').then(module => {
-            const showMessage = () => {
-                if (!this.gameActive) return;
-                
-                const message = module.getDuringTestMessage();
-                const motivationElement = document.getElementById('mp-motivation-text');
-                
-                if (motivationElement) {
-                    motivationElement.textContent = `💬 ${message}`;
-                    motivationElement.style.opacity = '0';
-                    motivationElement.style.transition = 'opacity 0.5s';
-                    
-                    setTimeout(() => {
-                        if (motivationElement && this.gameActive) {
-                            motivationElement.style.opacity = '1';
-                        }
-                    }, 100);
-                    
-                    setTimeout(() => {
-                        if (motivationElement && this.gameActive) {
-                            motivationElement.style.opacity = '0';
-                            setTimeout(() => {
-                                if (motivationElement && this.gameActive) {
-                                    motivationElement.textContent = '';
-                                }
-                            }, 500);
-                        }
-                    }, 5000);
-                }
-            };
+    // Importuj funkci pro motivační zprávy
+    import('./messages.js').then(module => {
+        const showMessage = () => {
+            if (!this.gameActive) return;
             
-            setTimeout(() => {
-                if (this.gameActive) {
-                    showMessage();
-                    this.motivationInterval = setInterval(() => {
-                        if (this.gameActive) {
-                            showMessage();
-                        } else {
-                            clearInterval(this.motivationInterval);
-                        }
-                    }, (Math.floor(Math.random() * 6) + 10) * 1000);
-                }
-            }, 8000);
-        });
-    }
+            const message = module.getDuringTestMessage();
+            const motivationElement = document.getElementById('mp-motivation-text');
+            
+            if (motivationElement) {
+                motivationElement.textContent = `💬 ${message}`;
+                motivationElement.style.opacity = '0';
+                motivationElement.style.transition = 'opacity 0.5s';
+                
+                setTimeout(() => {
+                    if (motivationElement && this.gameActive) {
+                        motivationElement.style.opacity = '1';
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    if (motivationElement && this.gameActive) {
+                        motivationElement.style.opacity = '0';
+                        setTimeout(() => {
+                            if (motivationElement && this.gameActive) {
+                                motivationElement.textContent = '';
+                            }
+                        }, 500);
+                    }
+                }, 5000);
+            }
+        };
+        
+        // První zpráva po 8 sekundách
+        setTimeout(() => {
+            if (this.gameActive) {
+                showMessage();
+                // Pak každých 10-15 sekund
+                this.motivationInterval = setInterval(() => {
+                    if (this.gameActive) {
+                        showMessage();
+                    } else {
+                        clearInterval(this.motivationInterval);
+                    }
+                }, (Math.floor(Math.random() * 6) + 10) * 1000);
+            }
+        }, 8000);
+    });
+}
 
-    updateProgressBar() {
-        const myProgress = document.getElementById('mp-progress-me');
-        const opponentProgress = document.getElementById('mp-progress-opponent');
+updateProgressBar() {
+    const myProgress = document.getElementById('mp-progress-me');
+    const opponentProgress = document.getElementById('mp-progress-opponent');
+    
+    if (!myProgress || !opponentProgress) return;
+    
+    const diff = this.myScore - this.opponentScore; // rozdíl bodů
+    const maxDiff = 10; // maximum je +10 nebo -10
+    
+    if (diff > 0) {
+        // Já vedu - modrá tyčka doprava
+        const myWidth = (diff / maxDiff) * 50; // každý bod = 5%
+        myProgress.style.width = `${myWidth}%`;
+        opponentProgress.style.width = '0%';
         
-        if (!myProgress || !opponentProgress) return;
-        
-        const diff = this.myScore - this.opponentScore;
-        const maxDiff = 10;
-        
-        if (diff > 0) {
-            const myWidth = (diff / maxDiff) * 50;
-            myProgress.style.width = `${myWidth}%`;
-            opponentProgress.style.width = '0%';
-            
-            if (diff > 5) {
-                myProgress.style.background = '#10b981';
-            } else {
-                myProgress.style.background = '#3b82f6';
-            }
-        } else if (diff < 0) {
-            const opponentWidth = (Math.abs(diff) / maxDiff) * 50;
-            opponentProgress.style.width = `${opponentWidth}%`;
-            myProgress.style.width = '0%';
-            
-            if (Math.abs(diff) > 5) {
-                opponentProgress.style.background = '#dc2626';
-            } else {
-                opponentProgress.style.background = '#ef4444';
-            }
+        // Barva podle vedení
+        if (diff > 5) {
+            myProgress.style.background = '#10b981'; // zelená - velký náskok
         } else {
-            myProgress.style.width = '0%';
-            opponentProgress.style.width = '0%';
+            myProgress.style.background = '#3b82f6'; // modrá - malý náskok
         }
+    } else if (diff < 0) {
+        // Soupeř vede - červená tyčka doleva
+        const opponentWidth = (Math.abs(diff) / maxDiff) * 50;
+        opponentProgress.style.width = `${opponentWidth}%`;
+        myProgress.style.width = '0%';
+        
+        // Barva podle vedení
+        if (Math.abs(diff) > 5) {
+            opponentProgress.style.background = '#dc2626'; // tmavě červená - velký náskok soupeře
+        } else {
+            opponentProgress.style.background = '#ef4444'; // červená - malý náskok soupeře
+        }
+    } else {
+        // Remíza - obě tyčky na 0
+        myProgress.style.width = '0%';
+        opponentProgress.style.width = '0%';
     }
+}
 }
