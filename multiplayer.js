@@ -23,11 +23,8 @@ export class MultiplayerManager {
         return new Promise((resolve, reject) => {
             const customId = this.generateShortId();
             
-            // Zkusíme použít Cloudflare PeerJS server
+            // Vrátíme se k výchozímu serveru, ale s lepší konfigurací
             this.peer = new Peer(customId, {
-                host: 'peerjs-server.herokuapp.com',
-                secure: true,
-                port: 443,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
@@ -49,28 +46,26 @@ export class MultiplayerManager {
                             urls: 'turn:openrelay.metered.ca:443',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
                         }
                     ]
                 },
-                debug: 3
+                debug: 2
             });
             
             this.peer.on('open', (id) => {
-                console.log('✅ Peer PŘIPOJEN! ID:', id);
-                console.log('🌐 Server:', this.peer.options.host);
+                console.log('✅ Peer připojen! ID:', id);
                 this.gameCode = id.toUpperCase();
                 resolve(this.gameCode);
             });
 
             this.peer.on('error', (err) => {
-                console.error('❌ Peer CHYBA:', err);
-                console.error('Typ chyby:', err.type);
+                console.error('❌ Peer chyba:', err);
                 reject(err);
-            });
-
-            this.peer.on('disconnected', () => {
-                console.warn('⚠️ Peer odpojen, zkouším reconnect...');
-                this.peer.reconnect();
             });
 
             this.peer.on('connection', (conn) => {
@@ -120,9 +115,6 @@ export class MultiplayerManager {
 
         return new Promise((resolve, reject) => {
             this.peer = new Peer({
-                host: 'peerjs-server.herokuapp.com',
-                secure: true,
-                port: 443,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
@@ -144,10 +136,15 @@ export class MultiplayerManager {
                             urls: 'turn:openrelay.metered.ca:443',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
                         }
                     ]
                 },
-                debug: 3
+                debug: 2
             });
 
             this.peer.on('open', (myId) => {
@@ -162,12 +159,12 @@ export class MultiplayerManager {
                 let attemptIndex = 0;
                 const tryConnect = () => {
                     if (attemptIndex >= attempts.length) {
-                        reject(new Error('Nepodařilo se připojit ke hře. Host možná není online.'));
+                        reject(new Error('Nepodařilo se připojit ke hře'));
                         return;
                     }
                     
                     const hostPeerId = attempts[attemptIndex];
-                    console.log(`📞 Pokus ${attemptIndex + 1}/2 - připojuji se k:`, hostPeerId);
+                    console.log(`📞 Pokus ${attemptIndex + 1}/2:`, hostPeerId);
                     
                     this.connection = this.peer.connect(hostPeerId, {
                         reliable: true
@@ -175,11 +172,11 @@ export class MultiplayerManager {
                     
                     const connectionTimeout = setTimeout(() => {
                         if (this.connection && this.connection.open === false) {
-                            console.log('⏱️ Timeout, zkouším další variantu...');
+                            console.log('⏱️ Timeout, další pokus...');
                             attemptIndex++;
                             tryConnect();
                         }
-                    }, 7000); // Delší timeout
+                    }, 5000);
                     
                     this.connection.on('open', () => {
                         clearTimeout(connectionTimeout);
@@ -199,7 +196,7 @@ export class MultiplayerManager {
                         if (attemptIndex < attempts.length) {
                             tryConnect();
                         } else {
-                            reject(new Error('Nepodařilo se připojit ke hře. Zkontroluj kód nebo zkus to znovu.'));
+                            reject(new Error('Nepodařilo se připojit ke hře'));
                         }
                     });
                 };
@@ -209,13 +206,7 @@ export class MultiplayerManager {
 
             this.peer.on('error', (err) => {
                 console.error('❌ Peer chyba:', err);
-                console.error('Typ:', err.type);
                 reject(err);
-            });
-
-            this.peer.on('disconnected', () => {
-                console.warn('⚠️ Odpojen, reconnecting...');
-                this.peer.reconnect();
             });
         });
     }
