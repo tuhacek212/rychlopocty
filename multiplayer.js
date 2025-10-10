@@ -22,7 +22,21 @@ export class MultiplayerManager {
     initializePeer() {
         return new Promise((resolve, reject) => {
             const customId = this.generateShortId();
-            this.peer = new Peer(customId);
+            
+            // Přidáme TURN server pro spojení přes různé sítě
+            this.peer = new Peer(customId, {
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
+                    ]
+                }
+            });
             
             this.peer.on('open', (id) => {
                 console.log('Peer ID:', id);
@@ -80,7 +94,20 @@ export class MultiplayerManager {
         this.gameCode = gameCode;
 
         return new Promise((resolve, reject) => {
-            this.peer = new Peer();
+            // Přidáme TURN server i pro join
+            this.peer = new Peer({
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
+                    ]
+                }
+            });
 
             this.peer.on('open', (myId) => {
                 console.log('My peer ID:', myId);
@@ -636,7 +663,22 @@ export class MultiplayerManager {
             </div>
         `;
 
-        document.getElementById('mp-answer').focus();
+        // Vylepšený focus pro mobil - vícenásobné pokusy
+        const tryFocus = () => {
+            const input = document.getElementById('mp-answer');
+            if (input) {
+                input.focus();
+                input.click();
+            }
+        };
+
+        // První pokus okamžitě
+        setTimeout(tryFocus, 100);
+        // Druhý pokus po 300ms
+        setTimeout(tryFocus, 300);
+        // Třetí pokus po 500ms
+        setTimeout(tryFocus, 500);
+
         document.getElementById('mp-answer').addEventListener('input', (e) => this.handleAnswerInput(e));
 
         this.startMotivationMessages();
@@ -724,7 +766,11 @@ export class MultiplayerManager {
                 setTimeout(() => {
                     e.target.value = '';
                     e.target.style.background = '#334155';
-                    e.target.focus();
+                    // Vylepšený focus po chybě
+                    setTimeout(() => {
+                        e.target.focus();
+                        e.target.click();
+                    }, 100);
                 }, 800);
             }
         } else {
