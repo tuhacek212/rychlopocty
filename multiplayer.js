@@ -15,6 +15,8 @@ export class MultiplayerManager {
         this.questionStartTime = null;
         this.gameActive = false;
         this.operations = ['*'];
+        this.rematchRequested = false;
+        this.opponentRematchRequested = false;
     }
 
     initializePeer() {
@@ -187,6 +189,14 @@ export class MultiplayerManager {
             case 'game_over':
                 this.endGame(data.winner);
                 break;
+
+            case 'rematch_request':
+                this.handleRematchRequest();
+                break;
+
+            case 'rematch_accepted':
+                this.startRematch();
+                break;
         }
     }
 
@@ -312,8 +322,7 @@ export class MultiplayerManager {
         document.getElementById('score-diff').textContent = 
             scoreDiff > 0 ? `+${scoreDiff}` : scoreDiff;
 
-        this.updateProgressBar(); // <--- PŘIDEJ TOHLE
-
+        this.updateProgressBar();
     }
 
     checkWinCondition() {
@@ -391,7 +400,12 @@ export class MultiplayerManager {
                 </div>
             </div>
 
-            <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 30px;" 
+            <button class="btn btn-green" id="rematch-btn" style="width: auto; padding: 12px 30px; margin-top: 30px;" 
+                    onclick="app.multiplayerManager.requestRematch()">
+                🔄 Odveta
+            </button>
+
+            <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 10px;" 
                     onclick="app.showMainScreen()">
                 🏠 Zpět na hlavní obrazovku
             </button>
@@ -560,6 +574,7 @@ showGameScreen() {
         }
         this.app.showMainScreen();
     }
+    
     startMotivationMessages() {
     // Importuj funkci pro motivační zprávy
     import('./messages.js').then(module => {
@@ -616,37 +631,82 @@ updateProgressBar() {
     
     if (!myProgress || !opponentProgress) return;
     
-    const diff = this.myScore - this.opponentScore; // rozdíl bodů
-    const maxDiff = 10; // maximum je +10 nebo -10
+    const diff = this.myScore - this.opponentScore;
+    const maxDiff = 10;
     
     if (diff > 0) {
-        // Já vedu - modrá tyčka doprava
-        const myWidth = (diff / maxDiff) * 50; // každý bod = 5%
+        const myWidth = (diff / maxDiff) * 50;
         myProgress.style.width = `${myWidth}%`;
         opponentProgress.style.width = '0%';
         
-        // Barva podle vedení
         if (diff > 5) {
-            myProgress.style.background = '#10b981'; // zelená - velký náskok
+            myProgress.style.background = '#10b981';
         } else {
-            myProgress.style.background = '#3b82f6'; // modrá - malý náskok
+            myProgress.style.background = '#3b82f6';
         }
     } else if (diff < 0) {
-        // Soupeř vede - červená tyčka doleva
         const opponentWidth = (Math.abs(diff) / maxDiff) * 50;
         opponentProgress.style.width = `${opponentWidth}%`;
         myProgress.style.width = '0%';
         
-        // Barva podle vedení
         if (Math.abs(diff) > 5) {
-            opponentProgress.style.background = '#dc2626'; // tmavě červená - velký náskok soupeře
+            opponentProgress.style.background = '#dc2626';
         } else {
-            opponentProgress.style.background = '#ef4444'; // červená - malý náskok soupeře
+            opponentProgress.style.background = '#ef4444';
         }
     } else {
-        // Remíza - obě tyčky na 0
         myProgress.style.width = '0%';
         opponentProgress.style.width = '0%';
     }
+}
+
+requestRematch() {
+    this.rematchRequested = true;
+    this.sendData({
+        type: 'rematch_request'
+    });
+    
+    const rematchBtn = document.getElementById('rematch-btn');
+    if (rematchBtn) {
+        rematchBtn.textContent = '⏳ Čekání na soupeře...';
+        rematchBtn.disabled = true;
+        rematchBtn.style.opacity = '0.6';
+    }
+    
+    // Pokud už soupeř taky požádal, začneme
+    if (this.opponentRematchRequested) {
+        this.startRematch();
+    }
+}
+
+handleRematchRequest() {
+    this.opponentRematchRequested = true;
+    
+    const rematchBtn = document.getElementById('rematch-btn');
+    if (rematchBtn && !this.rematchRequested) {
+        rematchBtn.textContent = '✅ Soupeř chce odvetu!';
+        rematchBtn.style.animation = 'pulse 1s infinite';
+    }
+    
+    // Pokud už jsem taky požádal, začneme
+    if (this.rematchRequested) {
+        this.sendData({
+            type: 'rematch_accepted'
+        });
+        this.startRematch();
+    }
+}
+
+startRematch() {
+    // Reset stavu
+    this.rematchRequested = false;
+    this.opponentRematchRequested = false;
+    this.myScore = 0;
+    this.opponentScore = 0;
+    this.currentQuestion = null;
+    this.questionStartTime = null;
+    
+    // Spusť novou hru
+    this.startGame();
 }
 }
