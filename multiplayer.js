@@ -23,33 +23,51 @@ export class MultiplayerManager {
         return new Promise((resolve, reject) => {
             const customId = this.generateShortId();
             
-            // Přidáme TURN server pro spojení přes různé sítě
+            // Použijeme lepší PeerJS server + TURN
             this.peer = new Peer(customId, {
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
                         {
                             urls: 'turn:openrelay.metered.ca:80',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
                         }
-                    ]
-                }
+                    ],
+                    iceTransportPolicy: 'all'
+                },
+                debug: 2
             });
             
             this.peer.on('open', (id) => {
-                console.log('Peer ID:', id);
+                console.log('✅ Peer connected! ID:', id);
                 this.gameCode = id.toUpperCase();
                 resolve(this.gameCode);
             });
 
             this.peer.on('error', (err) => {
-                console.error('Peer error:', err);
+                console.error('❌ Peer error:', err);
                 reject(err);
             });
 
             this.peer.on('connection', (conn) => {
+                console.log('📞 Incoming connection!');
                 this.connection = conn;
                 this.setupConnection();
             });
@@ -94,24 +112,41 @@ export class MultiplayerManager {
         this.gameCode = gameCode;
 
         return new Promise((resolve, reject) => {
-            // Přidáme TURN server i pro join
+            // Stejná konfigurace jako u hosta
             this.peer = new Peer({
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
                         {
                             urls: 'turn:openrelay.metered.ca:80',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
                         }
-                    ]
-                }
+                    ],
+                    iceTransportPolicy: 'all'
+                },
+                debug: 2
             });
 
             this.peer.on('open', (myId) => {
-                console.log('My peer ID:', myId);
-                console.log('Connecting to game code:', gameCode);
+                console.log('✅ My peer ID:', myId);
+                console.log('🔍 Connecting to game code:', gameCode);
                 
                 const attempts = [
                     gameCode.toLowerCase(),
@@ -126,21 +161,21 @@ export class MultiplayerManager {
                     }
                     
                     const hostPeerId = attempts[attemptIndex];
-                    console.log('Attempting connection to:', hostPeerId);
+                    console.log('📞 Attempting connection to:', hostPeerId);
                     
                     this.connection = this.peer.connect(hostPeerId);
                     
                     const connectionTimeout = setTimeout(() => {
                         if (this.connection && this.connection.open === false) {
-                            console.log('Connection timeout, trying next...');
+                            console.log('⏱️ Connection timeout, trying next...');
                             attemptIndex++;
                             tryConnect();
                         }
-                    }, 3000);
+                    }, 5000); // Zvýšil jsem timeout na 5s
                     
                     this.connection.on('open', () => {
                         clearTimeout(connectionTimeout);
-                        console.log('Connection established!');
+                        console.log('✅ Connection established!');
                         this.setupConnection();
                         this.sendData({
                             type: 'player_joined',
@@ -151,7 +186,7 @@ export class MultiplayerManager {
 
                     this.connection.on('error', (err) => {
                         clearTimeout(connectionTimeout);
-                        console.error('Connection error:', err);
+                        console.error('❌ Connection error:', err);
                         attemptIndex++;
                         if (attemptIndex < attempts.length) {
                             tryConnect();
@@ -165,7 +200,7 @@ export class MultiplayerManager {
             });
 
             this.peer.on('error', (err) => {
-                console.error('Peer error:', err);
+                console.error('❌ Peer error:', err);
                 reject(err);
             });
         });
