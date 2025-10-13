@@ -25,12 +25,8 @@ export class MultiplayerManager {
 
     initializePeer() {
         return new Promise((resolve, reject) => {
-            this.peer = new Peer({
-                host: '0.peerjs.com',
-                port: 443,
-                path: '/',
-                secure: true
-            });
+            // Použij výchozí PeerJS cloud server
+            this.peer = new Peer();
             
             this.peer.on('open', (id) => {
                 console.log('Peer ID:', id);
@@ -153,7 +149,7 @@ export class MultiplayerManager {
             
             const connectionTimeout = setTimeout(() => {
                 reject(new Error('Nepodařilo se připojit ke hře'));
-            }, 10000);
+            }, 20000);
             
             this.connection.on('open', () => {
                 clearTimeout(connectionTimeout);
