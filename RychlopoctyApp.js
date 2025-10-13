@@ -32,66 +32,7 @@ export class RychlopoctyApp {
         this.testManager = new TestManager(this);
         this.multiplayerManager = new MultiplayerManager(this);
         
-        // Zkontroluj, jestli URL obsahuje pozvánku
-        this.checkForInvite();
-    }
-
-    checkForInvite() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const joinCode = urlParams.get('join');
-        
-        if (joinCode) {
-            // Odstranit parametr z URL bez reloadu
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Zobrazit obrazovku pro připojení s předvyplněným kódem
-            this.showJoinGameScreenWithCode(joinCode);
-        } else {
-            this.showMainScreen();
-        }
-    }
-
-    showJoinGameScreenWithCode(gameCode) {
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div style="font-size: 32px; margin-bottom: 20px;">🔗 Připojit se ke hře</div>
-                
-                <div style="font-size: 16px; color: #10b981; margin-bottom: 20px;">
-                    ✅ Kód hry byl automaticky vyplněn!
-                </div>
-                
-                <div style="margin: 30px 0;">
-                    <input type="text" 
-                           id="guest-name" 
-                           class="name-input" 
-                           placeholder="Tvoje jméno" 
-                           value="${this.userName}"
-                           style="font-size: 18px; padding: 15px; margin-bottom: 15px;">
-                    
-                    <input type="text" 
-                           id="game-code" 
-                           class="name-input" 
-                           placeholder="Kód hry" 
-                           value="${gameCode}"
-                           style="font-size: 24px; padding: 15px; text-transform: uppercase; letter-spacing: 3px;">
-                </div>
-
-                <button class="btn btn-blue" 
-                        style="width: auto; padding: 15px 40px; font-size: 18px;" 
-                        onclick="app.joinMultiplayerGame()">
-                    🎮 Připojit se
-                </button>
-
-                <button class="btn btn-blue" 
-                        style="width: auto; padding: 12px 30px; margin-top: 20px;" 
-                        onclick="app.showMainScreen()">
-                    ◀ Zpět
-                </button>
-            </div>
-        `;
-
-        document.getElementById('guest-name').focus();
+        this.showMainScreen();
     }
 
     async showMainScreen() {
@@ -228,6 +169,17 @@ export class RychlopoctyApp {
                            style="font-size: 18px; padding: 15px;">
                 </div>
 
+                <div style="margin: 20px 0; text-align: left; max-width: 300px; margin-left: auto; margin-right: auto;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: #1e293b; border-radius: 4px;">
+                        <input type="checkbox" id="private-game" onchange="app.togglePrivateGame()" 
+                               style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-size: 16px; color: #e2e8f0;">🔒 Soukromá hra</span>
+                    </label>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 8px; padding-left: 15px;">
+                        Veřejné hry jsou viditelné v seznamu
+                    </div>
+                </div>
+
                 <button class="btn btn-green" 
                         style="width: auto; padding: 15px 40px; font-size: 18px;" 
                         onclick="app.createMultiplayerGame()">
@@ -245,35 +197,58 @@ export class RychlopoctyApp {
         document.getElementById('host-name').focus();
     }
 
-    showJoinGameScreen() {
+    togglePrivateGame() {
+        // Tato funkce je jen pro případné budoucí rozšíření
+    }
+
+showJoinGameScreen() {
         const app = document.getElementById('app');
         app.innerHTML = `
-            <div class="card" style="text-align: center; padding: 40px;">
-                <div style="font-size: 32px; margin-bottom: 20px;">🔗 Připojit se ke hře</div>
+            <div style="margin-bottom: 30px;">
+                <div style="font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 20px;">🔗 Připojit se ke hře</div>
                 
-                <div style="margin: 30px 0;">
+                <div style="text-align: center; margin-bottom: 30px;">
                     <input type="text" 
                            id="guest-name" 
                            class="name-input" 
                            placeholder="Tvoje jméno" 
                            value="${this.userName}"
-                           style="font-size: 18px; padding: 15px; margin-bottom: 15px;">
-                    
-                    <input type="text" 
-                           id="game-code" 
-                           class="name-input" 
-                           placeholder="Kód hry (např. 42)" 
-                           style="font-size: 24px; padding: 15px; text-transform: uppercase; letter-spacing: 3px;">
+                           style="font-size: 18px; padding: 15px; max-width: 400px;">
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="card">
+                    <div class="section-title">🌍 Veřejné hry</div>
+                    <div id="public-games-list" style="min-height: 200px;">
+                        <div style="text-align: center; color: #94a3b8; padding: 40px 20px;">
+                            ⏳ Načítání her...
+                        </div>
+                    </div>
                 </div>
 
-                <button class="btn btn-blue" 
-                        style="width: auto; padding: 15px 40px; font-size: 18px;" 
-                        onclick="app.joinMultiplayerGame()">
-                    🎮 Připojit se
-                </button>
+                <div class="card">
+                    <div class="section-title">🔑 Zadat kód</div>
+                    <div style="padding: 20px 0;">
+                        <input type="text" 
+                               id="game-code" 
+                               class="name-input" 
+                               placeholder="např. 42" 
+                               maxlength="2"
+                               style="font-size: 36px; padding: 20px; text-align: center; letter-spacing: 8px;">
+                        
+                        <button class="btn btn-blue" 
+                                style="width: 100%; padding: 15px; font-size: 18px; margin-top: 20px;" 
+                                onclick="app.joinMultiplayerGame()">
+                            🎮 Připojit se
+                        </button>
+                    </div>
+                </div>
+            </div>
 
+            <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-blue" 
-                        style="width: auto; padding: 12px 30px; margin-top: 20px;" 
+                        style="width: auto; padding: 12px 30px;" 
                         onclick="app.showMainScreen()">
                     ◀ Zpět
                 </button>
@@ -281,11 +256,100 @@ export class RychlopoctyApp {
         `;
 
         document.getElementById('guest-name').focus();
+        
+        // Automaticky načti veřejné hry
+        this.loadPublicGamesInline();
+    }
+
+    async loadPublicGamesInline() {
+        const container = document.getElementById('public-games-list');
+        if (!container) return;
+
+        try {
+            const games = await this.multiplayerManager.getPublicGames();
+            
+            if (games.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #94a3b8; padding: 40px 20px;">
+                        😔 Žádné veřejné hry
+                    </div>
+                `;
+                return;
+            }
+
+            const opIcons = {
+                '*': '✖️',
+                '+': '➕',
+                '-': '➖',
+                '/': '➗'
+            };
+
+            const gamesListHTML = games.map(game => {
+                const opsDisplay = game.operations.map(op => opIcons[op] || op).join(' ');
+                
+                return `
+                    <div style="background: #1e293b; padding: 15px; border-radius: 4px; margin-bottom: 10px; cursor: pointer; transition: background 0.2s;"
+                         onmouseover="this.style.background='#334155'" 
+                         onmouseout="this.style.background='#1e293b'"
+                         onclick="app.joinPublicGameFromList('${game.gameCode}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="text-align: left;">
+                                <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 3px;">
+                                    ${game.hostName}
+                                </div>
+                                <div style="font-size: 13px; color: #94a3b8;">
+                                    ${opsDisplay} • ${game.gameCode}
+                                </div>
+                            </div>
+                            <div style="font-size: 20px;">▶️</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = gamesListHTML;
+        } catch (error) {
+            console.error('Error loading public games:', error);
+            container.innerHTML = `
+                <div style="text-align: center; color: #ef4444; padding: 40px 20px;">
+                    ❌ Chyba načítání
+                </div>
+            `;
+        }
+    }
+
+    async joinPublicGameFromList(gameCode) {
+        const nameInput = document.getElementById('guest-name');
+        const playerName = nameInput.value.trim();
+
+        if (!playerName) {
+            alert('Nejdřív zadej své jméno!');
+            nameInput.focus();
+            return;
+        }
+
+        this.userName = playerName;
+        localStorage.setItem('rychlopocty_username', playerName);
+
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 24px; margin-bottom: 20px;">⏳ Připojování ke hře...</div>
+            </div>
+        `;
+
+        try {
+            await this.multiplayerManager.joinGame(gameCode, playerName);
+        } catch (error) {
+            alert('Nepodařilo se připojit ke hře. Zkus to znovu.');
+            this.showJoinGameScreen();
+        }
     }
 
     async createMultiplayerGame() {
         const nameInput = document.getElementById('host-name');
         const playerName = nameInput.value.trim();
+        const isPrivate = document.getElementById('private-game').checked;
 
         if (!playerName) {
             alert('Zadej své jméno!');
@@ -313,44 +377,33 @@ export class RychlopoctyApp {
         `;
 
         try {
-            const gameCode = await this.multiplayerManager.createGame(playerName, operations);
+            const gameCode = await this.multiplayerManager.createGame(playerName, operations, isPrivate);
+            
+            const codeDisplayHTML = isPrivate ? `
+                <div style="font-size: 18px; color: #94a3b8; margin-bottom: 20px;">
+                    🔒 Soukromá hra - sdílej kód se soupeřem:
+                </div>
+                
+                <div style="font-size: 48px; font-weight: bold; color: #10b981; 
+                            letter-spacing: 5px; padding: 20px; background: #1e293b; 
+                            border-radius: 4px; margin: 20px 0;">
+                    ${gameCode}
+                </div>
+            ` : `
+                <div style="font-size: 18px; color: #94a3b8; margin-bottom: 20px;">
+                    🌍 Veřejná hra - soupeř se může připojit ze seznamu
+                </div>
+                
+                <div style="font-size: 24px; color: #64748b; margin: 20px 0;">
+                    Kód hry: <span style="color: #10b981; font-weight: bold;">${gameCode}</span>
+                </div>
+            `;
             
             app.innerHTML = `
                 <div class="card" style="text-align: center; padding: 40px;">
                     <div style="font-size: 32px; margin-bottom: 20px;">✅ Hra vytvořena!</div>
                     
-                    <div style="font-size: 18px; color: #94a3b8; margin-bottom: 20px;">
-                        Sdílej tento kód se soupeřem:
-                    </div>
-                    
-                    <div style="font-size: 48px; font-weight: bold; color: #10b981; 
-                                letter-spacing: 5px; padding: 20px; background: #1e293b; 
-                                border-radius: 4px; margin: 20px 0;">
-                        ${gameCode}
-                    </div>
-
-                    <div style="font-size: 16px; font-weight: 600; color: #3b82f6; margin: 20px 0;">
-                        📤 Nebo pošli pozvánku:
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; max-width: 600px; margin-left: auto; margin-right: auto;">
-                        <button class="btn btn-green" style="padding: 12px; font-size: 13px;" 
-                                onclick="app.multiplayerManager.shareViaWhatsApp('${gameCode}')">
-                            💬 WhatsApp
-                        </button>
-                        <button class="btn btn-blue" style="padding: 12px; font-size: 13px;" 
-                                onclick="app.multiplayerManager.shareViaMessenger('${gameCode}')">
-                            💬 Messenger
-                        </button>
-                        <button class="btn btn-purple" style="padding: 12px; font-size: 13px;" 
-                                onclick="app.multiplayerManager.copyInviteLink('${gameCode}')">
-                            🔗 Kopírovat odkaz
-                        </button>
-                        <button class="btn btn-orange" style="padding: 12px; font-size: 13px;" 
-                                onclick="app.multiplayerManager.shareNative('${gameCode}')">
-                            📱 Sdílet
-                        </button>
-                    </div>
+                    ${codeDisplayHTML}
 
                     <div style="font-size: 16px; color: #fbbf24; margin: 30px 0;">
                         ⏳ Čekání na soupeře...

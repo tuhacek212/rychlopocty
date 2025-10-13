@@ -25,8 +25,16 @@ export class MultiplayerManager {
 
     initializePeer() {
         return new Promise((resolve, reject) => {
-            // Použij výchozí PeerJS cloud server
-            this.peer = new Peer();
+            // Použij výchozí PeerJS cloud server s STUN/TURN servery
+            this.peer = new Peer({
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                }
+            });
             
             this.peer.on('open', (id) => {
                 console.log('Peer ID:', id);
@@ -47,8 +55,8 @@ export class MultiplayerManager {
     }
 
     generateShortId() {
-        // Vygeneruj krátké 4-místné ID
-        return Math.floor(1000 + Math.random() * 9000).toString();
+        // Vygeneruj krátké 2-místné ID (10-99)
+        return (Math.floor(Math.random() * 90) + 10).toString();
     }
 
     setupConnection() {
@@ -69,7 +77,7 @@ export class MultiplayerManager {
         });
     }
 
-    async createGame(playerName, operations) {
+    async createGame(playerName, operations, isPrivate = false) {
         this.isHost = true;
         this.myName = playerName;
         this.operations = operations;
@@ -90,6 +98,7 @@ export class MultiplayerManager {
             guestName: null,
             operations: this.operations,
             status: 'waiting',
+            isPrivate: isPrivate,
             createdAt: new Date().toISOString()
         });
         
@@ -107,6 +116,26 @@ export class MultiplayerManager {
         });
         
         return this.gameCode;
+    }
+
+    async getPublicGames() {
+        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js");
+        
+        const gamesRef = collection(db, 'games');
+        const q = query(
+            gamesRef,
+            where('status', '==', 'waiting'),
+            where('isPrivate', '==', false)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const games = [];
+        
+        querySnapshot.forEach((doc) => {
+            games.push(doc.data());
+        });
+        
+        return games;
     }
 
     async joinGame(gameCode, playerName) {
