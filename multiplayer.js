@@ -1,12 +1,10 @@
 import { updateFirebaseStats } from './stats.js';
-import { db } from './firebase.js';
-import { collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { rtdb } from './firebase.js';
+import { ref, set, onValue, update, remove, get, push, onDisconnect } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
 export class MultiplayerManager {
     constructor(app) {
         this.app = app;
-        this.peer = null;
-        this.connection = null;
         this.isHost = false;
         this.gameCode = null;
         this.myScore = 0;
@@ -19,261 +17,219 @@ export class MultiplayerManager {
         this.operations = ['*'];
         this.rematchRequested = false;
         this.opponentRematchRequested = false;
-        this.gameDocUnsubscribe = null;
-        this.myPeerId = null;
-    }
-
-    initializePeer() {
-        return new Promise((resolve, reject) => {
-            // Použij výchozí PeerJS cloud server s STUN/TURN servery
-            this.peer = new Peer({
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
-                    ]
-                }
-            });
-            
-            this.peer.on('open', (id) => {
-                console.log('Peer ID:', id);
-                this.myPeerId = id;
-                resolve(id);
-            });
-
-            this.peer.on('error', (err) => {
-                console.error('Peer error:', err);
-                reject(err);
-            });
-
-            this.peer.on('connection', (conn) => {
-                this.connection = conn;
-                this.setupConnection();
-            });
-        });
+        this.gameRef = null;
+        this.listeners = [];
+        this.myPlayerId = null;
+        this.opponentPlayerId = null;
     }
 
     generateShortId() {
-        // Vygeneruj krátké 2-místné ID (10-99)
-        return (Math.floor(Math.random() * 90) + 10).toString();
-    }
-
-    setupConnection() {
-        this.connection.on('open', () => {
-            console.log('Connection established');
-        });
-
-        this.connection.on('data', (data) => {
-            this.handleIncomingData(data);
-        });
-
-        this.connection.on('close', () => {
-            this.handleDisconnect();
-        });
-
-        this.connection.on('error', (err) => {
-            console.error('Connection error:', err);
-        });
+        return (Math.floor(Math.random() * 9000) + 1000).toString();
     }
 
     async createGame(playerName, operations, isPrivate = false) {
         this.isHost = true;
         this.myName = playerName;
-        this.operations = operations;
+        this.operations = operations || ['*'];
+        this.myPlayerId = 'host';
+        this.opponentPlayerId = 'guest';
         
-        // Inicializuj PeerJS
-        await this.initializePeer();
-        
-        // Vygeneruj game code
         this.gameCode = this.generateShortId();
         
-        // Vytvoř dokument ve Firebase
-        const gameRef = doc(db, 'games', this.gameCode);
-        await setDoc(gameRef, {
+        if (!this.gameCode) {
+            throw new Error('Failed to generate game code');
+        }
+        
+        this.gameRef = ref(rtdb, `games/${this.gameCode}`);
+        
+        await set(this.gameRef, {
             gameCode: this.gameCode,
-            hostPeerId: this.myPeerId,
             hostName: this.myName,
-            guestPeerId: null,
             guestName: null,
+            hostConnected: true,
+            guestConnected: false,
             operations: this.operations,
             status: 'waiting',
             isPrivate: isPrivate,
-            createdAt: new Date().toISOString()
+            createdAt: Date.now(),
+            currentQuestion: null,
+            hostScore: 0,
+            guestScore: 0,
+            hostAnswer: null,
+            guestAnswer: null,
+            gameOver: false,
+            winner: null
         });
+
+        const hostConnectedRef = ref(rtdb, `games/${this.gameCode}/hostConnected`);
+        onDisconnect(hostConnectedRef).set(false);
         
-        // Poslouchej změny v dokumentu
-        this.gameDocUnsubscribe = onSnapshot(gameRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                
-                // Pokud se připojil guest
-                if (data.guestPeerId && data.status === 'ready' && !this.connection) {
-                    console.log('Guest joined with PeerID:', data.guestPeerId);
-                    this.opponentName = data.guestName;
-                }
-            }
-        });
+        this.setupGameListener();
         
         return this.gameCode;
     }
 
     async getPublicGames() {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js");
+        const gamesRef = ref(rtdb, 'games');
+        const snapshot = await get(gamesRef);
         
-        const gamesRef = collection(db, 'games');
-        const q = query(
-            gamesRef,
-            where('status', '==', 'waiting'),
-            where('isPrivate', '==', false)
-        );
+        if (!snapshot.exists()) {
+            return [];
+        }
         
-        const querySnapshot = await getDocs(q);
         const games = [];
+        const now = Date.now();
+        const fiveMinutesAgo = now - 5 * 60 * 1000;
         
-        querySnapshot.forEach((doc) => {
-            games.push(doc.data());
+        snapshot.forEach((childSnapshot) => {
+            const game = childSnapshot.val();
+            if (game.status === 'waiting' && 
+                game.isPrivate === false && 
+                game.createdAt > fiveMinutesAgo) {
+                games.push(game);
+            }
         });
         
         return games;
     }
 
     async joinGame(gameCode, playerName) {
+        if (!gameCode) {
+            throw new Error('Game code is required');
+        }
+        
         this.isHost = false;
         this.myName = playerName;
         this.gameCode = gameCode;
-
-        // Inicializuj PeerJS
-        await this.initializePeer();
+        this.myPlayerId = 'guest';
+        this.opponentPlayerId = 'host';
         
-        // Zkontroluj, jestli hra existuje
-        const gameRef = doc(db, 'games', gameCode);
-        const gameSnap = await getDoc(gameRef);
+        this.gameRef = ref(rtdb, `games/${gameCode}`);
+        const snapshot = await get(this.gameRef);
         
-        if (!gameSnap.exists()) {
+        if (!snapshot.exists()) {
             throw new Error('Hra s tímto kódem neexistuje');
         }
         
-        const gameData = gameSnap.data();
+        const gameData = snapshot.val();
         
         if (gameData.status !== 'waiting') {
             throw new Error('Hra již začala nebo je plná');
         }
         
-        // Ulož své PeerJS ID do Firebase
-        await updateDoc(gameRef, {
-            guestPeerId: this.myPeerId,
-            guestName: this.myName,
-            status: 'ready'
-        });
-        
         this.opponentName = gameData.hostName;
         this.operations = gameData.operations || ['*'];
         
-        // Připoj se k hostovi přes PeerJS
-        return new Promise((resolve, reject) => {
-            console.log('Connecting to host PeerID:', gameData.hostPeerId);
-            
-            this.connection = this.peer.connect(gameData.hostPeerId);
-            
-            const connectionTimeout = setTimeout(() => {
-                reject(new Error('Nepodařilo se připojit ke hře'));
-            }, 20000);
-            
-            this.connection.on('open', () => {
-                clearTimeout(connectionTimeout);
-                console.log('Connection established!');
-                this.setupConnection();
-                this.sendData({
-                    type: 'player_joined',
-                    name: this.myName
-                });
-                resolve();
-            });
-
-            this.connection.on('error', (err) => {
-                clearTimeout(connectionTimeout);
-                console.error('Connection error:', err);
-                reject(new Error('Nepodařilo se připojit ke hře'));
-            });
+        await update(this.gameRef, {
+            guestName: this.myName,
+            guestConnected: true,
+            status: 'ready'
         });
+
+        const guestConnectedRef = ref(rtdb, `games/${this.gameCode}/guestConnected`);
+        onDisconnect(guestConnectedRef).set(false);
+        
+        this.setupGameListener();
     }
 
-    handleIncomingData(data) {
-        console.log('Received data:', data);
-
-        switch(data.type) {
-            case 'player_joined':
-                console.log('Player joined:', data.name);
-                this.opponentName = data.name;
-                if (this.isHost) {
-                    this.sendData({
-                        type: 'game_start',
-                        hostName: this.myName,
-                        operations: this.operations
-                    });
-                    setTimeout(() => {
-                        this.startGame();
-                    }, 100);
+    setupGameListener() {
+        if (!this.gameRef) {
+            console.error('Cannot setup listener: gameRef is null');
+            return;
+        }
+        
+        const listener = onValue(this.gameRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                if (this.gameActive) {
+                    alert('Hra byla ukončena');
+                    this.app.showMainScreen();
                 }
-                break;
-
-            case 'game_start':
-                console.log('Game starting, host name:', data.hostName);
-                this.opponentName = data.hostName;
-                this.operations = data.operations || ['*'];
-                this.showGameScreen();
-                break;
-
-            case 'new_question':
-                console.log('Received new question:', data.question);
-                this.currentQuestion = data.question;
-                this.questionStartTime = Date.now();
-                this.gameActive = true;
-                setTimeout(() => {
-                    this.displayQuestion();
-                }, 100);
-                break;
-
-            case 'answer':
-                this.handleOpponentAnswer(data);
-                break;
-
-            case 'game_over':
+                return;
+            }
+            
+            const data = snapshot.val();
+            console.log('Game data updated:', data);
+            
+            if (this.isHost) {
+                if (data.status === 'ready' && !this.gameActive) {
+                    this.opponentName = data.guestName;
+                    console.log('Guest joined, starting game...');
+                    setTimeout(() => this.startGame(), 100);
+                }
+                
+                if (!data.guestConnected && this.gameActive) {
+                    alert('Soupeř se odpojil!');
+                    this.disconnect();
+                }
+            } else {
+                if (data.status === 'playing' && !this.gameActive) {
+                    console.log('Game started by host');
+                    this.gameActive = true;
+                    this.showGameScreen();
+                }
+                
+                if (!data.hostConnected && this.gameActive) {
+                    alert('Soupeř se odpojil!');
+                    this.disconnect();
+                }
+            }
+            
+            if (data.currentQuestion) {
+                console.log('New question received:', data.currentQuestion);
+                this.handleNewQuestion(data.currentQuestion);
+            }
+            
+            if (this.isHost) {
+                this.opponentScore = data.guestScore || 0;
+                if (data.guestAnswer !== null && data.guestAnswer !== this.lastGuestAnswer) {
+                    this.lastGuestAnswer = data.guestAnswer;
+                    this.handleOpponentAnswer(data.guestAnswer);
+                }
+            } else {
+                this.opponentScore = data.hostScore || 0;
+                if (data.hostAnswer !== null && data.hostAnswer !== this.lastHostAnswer) {
+                    this.lastHostAnswer = data.hostAnswer;
+                    this.handleOpponentAnswer(data.hostAnswer);
+                }
+            }
+            
+            this.updateScoreDisplay();
+            
+            if (data.gameOver && this.gameActive) {
                 this.endGame(data.winner);
-                break;
-
-            case 'rematch_request':
+            }
+            
+            if (data.rematchHost && !this.isHost) {
                 this.handleRematchRequest();
-                break;
-
-            case 'rematch_accepted':
+            }
+            if (data.rematchGuest && this.isHost) {
+                this.handleRematchRequest();
+            }
+            
+            if (data.rematchHost && data.rematchGuest && !this.gameActive) {
                 this.startRematch();
-                break;
-        }
+            }
+        });
+        
+        this.listeners.push(listener);
     }
 
-    sendData(data) {
-        if (this.connection && this.connection.open) {
-            this.connection.send(data);
-        }
-    }
-
-    startGame() {
-        console.log('Starting game, isHost:', this.isHost);
+    async startGame() {
         this.gameActive = true;
         this.myScore = 0;
         this.opponentScore = 0;
+        this.lastGuestAnswer = null;
+        this.lastHostAnswer = null;
+
+        await update(this.gameRef, {
+            status: 'playing',
+            hostScore: 0,
+            guestScore: 0,
+            hostAnswer: null,
+            guestAnswer: null,
+            gameOver: false,
+            winner: null
+        });
 
         this.showGameScreen();
 
@@ -284,8 +240,8 @@ export class MultiplayerManager {
         }
     }
 
-    generateNewQuestion() {
-        if (!this.isHost) return;
+    async generateNewQuestion() {
+        if (!this.isHost || !this.gameActive) return;
 
         if (!this.operations || this.operations.length === 0) {
             this.operations = ['*'];
@@ -314,16 +270,33 @@ export class MultiplayerManager {
             }
         }
 
-        this.currentQuestion = {a, b, op};
-        this.questionStartTime = Date.now();
-
-        console.log('Generated new question:', this.currentQuestion);
-
-        this.sendData({
-            type: 'new_question',
-            question: this.currentQuestion
+        const question = {a, b, op, timestamp: Date.now()};
+        
+        await update(this.gameRef, {
+            currentQuestion: question,
+            hostAnswer: null,
+            guestAnswer: null
         });
+    }
 
+    handleNewQuestion(question) {
+        if (!question) {
+            console.log('No question received');
+            return;
+        }
+        
+        console.log('Processing question:', question, 'Last timestamp:', this.lastQuestionTimestamp);
+        
+        if (question.timestamp === this.lastQuestionTimestamp) {
+            console.log('Question already processed, skipping');
+            return;
+        }
+        
+        this.lastQuestionTimestamp = question.timestamp;
+        this.currentQuestion = question;
+        this.questionStartTime = Date.now();
+        
+        console.log('Displaying new question');
         setTimeout(() => {
             this.displayQuestion();
         }, 100);
@@ -333,8 +306,14 @@ export class MultiplayerManager {
         const questionElement = document.getElementById('mp-question');
         const answerElement = document.getElementById('mp-answer');
         
-        if (!questionElement || !answerElement) {
-            console.log('Question elements not ready yet');
+        console.log('displayQuestion called', {
+            questionElement: !!questionElement,
+            answerElement: !!answerElement,
+            currentQuestion: this.currentQuestion
+        });
+        
+        if (!questionElement || !answerElement || !this.currentQuestion) {
+            console.log('Cannot display question - missing elements or question');
             return;
         }
 
@@ -346,6 +325,8 @@ export class MultiplayerManager {
         answerElement.disabled = false;
         answerElement.style.background = '#334155';
         
+        console.log('Question displayed:', questionElement.textContent);
+        
         this.setupAnswerListener();
 
         setTimeout(() => {
@@ -356,56 +337,56 @@ export class MultiplayerManager {
         }, 200);    
     }
 
-    handleOpponentAnswer(data) {
-        if (data.correct) {
-            console.log('Opponent answered correctly first');
-            
-            this.opponentScore++;
-            this.updateScoreDisplay();
-            this.checkWinCondition();
+    async handleOpponentAnswer(answerData) {
+        if (!answerData || !answerData.correct) return;
+        
+        this.opponentScore++;
+        this.updateScoreDisplay();
+        this.checkWinCondition();
 
-            const answerInput = document.getElementById('mp-answer');
-            if (answerInput) {
-                answerInput.disabled = true;
-                answerInput.style.background = '#64748b';
-            }
+        const answerInput = document.getElementById('mp-answer');
+        if (answerInput) {
+            answerInput.disabled = true;
+            answerInput.style.background = '#64748b';
+        }
 
-            if (this.isHost) {
-                setTimeout(() => {
-                    this.generateNewQuestion();
-                }, 1500);
-            }
+        if (this.isHost) {
+            setTimeout(() => {
+                this.generateNewQuestion();
+            }, 1500);
         }
     }
 
     updateScoreDisplay() {
-        const scoreDiff = this.myScore - this.opponentScore;
-        document.getElementById('my-score').textContent = this.myScore;
-        document.getElementById('opponent-score').textContent = this.opponentScore;
-        document.getElementById('score-diff').textContent = 
-            scoreDiff > 0 ? `+${scoreDiff}` : scoreDiff;
+        const myScoreEl = document.getElementById('my-score');
+        const opponentScoreEl = document.getElementById('opponent-score');
+        const scoreDiffEl = document.getElementById('score-diff');
+        
+        if (myScoreEl) myScoreEl.textContent = this.myScore;
+        if (opponentScoreEl) opponentScoreEl.textContent = this.opponentScore;
+        
+        if (scoreDiffEl) {
+            const scoreDiff = this.myScore - this.opponentScore;
+            scoreDiffEl.textContent = scoreDiff > 0 ? `+${scoreDiff}` : scoreDiff;
+        }
 
         this.updateProgressBar();
     }
 
-    checkWinCondition() {
+    async checkWinCondition() {
         const diff = Math.abs(this.myScore - this.opponentScore);
         
         if (diff >= 10) {
-            const winner = this.myScore > this.opponentScore ? 'me' : 'opponent';
+            const winner = this.myScore > this.opponentScore ? this.myPlayerId : this.opponentPlayerId;
             
-            if (this.isHost) {
-                this.sendData({
-                    type: 'game_over',
-                    winner: winner === 'me' ? 'host' : 'guest'
-                });
-            }
-            
-            this.endGame(winner);
+            await update(this.gameRef, {
+                gameOver: true,
+                winner: winner
+            });
         }
     }
 
-    endGame(winnerType) {
+    endGame(winner) {
         if (this.motivationInterval) {
             clearInterval(this.motivationInterval);
         }
@@ -417,17 +398,7 @@ export class MultiplayerManager {
             });
         }
         
-        // Určíme skutečného vítěze
-        let iWon = false;
-        if (winnerType === 'me') {
-            iWon = true;
-        } else if (winnerType === 'host') {
-            iWon = this.isHost;
-        } else if (winnerType === 'guest') {
-            iWon = !this.isHost;
-        } else if (winnerType === 'opponent') {
-            iWon = false;
-        }
+        const iWon = winner === this.myPlayerId;
         
         const winnerName = iWon ? this.myName : this.opponentName;
         const resultText = iWon ? '🎉 VYHRÁL JSI!' : '😢 PROHRÁL JSI';
@@ -467,7 +438,7 @@ export class MultiplayerManager {
                 </button>
 
                 <button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 10px;" 
-                        onclick="app.showMainScreen()">
+                        onclick="app.multiplayerManager.disconnect()">
                     🏠 Zpět na hlavní obrazovku
                 </button>
             </div>
@@ -529,37 +500,26 @@ export class MultiplayerManager {
     setupAnswerListener() {
         const answerInput = document.getElementById('mp-answer');
         if (!answerInput) {
-            console.log('Answer input not found!');
             return;
         }
-
-        console.log('Setting up answer listener');
 
         const newInput = answerInput.cloneNode(true);
         answerInput.parentNode.replaceChild(newInput, answerInput);
 
         const finalInput = document.getElementById('mp-answer');
         finalInput.addEventListener('input', (e) => {
-            console.log('Input event triggered:', e.target.value);
             this.handleAnswerInput(e);
         });
-
-        console.log('Listener set up successfully');
     }
 
-    handleAnswerInput(e) {
-        console.log('handleAnswerInput called, gameActive:', this.gameActive, 'hasQuestion:', !!this.currentQuestion);
-        
+    async handleAnswerInput(e) {
         if (!this.gameActive || !this.currentQuestion) {
-            console.log('Not ready for input');
             return;
         }
         
         const text = e.target.value;
-        console.log('Input text:', text);
         
         if (!/^\d+$/.test(text) && text !== '') {
-            console.log('Invalid input format');
             return;
         }
         
@@ -573,26 +533,36 @@ export class MultiplayerManager {
         else if (op === '-') correct = a - b;
         else if (op === '/') correct = Math.floor(a / b);
 
-        console.log('Current question:', this.currentQuestion, 'Correct answer:', correct);
-
         if (text.length >= correct.toString().length) {
             const userAnswer = parseInt(text);
-            console.log('Checking complete answer:', userAnswer, 'vs', correct);
             
             if (userAnswer === correct) {
-                console.log('Answer is CORRECT!');
                 const responseTime = Date.now() - this.questionStartTime;
                 
                 e.target.style.background = '#10b981';
                 e.target.disabled = true;
                 
-                this.sendData({
-                    type: 'answer',
-                    correct: true,
-                    time: responseTime
-                });
-
                 this.myScore++;
+                
+                const updateData = {};
+                if (this.isHost) {
+                    updateData.hostScore = this.myScore;
+                    updateData.hostAnswer = {
+                        correct: true,
+                        time: responseTime,
+                        timestamp: Date.now()
+                    };
+                } else {
+                    updateData.guestScore = this.myScore;
+                    updateData.guestAnswer = {
+                        correct: true,
+                        time: responseTime,
+                        timestamp: Date.now()
+                    };
+                }
+                
+                await update(this.gameRef, updateData);
+                
                 this.updateScoreDisplay();
                 this.checkWinCondition();
                 
@@ -602,7 +572,6 @@ export class MultiplayerManager {
                     }, 1500);
                 }
             } else {
-                console.log('Answer is WRONG');
                 e.target.style.background = '#ef4444';
                 setTimeout(() => {
                     e.target.value = '';
@@ -610,15 +579,6 @@ export class MultiplayerManager {
                     e.target.focus();
                 }, 800);
             }
-        } else {
-            console.log('Answer not complete yet, length:', text.length, 'needed:', correct.toString().length);
-        }
-    }
-
-    handleDisconnect() {
-        if (this.gameActive) {
-            alert('Soupeř se odpojil!');
-            this.app.showMainScreen();
         }
     }
 
@@ -628,26 +588,27 @@ export class MultiplayerManager {
         }
         this.gameActive = false;
         
-        // Zruš poslouchání Firebase
-        if (this.gameDocUnsubscribe) {
-            this.gameDocUnsubscribe();
-        }
+        this.listeners.forEach(unsubscribe => {
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
+        });
+        this.listeners = [];
         
-        // Smaž hru z Firebase pokud jsi host
-        if (this.isHost && this.gameCode) {
+        if (this.gameRef) {
             try {
-                await deleteDoc(doc(db, 'games', this.gameCode));
+                if (this.isHost) {
+                    await remove(this.gameRef);
+                } else {
+                    await update(this.gameRef, {
+                        guestConnected: false
+                    });
+                }
             } catch (err) {
-                console.error('Error deleting game:', err);
+                console.error('Error disconnecting:', err);
             }
         }
         
-        if (this.connection) {
-            this.connection.close();
-        }
-        if (this.peer) {
-            this.peer.destroy();
-        }
         this.app.showMainScreen();
     }
     
@@ -733,21 +694,23 @@ export class MultiplayerManager {
         }
     }
 
-    requestRematch() {
+    async requestRematch() {
         this.rematchRequested = true;
-        this.sendData({
-            type: 'rematch_request'
-        });
+        
+        const updateData = {};
+        if (this.isHost) {
+            updateData.rematchHost = true;
+        } else {
+            updateData.rematchGuest = true;
+        }
+        
+        await update(this.gameRef, updateData);
         
         const rematchBtn = document.getElementById('rematch-btn');
         if (rematchBtn) {
             rematchBtn.textContent = '⏳ Čekání na soupeře...';
             rematchBtn.disabled = true;
             rematchBtn.style.opacity = '0.6';
-        }
-        
-        if (this.opponentRematchRequested) {
-            this.startRematch();
         }
     }
 
@@ -759,22 +722,28 @@ export class MultiplayerManager {
             rematchBtn.textContent = '✅ Soupeř chce odvetu!';
             rematchBtn.style.animation = 'pulse 1s infinite';
         }
-        
-        if (this.rematchRequested) {
-            this.sendData({
-                type: 'rematch_accepted'
-            });
-            this.startRematch();
-        }
     }
 
-    startRematch() {
+    async startRematch() {
         this.rematchRequested = false;
         this.opponentRematchRequested = false;
         this.myScore = 0;
         this.opponentScore = 0;
         this.currentQuestion = null;
         this.questionStartTime = null;
+        
+        await update(this.gameRef, {
+            rematchHost: false,
+            rematchGuest: false,
+            status: 'playing',
+            hostScore: 0,
+            guestScore: 0,
+            hostAnswer: null,
+            guestAnswer: null,
+            gameOver: false,
+            winner: null,
+            currentQuestion: null
+        });
         
         this.startGame();
     }
