@@ -24,12 +24,7 @@ export async function showLeaderboards() {
     const target = tabContent || document.getElementById('app');
     
     target.innerHTML = `
-        <div class="title-section">
-            <div class="main-title">🏆 Žebříček</div>
-            <div class="subtitle">Top výsledky podle času</div>
-        </div>
-
-        <div class="card" style="padding: 20px; margin-bottom: 20px;">
+            <div class="card" style="padding: 20px; margin-bottom: 20px;">
             <div style="text-align: center; font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #fbbf24;">🔢 Filtrovat podle operací</div>
             <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
                 <div class="checkbox-item">
@@ -176,4 +171,5 @@ export async function saveToLeaderboard(mode, time, userName, correctCount, wron
         alert('❌ Nepodařilo se uložit do žebříčku. Zkus to znovu.');
         return null;
     }
+
 }
