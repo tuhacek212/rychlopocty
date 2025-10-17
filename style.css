@@ -69,6 +69,16 @@ html {
     .two-column {
         grid-template-columns: 1fr;
     }
+    
+    /* Navigační tlačítka na mobile - každé na vlastním řádku */
+    .nav-buttons {
+        flex-direction: column !important;
+    }
+    
+    .nav-buttons .btn {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
 }
 
 .section-title {
@@ -586,4 +596,64 @@ html {
 
 .hidden {
     display: none;
+}
+
+/* Tab Menu */
+.tab-menu {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #334155;
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #94a3b8;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 15px 25px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Outfit', sans-serif;
+}
+
+.tab-btn:hover {
+    color: #f1f5f9;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .tab-menu {
+        gap: 5px;
+    }
+    
+    .tab-btn {
+        font-size: 14px;
+        padding: 12px 15px;
+        flex: 1;
+        text-align: center;
+    }
 }

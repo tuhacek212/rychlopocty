@@ -1,6 +1,6 @@
 import { updateFirebaseStats } from './stats.js';
 import { rtdb } from './firebase.js';
-import { ref, set, onValue, update, remove, get, push, onDisconnect } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+import { ref, set, onValue, update, remove, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
 export class MultiplayerManager {
     constructor(app) {
@@ -21,11 +21,12 @@ export class MultiplayerManager {
         this.listeners = [];
         this.myPlayerId = null;
         this.opponentPlayerId = null;
+        this.publicGamesListener = null;
     }
 
     generateShortId() {
-        return (Math.floor(Math.random() * 9000) + 1000).toString();
-    }
+    return (Math.floor(Math.random() * 90) + 10).toString();
+}
 
     async createGame(playerName, operations, isPrivate = false) {
         this.isHost = true;
@@ -62,35 +63,46 @@ export class MultiplayerManager {
         });
 
         const hostConnectedRef = ref(rtdb, `games/${this.gameCode}/hostConnected`);
-        onDisconnect(hostConnectedRef).set(false);
+        const disconnectHandler = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js");
+        disconnectHandler.onDisconnect(hostConnectedRef).set(false);
         
         this.setupGameListener();
         
         return this.gameCode;
     }
 
-    async getPublicGames() {
-        const gamesRef = ref(rtdb, 'games');
-        const snapshot = await get(gamesRef);
+    // Real-time listener pro veřejné hry
+  startPublicGamesListener(callback) {
+    this.stopPublicGamesListener();
+    
+    const gamesRef = ref(rtdb, 'games');
+    
+    this.publicGamesListener = onValue(gamesRef, (snapshot) => {
+        const games = [];
         
-        if (!snapshot.exists()) {
-            return [];
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                const game = childSnapshot.val();
+                // Zobraz jen hry kde je host připojený a status je waiting
+                if (game.status === 'waiting' && 
+                    game.hostConnected === true) {
+                    games.push(game);
+                }
+            });
         }
         
-        const games = [];
-        const now = Date.now();
-        const fiveMinutesAgo = now - 5 * 60 * 1000;
+        // Seřadit podle času vytvoření (nejnovější první)
+        games.sort((a, b) => b.createdAt - a.createdAt);
         
-        snapshot.forEach((childSnapshot) => {
-            const game = childSnapshot.val();
-            if (game.status === 'waiting' && 
-                game.isPrivate === false && 
-                game.createdAt > fiveMinutesAgo) {
-                games.push(game);
-            }
-        });
-        
-        return games;
+        callback(games);
+    });
+}
+
+    stopPublicGamesListener() {
+        if (this.publicGamesListener && typeof this.publicGamesListener === 'function') {
+            this.publicGamesListener();
+            this.publicGamesListener = null;
+        }
     }
 
     async joinGame(gameCode, playerName) {
@@ -112,7 +124,7 @@ export class MultiplayerManager {
         }
         
         const gameData = snapshot.val();
-        
+
         if (gameData.status !== 'waiting') {
             throw new Error('Hra již začala nebo je plná');
         }
@@ -127,7 +139,8 @@ export class MultiplayerManager {
         });
 
         const guestConnectedRef = ref(rtdb, `games/${this.gameCode}/guestConnected`);
-        onDisconnect(guestConnectedRef).set(false);
+        const disconnectHandler = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js");
+        disconnectHandler.onDisconnect(guestConnectedRef).set(false);
         
         this.setupGameListener();
     }
@@ -142,7 +155,7 @@ export class MultiplayerManager {
             if (!snapshot.exists()) {
                 if (this.gameActive) {
                     alert('Hra byla ukončena');
-                    this.app.showMainScreen();
+                    this.app.router.navigate('/');
                 }
                 return;
             }
@@ -296,46 +309,44 @@ export class MultiplayerManager {
         this.currentQuestion = question;
         this.questionStartTime = Date.now();
         
-        console.log('Displaying new question');
-        setTimeout(() => {
-            this.displayQuestion();
-        }, 100);
+        console.log('Displaying new question immediately');
+        this.displayQuestion();
     }
 
     displayQuestion() {
-        const questionElement = document.getElementById('mp-question');
-        const answerElement = document.getElementById('mp-answer');
-        
-        console.log('displayQuestion called', {
-            questionElement: !!questionElement,
-            answerElement: !!answerElement,
-            currentQuestion: this.currentQuestion
-        });
-        
-        if (!questionElement || !answerElement || !this.currentQuestion) {
-            console.log('Cannot display question - missing elements or question');
-            return;
-        }
-
-        const symbols = {'*': 'x', '+': '+', '-': '-', '/': ':'};
-        const display = symbols[this.currentQuestion.op];
-        
-        questionElement.textContent = `${this.currentQuestion.a} ${display} ${this.currentQuestion.b}`;
-        answerElement.value = '';
-        answerElement.disabled = false;
-        answerElement.style.background = '#334155';
-        
-        console.log('Question displayed:', questionElement.textContent);
-        
-        this.setupAnswerListener();
-
-        setTimeout(() => {
-            const input = document.getElementById('mp-answer');
-            if (input) {
-                input.focus();
-            }
-        }, 200);    
+    const questionElement = document.getElementById('mp-question');
+    const answerElement = document.getElementById('mp-answer');
+    
+    console.log('displayQuestion called', {
+        questionElement: !!questionElement,
+        answerElement: !!answerElement,
+        currentQuestion: this.currentQuestion
+    });
+    
+    if (!questionElement || !answerElement || !this.currentQuestion) {
+        console.log('Cannot display question - missing elements or question');
+        return;
     }
+
+    const symbols = {'*': 'x', '+': '+', '-': '-', '/': ':'};
+    const display = symbols[this.currentQuestion.op];
+    
+    questionElement.textContent = `${this.currentQuestion.a} ${display} ${this.currentQuestion.b}`;
+    answerElement.value = '';
+    answerElement.disabled = false;
+    answerElement.style.background = '#334155';
+    
+    setTimeout(() => {
+        const input = document.getElementById('mp-answer');
+        if (input) {
+            input.focus();
+        }
+    }, 200);
+    
+    console.log('Question displayed:', questionElement.textContent);
+    
+    this.setupAnswerListener();
+}
 
     async handleOpponentAnswer(answerData) {
         if (!answerData || !answerData.correct) return;
@@ -588,6 +599,8 @@ export class MultiplayerManager {
         }
         this.gameActive = false;
         
+        this.stopPublicGamesListener();
+        
         this.listeners.forEach(unsubscribe => {
             if (typeof unsubscribe === 'function') {
                 unsubscribe();
@@ -609,7 +622,7 @@ export class MultiplayerManager {
             }
         }
         
-        this.app.showMainScreen();
+        this.app.router.navigate('/');
     }
     
     startMotivationMessages() {

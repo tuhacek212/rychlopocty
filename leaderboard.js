@@ -20,8 +20,10 @@ let currentFilters = {
 };
 
 export async function showLeaderboards() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
+    const tabContent = document.getElementById('tab-content');
+    const target = tabContent || document.getElementById('app');
+    
+    target.innerHTML = `
         <div class="title-section">
             <div class="main-title">🏆 Žebříček</div>
             <div class="subtitle">Top výsledky podle času</div>
@@ -54,9 +56,7 @@ export async function showLeaderboards() {
                 <div style="font-size: 24px;">⏳ Načítání...</div>
             </div>
         </div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-blue" style="width: auto; padding: 12px 30px;" onclick="app.showMainScreen()">◀ Zpět</button>
-        </div>
+        ${!tabContent ? '<div style="text-align: center; margin-top: 20px;"><button class="btn btn-blue" style="width: auto; padding: 12px 30px;" onclick="app.router.navigate(\'/\')">◀ Zpět</button></div>' : ''}
     `;
 
     try {

@@ -174,6 +174,7 @@ export class TestManager {
             if (this.app.mode !== '⏱️ Na čas' && this.app.mode !== '∞ Trénink' && this.app.correctTimes.length === 10) {
                 const totalTime = (this.app.correctTimes[9] - this.app.correctTimes[0]) / 1000;
                 if (totalTime <= this.app.limit) {
+                    this.clearMotivationTimers();
                     this.app.finishTest();
                 }
             }
@@ -285,7 +286,7 @@ export class TestManager {
                 "Tak honem, honem!",
                 "Pohni kostrou!",
                 "Jedem! Jedem!",
-                "Hurá! Ať vidím ty prstěnky létat!",
+                "Hurá! Ať vidím ty prsténky létat!",
                 "Dělej ať stihneš taky něco dalšího dneska!",
                 "Nečti si a počítej!",
                 "To není úkol na celou hodinu!"
