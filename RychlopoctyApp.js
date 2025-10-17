@@ -228,20 +228,41 @@ export class RychlopoctyApp {
         }
     }
 
-    showCreatedGameInList(gameCode) {
-        const gamesContainer = document.getElementById('public-games-list');
-        if (!gamesContainer) return;
-        
-        const myGameHTML = '<div style="background: #1e293b; padding: 20px; border-radius: 4px; margin-bottom: 15px; border: 2px solid #10b981;"><div style="text-align: center;"><div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">✅ Tvoje hra vytvořena!</div><div style="font-size: 14px; color: #94a3b8; margin-bottom: 15px;">Kód hry:</div><div style="font-size: 48px; font-weight: bold; color: #10b981; letter-spacing: 10px; font-family: monospace;">' + gameCode + '</div><div style="font-size: 14px; color: #fbbf24; margin-top: 15px;">⏳ Čekání na soupeře...</div><button class="btn btn-red" style="width: auto; padding: 10px 20px; margin-top: 15px; font-size: 14px;" onclick="app.cancelMyGame()">🛑 Zrušit</button></div></div>';
-        
-        // Vlož na začátek seznamu
-        const currentContent = gamesContainer.innerHTML;
-        if (currentContent.includes('Načítání') || currentContent.includes('Žádné')) {
-            gamesContainer.innerHTML = myGameHTML;
-        } else {
-            gamesContainer.innerHTML = myGameHTML + currentContent;
-        }
+showCreatedGameInList(gameCode) {
+    const gamesContainer = document.getElementById('public-games-list');
+    if (!gamesContainer) return;
+    
+    // WhatsApp sdílecí odkaz
+    const shareText = encodeURIComponent(`Pojď hrát Rychlopočty! 🎮\nKód hry: ${gameCode}\nhttps://rychlopocty.cz/multiplayer`);
+    const whatsappUrl = `https://wa.me/?text=${shareText}`;
+    
+    const myGameHTML = `
+        <div style="background: #1e293b; padding: 20px; border-radius: 4px; margin-bottom: 15px; border: 2px solid #10b981;">
+            <div style="text-align: center;">
+                <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">✅ Tvoje hra vytvořena!</div>
+                <div style="font-size: 14px; color: #94a3b8; margin-bottom: 15px;">Kód hry:</div>
+                <div style="font-size: 48px; font-weight: bold; color: #10b981; letter-spacing: 10px; font-family: monospace;">${gameCode}</div>
+                <div style="font-size: 14px; color: #fbbf24; margin-top: 15px;">⏳ Čekání na soupeře...</div>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                    <a href="${whatsappUrl}" target="_blank" class="btn btn-green" style="width: auto; padding: 10px 20px; font-size: 14px; text-decoration: none; display: inline-block;">
+                        💬 Sdílet přes WhatsApp
+                    </a>
+                    <button class="btn btn-red" style="width: auto; padding: 10px 20px; font-size: 14px;" onclick="app.cancelMyGame()">
+                        🛑 Zrušit
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Vlož na začátek seznamu
+    const currentContent = gamesContainer.innerHTML;
+    if (currentContent.includes('Načítání') || currentContent.includes('Žádné')) {
+        gamesContainer.innerHTML = myGameHTML;
+    } else {
+        gamesContainer.innerHTML = myGameHTML + currentContent;
     }
+}
 
     async cancelMyGame() {
         await this.multiplayerManager.disconnect();
