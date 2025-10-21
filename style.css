@@ -30,7 +30,11 @@ html {
 
 @media (max-width: 768px) {
     .container {
-        padding: 15px;
+        padding: 10px;
+    }
+    
+    body {
+        font-size: 16px;
     }
 }
 
@@ -41,9 +45,22 @@ html {
     padding: 20px;
 }
 
+@media (max-width: 768px) {
+    .card {
+        padding: 15px;
+        border-radius: 8px;
+    }
+}
+
 .title-section {
     text-align: center;
     margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .title-section {
+        margin-bottom: 20px;
+    }
 }
 
 .main-title {
@@ -52,10 +69,22 @@ html {
     margin-bottom: 8px;
 }
 
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 24px;
+    }
+}
+
 .subtitle {
     font-size: 14px;
     color: #94a3b8;
     font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .subtitle {
+        font-size: 12px;
+    }
 }
 
 .two-column {
@@ -68,6 +97,7 @@ html {
 @media (max-width: 768px) {
     .two-column {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     /* Navigační tlačítka na mobile - každé na vlastním řádku */
@@ -88,6 +118,13 @@ html {
     text-align: center;
 }
 
+@media (max-width: 768px) {
+    .section-title {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+}
+
 .btn {
     width: 100%;
     padding: 14px 20px;
@@ -105,8 +142,10 @@ html {
 
 @media (max-width: 768px) {
     .btn {
-        padding: 16px 20px;
+        padding: 18px 20px;
         font-size: 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
     }
 }
 
@@ -129,12 +168,26 @@ html {
     margin-bottom: 8px;
 }
 
+@media (max-width: 768px) {
+    .time-desc {
+        font-size: 10px;
+        margin-bottom: 10px;
+    }
+}
+
 .custom-time {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 8px;
     margin: 15px 0;
+}
+
+@media (max-width: 768px) {
+    .custom-time {
+        flex-direction: column;
+        gap: 10px;
+    }
 }
 
 .custom-time input {
@@ -146,6 +199,20 @@ html {
     border: none;
     border-radius: 2px;
     color: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+    .custom-time input {
+        width: 120px;
+        padding: 12px;
+        font-size: 18px;
+        border-radius: 8px;
+    }
+    
+    .custom-time span {
+        font-size: 12px !important;
+        text-align: center;
+    }
 }
 
 .checkbox-container {
@@ -164,6 +231,13 @@ html {
     height: 18px;
     margin-right: 10px;
     cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .checkbox-item input {
+        width: 22px;
+        height: 22px;
+    }
 }
 
 .checkbox-item label {
@@ -209,6 +283,8 @@ html {
     .operation-btn {
         padding: 16px 20px;
         font-size: 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
     }
 }
 
@@ -250,6 +326,7 @@ html {
         padding: 12px;
         gap: 8px;
         font-size: 14px;
+        border-radius: 8px;
     }
     
     .stat-item {
@@ -269,7 +346,7 @@ html {
 
 @media (max-width: 768px) {
     .example-area {
-        padding: 30px 15px 20px;
+        padding: 25px 15px 15px;
     }
 }
 
@@ -296,7 +373,7 @@ html {
 
 @media (max-width: 768px) {
     .example-text {
-        font-size: 40px;
+        font-size: 36px;
         margin: 20px 0;
     }
 }
@@ -319,10 +396,10 @@ html {
 @media (max-width: 768px) {
     .answer-input {
         width: 100%;
-        max-width: 250px;
-        padding: 18px;
-        font-size: 36px;
-        border-radius: 2px;
+        max-width: 280px;
+        padding: 20px;
+        font-size: 32px;
+        border-radius: 12px;
     }
 }
 
@@ -331,10 +408,22 @@ html {
     margin: 20px 0;
 }
 
+@media (max-width: 768px) {
+    .progress-section {
+        margin: 15px 0;
+    }
+}
+
 .progress-label {
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 10px;
+}
+
+@media (max-width: 768px) {
+    .progress-label {
+        font-size: 16px;
+    }
 }
 
 .progress-bar {
@@ -345,6 +434,14 @@ html {
     border-radius: 2px;
     margin: 10px auto;
     overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .progress-bar {
+        max-width: 95%;
+        height: 24px;
+        border-radius: 12px;
+    }
 }
 
 .progress-fill {
@@ -363,15 +460,35 @@ html {
     display: inline-block;
 }
 
+@media (max-width: 768px) {
+    .countdown {
+        padding: 15px 35px;
+        border-radius: 12px;
+    }
+}
+
 .countdown-text {
     font-size: 32px;
     font-weight: 600;
     color: #3b82f6;
 }
 
+@media (max-width: 768px) {
+    .countdown-text {
+        font-size: 28px;
+    }
+}
+
 .result-emoji {
     font-size: 48px;
     margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .result-emoji {
+        font-size: 56px;
+        margin-bottom: 20px;
+    }
 }
 
 .result-title {
@@ -380,10 +497,22 @@ html {
     margin-bottom: 10px;
 }
 
+@media (max-width: 768px) {
+    .result-title {
+        font-size: 22px;
+    }
+}
+
 .result-mode {
     font-size: 12px;
     color: #94a3b8;
     margin: 5px 0;
+}
+
+@media (max-width: 768px) {
+    .result-mode {
+        font-size: 13px;
+    }
 }
 
 .result-stats {
@@ -394,6 +523,13 @@ html {
     flex-wrap: wrap;
 }
 
+@media (max-width: 768px) {
+    .result-stats {
+        gap: 15px;
+        margin: 20px 0;
+    }
+}
+
 .result-box {
     background: #334155;
     padding: 20px 40px;
@@ -401,6 +537,15 @@ html {
     border: 1px solid;
     text-align: center;
     min-width: 120px;
+}
+
+@media (max-width: 768px) {
+    .result-box {
+        padding: 20px 30px;
+        border-radius: 12px;
+        min-width: 140px;
+        flex: 1;
+    }
 }
 
 .result-box.correct {
@@ -421,10 +566,22 @@ html {
     margin-bottom: 5px;
 }
 
+@media (max-width: 768px) {
+    .result-icon {
+        font-size: 28px;
+    }
+}
+
 .result-number {
     font-size: 28px;
     font-weight: 600;
     margin: 5px 0;
+}
+
+@media (max-width: 768px) {
+    .result-number {
+        font-size: 32px;
+    }
 }
 
 .result-number.correct {
@@ -440,11 +597,23 @@ html {
     color: #94a3b8;
 }
 
+@media (max-width: 768px) {
+    .result-label {
+        font-size: 11px;
+    }
+}
+
 .success-rate {
     font-size: 16px;
     font-weight: 600;
     color: #3b82f6;
     margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+    .success-rate {
+        font-size: 18px;
+    }
 }
 
 .time-stats {
@@ -454,6 +623,14 @@ html {
     padding: 20px;
     margin: 20px auto;
     max-width: 600px;
+}
+
+@media (max-width: 768px) {
+    .time-stats {
+        border-radius: 12px;
+        padding: 15px;
+        margin: 15px auto;
+    }
 }
 
 .time-stat-row {
@@ -473,10 +650,22 @@ html {
     color: #94a3b8;
 }
 
+@media (max-width: 768px) {
+    .time-stat-label {
+        font-size: 13px;
+    }
+}
+
 .time-stat-value {
     font-size: 18px;
     font-weight: 600;
     color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .time-stat-value {
+        font-size: 17px;
+    }
 }
 
 .leaderboard {
@@ -488,12 +677,25 @@ html {
     max-width: 600px;
 }
 
+@media (max-width: 768px) {
+    .leaderboard {
+        border-radius: 12px;
+        padding: 15px;
+    }
+}
+
 .leaderboard-title {
     text-align: center;
     font-size: 18px;
     font-weight: 600;
     color: #fbbf24;
     margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-title {
+        font-size: 17px;
+    }
 }
 
 .leaderboard-item {
@@ -506,11 +708,25 @@ html {
     border-radius: 2px;
 }
 
+@media (max-width: 768px) {
+    .leaderboard-item {
+        padding: 12px;
+        border-radius: 8px;
+    }
+}
+
 .leaderboard-rank {
     font-size: 18px;
     font-weight: 600;
     color: #fbbf24;
     min-width: 40px;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-rank {
+        font-size: 17px;
+        min-width: 35px;
+    }
 }
 
 .leaderboard-name {
@@ -519,10 +735,23 @@ html {
     font-size: 14px;
 }
 
+@media (max-width: 768px) {
+    .leaderboard-name {
+        padding: 0 10px;
+        font-size: 14px;
+    }
+}
+
 .leaderboard-ops {
     font-size: 12px;
     color: #94a3b8;
     margin-left: 5px;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-ops {
+        font-size: 11px;
+    }
 }
 
 .leaderboard-time {
@@ -531,10 +760,22 @@ html {
     color: #10b981;
 }
 
+@media (max-width: 768px) {
+    .leaderboard-time {
+        font-size: 15px;
+    }
+}
+
 .leaderboard-date {
     font-size: 10px;
     color: #64748b;
     margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-date {
+        display: none;
+    }
 }
 
 .name-input {
@@ -549,6 +790,14 @@ html {
     text-align: center;
     margin: 10px auto;
     display: block;
+}
+
+@media (max-width: 768px) {
+    .name-input {
+        padding: 14px 15px;
+        font-size: 16px;
+        border-radius: 8px;
+    }
 }
 
 .name-input:focus {
@@ -573,10 +822,30 @@ html {
     gap: 15px;
 }
 
+@media (max-width: 768px) {
+    .error-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+        border-radius: 8px;
+        gap: 10px;
+    }
+}
+
 .error-problem {
     font-size: 16px;
     font-weight: 600;
     flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .error-problem {
+        font-size: 18px;
+        width: 100%;
+        text-align: center;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #475569;
+    }
 }
 
 .error-answers {
@@ -584,6 +853,16 @@ html {
     display: flex;
     gap: 12px;
     align-items: center;
+}
+
+@media (max-width: 768px) {
+    .error-answers {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 14px;
+        width: 100%;
+    }
 }
 
 .error-your {
@@ -605,6 +884,13 @@ html {
     margin-bottom: 30px;
     border-bottom: 2px solid #334155;
     padding-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .tab-menu {
+        gap: 5px;
+        margin-bottom: 20px;
+    }
 }
 
 .tab-btn {
@@ -646,13 +932,9 @@ html {
 }
 
 @media (max-width: 768px) {
-    .tab-menu {
-        gap: 5px;
-    }
-    
     .tab-btn {
-        font-size: 14px;
-        padding: 12px 15px;
+        font-size: 13px;
+        padding: 12px 12px;
         flex: 1;
         text-align: center;
     }
