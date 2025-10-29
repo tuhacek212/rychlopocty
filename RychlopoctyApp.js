@@ -53,6 +53,11 @@ export class RychlopoctyApp {
             this.setActiveTab('leaderboard');
             setTimeout(() => this.showLeaderboardScreen(), 100);
         });
+        this.router.addRoute('/timer', () => {
+            this.showMainScreen();
+            this.setActiveTab('timer');
+            setTimeout(() => this.showTimerScreen(), 100);
+        });
         this.router.addRoute('/multiplayer', () => {
             this.showMainScreen();
             this.setActiveTab('multiplayer');
@@ -77,7 +82,7 @@ export class RychlopoctyApp {
         const app = document.getElementById('app');
         const header = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 20px;"><div style="text-align: left;"><div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">⚡ Rychlopočty</div><div style="font-size: 14px; color: #94a3b8;">Trénuj a sdílej své matematické dovednosti</div></div><div id="total-stats" style="text-align: right;"><div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">⏳ Načítání statistik...</div></div></div>';
         
-        const tabs = '<div class="tab-menu"><button class="tab-btn active" data-tab="training" onclick="app.switchTab(\'training\')">🏠 Trénink</button><button class="tab-btn" data-tab="leaderboard" onclick="app.switchTab(\'leaderboard\')">🏆 Žebříčky</button><button class="tab-btn" data-tab="multiplayer" onclick="app.switchTab(\'multiplayer\')">🎮 Multiplayer</button></div>';
+        const tabs = '<div class="tab-menu"><button class="tab-btn active" data-tab="training" onclick="app.switchTab(\'training\')">🏠 Trénink</button><button class="tab-btn" data-tab="timer" onclick="app.switchTab(\'timer\')">⏰ Časovač</button><button class="tab-btn" data-tab="leaderboard" onclick="app.switchTab(\'leaderboard\')">🏆 Žebříčky</button><button class="tab-btn" data-tab="multiplayer" onclick="app.switchTab(\'multiplayer\')">🎮 Multiplayer</button></div>';
         
         const content = '<div id="tab-content" class="tab-content">' + this.getTrainingContent() + '</div>';
         
@@ -89,7 +94,7 @@ export class RychlopoctyApp {
     }
 
     getTrainingContent() {
-        return '<div class="two-column"><div class="card"><div class="section-title">🎯 Vyber obtížnost</div><button class="btn btn-green" onclick="app.startTest(\'Lehká\', 30)">Lehká</button><div class="time-desc">30 sekund</div><button class="btn btn-yellow" onclick="app.startTest(\'Střední\', 22)">Střední</button><div class="time-desc">22 sekund</div><button class="btn btn-orange" onclick="app.startTest(\'Obtížná\', 15)">Obtížná</button><div class="time-desc">15 sekund</div><button class="btn btn-red" onclick="app.startTest(\'Expert\', 10)">Expert</button><div class="time-desc">10 sekund</div><div class="section-title" style="margin-top: 20px;">⏱️ Vlastní čas</div><div class="custom-time"><input type="number" id="customTime" placeholder="0" min="0" value="0"><span style="color: #94a3b8; font-size: 10px;">sekund (0 = nekonečný trénink)</span></div><button class="btn btn-purple" onclick="app.startCustomTime()">🚀 Start na čas</button></div><div class="card" style="display: flex; flex-direction: column;"><div class="section-title">🔢 Vyber operace</div><div class="operations-grid"><button class="operation-btn ' + (this.savedMultiply ? 'active' : '') + '" id="op-multiply" onclick="app.toggleOperation(\'multiply\')">✖️ Násobení</button><br><button class="operation-btn ' + (this.savedAdd ? 'active' : '') + '" id="op-add" onclick="app.toggleOperation(\'add\')">➕ Sčítání</button><br><button class="operation-btn ' + (this.savedSubtract ? 'active' : '') + '" id="op-subtract" onclick="app.toggleOperation(\'subtract\')">➖ Odčítání</button><br><button class="operation-btn ' + (this.savedDivide ? 'active' : '') + '" id="op-divide" onclick="app.toggleOperation(\'divide\')">➗ Dělení</button></div></div></div>';
+        return '<div style="background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;"><div style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">📝 <strong style="color: #f1f5f9;">Jak to funguje:</strong> Vyber si obtížnost a operace, které chceš trénovat. Tvým úkolem je správně vyřešit 10 příkladů za daný čas. Čím rychleji odpovídáš, tím lepší je tvůj výsledek!</div></div><div class="two-column"><div class="card"><div class="section-title">🎯 Vyber obtížnost</div><button class="btn btn-green" onclick="app.startTest(\'Lehká\', 30)">Lehká</button><div class="time-desc">30 sekund</div><button class="btn btn-yellow" onclick="app.startTest(\'Střední\', 22)">Střední</button><div class="time-desc">22 sekund</div><button class="btn btn-orange" onclick="app.startTest(\'Obtížná\', 15)">Obtížná</button><div class="time-desc">15 sekund</div><button class="btn btn-red" onclick="app.startTest(\'Expert\', 10)">Expert</button><div class="time-desc">10 sekund</div></div><div class="card" style="display: flex; flex-direction: column;"><div class="section-title">🔢 Vyber operace</div><div class="operations-grid"><button class="operation-btn ' + (this.savedMultiply ? 'active' : '') + '" id="op-multiply" onclick="app.toggleOperation(\'multiply\')">✖️ Násobení</button><br><button class="operation-btn ' + (this.savedAdd ? 'active' : '') + '" id="op-add" onclick="app.toggleOperation(\'add\')">➕ Sčítání</button><br><button class="operation-btn ' + (this.savedSubtract ? 'active' : '') + '" id="op-subtract" onclick="app.toggleOperation(\'subtract\')">➖ Odčítání</button><br><button class="operation-btn ' + (this.savedDivide ? 'active' : '') + '" id="op-divide" onclick="app.toggleOperation(\'divide\')">➗ Dělení</button></div></div></div>';
     }
 
     switchTab(tabName) {
@@ -100,6 +105,7 @@ export class RychlopoctyApp {
 
         const routes = {
             'training': '/',
+            'timer': '/timer',
             'leaderboard': '/leaderboard',
             'multiplayer': '/multiplayer'
         };
@@ -135,11 +141,81 @@ export class RychlopoctyApp {
         }, 200);
     }
 
+    showTimerScreen() {
+        const tabContent = document.getElementById('tab-content');
+        if (!tabContent) {
+            this.showMainScreen();
+            setTimeout(() => this.showTimerScreen(), 100);
+            return;
+        }
+        this.renderTimerContent();
+    }
+
+    renderTimerContent() {
+        const tabContent = document.getElementById('tab-content');
+        if (!tabContent) return;
+
+        tabContent.innerHTML = `
+            <div style="background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #8b5cf6;">
+                <div style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">
+                    ⏰ <strong style="color: #f1f5f9;">Časovač:</strong> Nastav si čas a zkus vyřešit co nejvíce příkladů, než vyprší čas. Minutník odpočítává vteřiny a na konci ti ukáže, kolik příkladů jsi stihl!
+                </div>
+            </div>
+            <div class="two-column">
+                <div class="card">
+                    <div class="section-title">⏱️ Nastav čas</div>
+                    <div style="margin: 20px 0;">
+                        <label style="display: block; font-size: 14px; color: #94a3b8; margin-bottom: 8px;">Minuty:</label>
+                        <input type="number" id="timer-minutes" placeholder="0" min="0" max="60" value="2" 
+                               style="width: 100%; padding: 15px; font-size: 24px; background: #1e293b; color: #f1f5f9; border: 2px solid #334155; border-radius: 4px; text-align: center;">
+                    </div>
+                    <div style="margin: 20px 0;">
+                        <label style="display: block; font-size: 14px; color: #94a3b8; margin-bottom: 8px;">Vteřiny:</label>
+                        <input type="number" id="timer-seconds" placeholder="0" min="0" max="59" value="0"
+                               style="width: 100%; padding: 15px; font-size: 24px; background: #1e293b; color: #f1f5f9; border: 2px solid #334155; border-radius: 4px; text-align: center;">
+                    </div>
+                    <button class="btn btn-purple" onclick="app.startTimerTest()" style="width: 100%; padding: 15px; font-size: 18px; margin-top: 10px;">
+                        🚀 Spustit časovač
+                    </button>
+                </div>
+                <div class="card" style="display: flex; flex-direction: column;">
+                    <div class="section-title">🔢 Vyber operace</div>
+                    <div class="operations-grid">
+                        <button class="operation-btn ${this.savedMultiply ? 'active' : ''}" id="timer-op-multiply" onclick="app.toggleTimerOperation('multiply')">✖️ Násobení</button><br>
+                        <button class="operation-btn ${this.savedAdd ? 'active' : ''}" id="timer-op-add" onclick="app.toggleTimerOperation('add')">➕ Sčítání</button><br>
+                        <button class="operation-btn ${this.savedSubtract ? 'active' : ''}" id="timer-op-subtract" onclick="app.toggleTimerOperation('subtract')">➖ Odčítání</button><br>
+                        <button class="operation-btn ${this.savedDivide ? 'active' : ''}" id="timer-op-divide" onclick="app.toggleTimerOperation('divide')">➗ Dělení</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     renderMultiplayerContent() {
         const tabContent = document.getElementById('tab-content');
         if (!tabContent) return;
 
-        tabContent.innerHTML = '<div class="two-column" style="margin-top: 20px;"><div class="card"><div class="section-title">✏️ Zadej jméno</div><div style="margin: 20px 0;"><input type="text" id="mp-name" class="name-input" placeholder="Tvoje jméno" value="' + this.userName + '" style="font-size: 18px; padding: 15px;"></div><button class="btn btn-green" id="create-game-btn" style="width: 100%; padding: 15px; font-size: 18px; position: relative;" onclick="app.createMultiplayerGame()">🚀 Vytvořit místnost</button><label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px 15px; margin-top: 10px; background: #1e293b; border-radius: 4px; justify-content: center;"><input type="checkbox" id="private-game" style="width: 18px; height: 18px; cursor: pointer;"><span style="font-size: 14px; color: #94a3b8;">🔒 Pouze s kódem (soukromá)</span></label></div><div class="card"><div class="section-title">🌐 Všechny hry</div><div id="public-games-list" style="min-height: 150px; margin-bottom: 20px;"><div style="text-align: center; color: #94a3b8; padding: 40px 20px;">⏳ Načítání her...</div></div><div style="border-top: 1px solid #334155; padding-top: 20px;"><div style="font-size: 14px; color: #94a3b8; margin-bottom: 10px; text-align: center;">Zadej kód hry:</div><input type="text" id="game-code" class="name-input" placeholder="např. 42" maxlength="2" style="font-size: 32px; padding: 15px; text-align: center; letter-spacing: 8px;" oninput="app.handleGameCodeInput(this)"></div></div></div>';
+        tabContent.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <label style="font-size: 16px; color: #cbd5e1; font-weight: 500; white-space: nowrap;">Tvoje jméno:</label>
+                <input type="text" id="mp-name" class="name-input" placeholder="Zadej jméno" value="${this.userName}" maxlength="20"
+                       style="width: 300px; padding: 12px 15px; font-size: 16px; background: #1e293b; color: #f1f5f9; border: 2px solid #334155; border-radius: 4px;">
+                <button class="btn btn-green" style="padding: 12px 20px; font-size: 16px; white-space: nowrap; display: flex; align-items: center; justify-content: space-between; gap: 15px; min-width: 250px; margin: 0; line-height: 1;" onclick="app.createMultiplayerGame()">
+                    <span style="margin: 0;">🚀 Vytvořit místnost</span>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0;" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="private-game" style="width: 18px; height: 18px; cursor: pointer; margin: 0; vertical-align: middle;" onclick="event.stopPropagation();">
+                        <span style="font-size: 16px; margin: 0; vertical-align: middle;">🔒</span>
+                    </label>
+                </button>
+            </div>
+
+            <div class="card" style="margin-top: 0;">
+                <div class="section-title">🌐 Aktivní místnosti</div>
+                <div id="public-games-list" style="min-height: 150px;">
+                    <div style="text-align: center; color: #94a3b8; padding: 40px 20px;">⏳ Načítání místností...</div>
+                </div>
+            </div>
+        `;
 
         // Focus na jméno po krátké prodlevě (aby DOM byl ready)
         setTimeout(() => {
@@ -164,7 +240,7 @@ export class RychlopoctyApp {
         if (!container) return;
 
         if (games.length === 0) {
-            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px 20px;">😔 Žádné hry<br><span style="font-size: 12px;">Založte novou hru</span></div>';
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px 20px;">😔 Žádné aktivní místnosti<br><span style="font-size: 12px;">Buď první a vytvoř novou!</span></div>';
             return;
         }
 
@@ -174,14 +250,91 @@ export class RychlopoctyApp {
             const opsDisplay = game.operations.map(op => opIcons[op] || op).join(' ');
             const timeAgo = this.getTimeAgo(game.createdAt);
             const isPrivate = game.isPrivate || false;
+            const isPlaying = game.status === 'playing';
+            const isFull = game.playerCount >= 2;
             
-            // Soukromé hry jsou neklikatelné a mají zámek
-            if (isPrivate) {
-                return '<div style="background: #1e293b; padding: 15px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #334155; opacity: 0.7;"><div style="display: flex; justify-content: space-between; align-items: center;"><div style="text-align: left; flex: 1;"><div style="font-size: 18px; font-weight: bold; color: #94a3b8; margin-bottom: 3px;">🔒 ' + game.hostName + '</div><div style="font-size: 13px; color: #64748b;">' + opsDisplay + ' • ' + timeAgo + '</div></div><div style="display: flex; align-items: center; gap: 10px;"><div style="font-size: 14px; color: #64748b;">Zadej kód</div></div></div></div>';
+            let statusIcon = '';
+            let statusText = '';
+            let statusColor = '';
+            let borderColor = '#334155';
+            let clickable = false;
+            let opacity = '1';
+            
+            if (isPlaying) {
+                statusIcon = '🎮';
+                statusText = 'Probíhá';
+                statusColor = '#8b5cf6';
+                opacity = '0.7';
+            } else if (isPrivate) {
+                statusIcon = '🔒';
+                statusText = 'Soukromá';
+                statusColor = '#f59e0b';
+                clickable = false;
+            } else if (isFull) {
+                statusIcon = '⏳';
+                statusText = 'Čeká';
+                statusColor = '#3b82f6';
+                opacity = '0.8';
+            } else {
+                statusIcon = '✅';
+                statusText = 'Volná';
+                statusColor = '#10b981';
+                borderColor = '#10b981';
+                clickable = true;
             }
             
-            // Veřejné hry jsou klikatelné
-            return '<div style="background: #1e293b; padding: 15px; border-radius: 4px; margin-bottom: 10px; cursor: pointer; transition: background 0.2s; border: 1px solid #334155;" onmouseover="this.style.background=\'#334155\'; this.style.borderColor=\'#3b82f6\'" onmouseout="this.style.background=\'#1e293b\'; this.style.borderColor=\'#334155\'" onclick="app.joinPublicGame(\'' + game.gameCode + '\')"><div style="display: flex; justify-content: space-between; align-items: center;"><div style="text-align: left; flex: 1;"><div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 3px;">👤 ' + game.hostName + '</div><div style="font-size: 13px; color: #94a3b8;">' + opsDisplay + ' • ' + timeAgo + '</div></div><div style="display: flex; align-items: center; gap: 10px;"><div style="font-size: 16px; color: #64748b; font-family: monospace;">#' + game.gameCode + '</div><div style="font-size: 24px; color: #3b82f6;">▶️</div></div></div></div>';
+            const cursorStyle = clickable ? 'cursor: pointer;' : 'cursor: default;';
+            const hoverEvents = clickable ? 
+                `onmouseover="this.style.background='#334155'; this.style.borderColor='#3b82f6'" onmouseout="this.style.background='#1e293b'; this.style.borderColor='${borderColor}'"` : 
+                '';
+            const clickEvent = clickable ? `onclick="app.joinPublicGame('${game.gameCode}')"` : '';
+            
+            // Pro soukromé hry zobrazíme input pro kód
+            let actionSection = '';
+            let codeDisplay = '';
+            
+            if (isPrivate) {
+                // U soukromých her NESKRÝVÁME kód - je to heslo!
+                codeDisplay = '';
+                actionSection = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="text" id="code-input-${game.gameCode}" placeholder="Kód" maxlength="2"
+                               style="width: 60px; padding: 10px 8px; font-size: 14px; background: #0f172a; color: #f1f5f9; border: 2px solid #334155; border-radius: 4px; text-align: center; box-sizing: border-box; margin: 0; vertical-align: middle;"
+                               onclick="event.stopPropagation();">
+                        <button class="btn btn-blue" style="padding: 10px 16px; font-size: 14px; line-height: 1; margin: 0; vertical-align: middle;" onclick="event.stopPropagation(); app.joinPrivateGameWithCode('${game.gameCode}')">
+                            🔑 Připojit
+                        </button>
+                    </div>
+                `;
+            } else {
+                codeDisplay = `<div style="font-size: 18px; color: #94a3b8; font-family: monospace; font-weight: bold;">#${game.gameCode}</div>`;
+                if (clickable) {
+                    actionSection = '<div style="font-size: 24px; color: #10b981;">▶️</div>';
+                }
+            }
+            
+            return `
+                <div style="background: #1e293b; padding: 12px 20px; border-radius: 4px; margin-bottom: 8px; border: 2px solid ${borderColor}; opacity: ${opacity}; transition: all 0.2s; ${cursorStyle}; display: flex; justify-content: space-between; align-items: center;" ${hoverEvents} ${clickEvent}>
+                    <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                        <div style="font-size: 16px; font-weight: bold; color: #f1f5f9; min-width: 120px;">
+                            👤 ${game.hostName}
+                        </div>
+                        <div style="font-size: 14px; color: #94a3b8;">
+                            ${opsDisplay}
+                        </div>
+                        <div style="font-size: 12px; color: ${statusColor}; font-weight: 600;">
+                            ${statusIcon} ${statusText}
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">
+                            ${timeAgo}
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        ${codeDisplay}
+                        ${actionSection}
+                    </div>
+                </div>
+            `;
         }).join('');
 
         container.innerHTML = gamesListHTML;
@@ -314,7 +467,74 @@ showCreatedGameInList(gameCode) {
 
         if (!playerName) {
             alert('Nejdřív zadej své jméno nahoře!');
-            if (nameInput) nameInput.focus();
+            if (nameInput) {
+                nameInput.focus();
+                nameInput.style.borderColor = '#ef4444';
+                setTimeout(() => nameInput.style.borderColor = '#334155', 1000);
+            }
+            return;
+        }
+
+        this.userName = playerName;
+        localStorage.setItem('rychlopocty_username', playerName);
+
+        const tabContent = document.getElementById('tab-content');
+        if (tabContent) {
+            tabContent.innerHTML = '<div class="card" style="text-align: center; padding: 40px;"><div style="font-size: 24px; margin-bottom: 20px;">⏳ Připojování ke hře...</div></div>';
+        }
+
+        try {
+            await this.multiplayerManager.joinGame(gameCode, playerName);
+        } catch (error) {
+            alert('Nepodařilo se připojit ke hře. Zkus to znovu.');
+            this.router.navigate('/multiplayer');
+        }
+    }
+
+    async joinPrivateGameWithCode(gameCode) {
+        const nameInput = document.getElementById('mp-name');
+        const codeInput = document.getElementById(`code-input-${gameCode}`);
+        const playerName = nameInput ? nameInput.value.trim() : '';
+        const enteredCode = codeInput ? codeInput.value.trim() : '';
+
+        if (!playerName) {
+            alert('Nejdřív zadej své jméno nahoře!');
+            if (nameInput) {
+                nameInput.focus();
+                nameInput.style.borderColor = '#ef4444';
+                setTimeout(() => nameInput.style.borderColor = '#334155', 1000);
+            }
+            return;
+        }
+
+        if (!enteredCode) {
+            alert('Zadej kód hry!');
+            if (codeInput) {
+                codeInput.focus();
+                codeInput.style.borderColor = '#ef4444';
+                setTimeout(() => codeInput.style.borderColor = '#334155', 1000);
+            }
+            return;
+        }
+
+        if (!/^\d{2}$/.test(enteredCode)) {
+            alert('Kód musí být 2místné číslo!');
+            if (codeInput) {
+                codeInput.focus();
+                codeInput.style.borderColor = '#ef4444';
+                setTimeout(() => codeInput.style.borderColor = '#334155', 1000);
+            }
+            return;
+        }
+
+        if (enteredCode !== gameCode) {
+            alert('Nesprávný kód!');
+            if (codeInput) {
+                codeInput.value = '';
+                codeInput.focus();
+                codeInput.style.borderColor = '#ef4444';
+                setTimeout(() => codeInput.style.borderColor = '#334155', 1000);
+            }
             return;
         }
 
@@ -373,19 +593,60 @@ showCreatedGameInList(gameCode) {
         }
     }
 
-    startCustomTime() {
-        const input = document.getElementById('customTime');
-        const time = parseInt(input.value);
-        if (!isNaN(time) && time >= 0) {
-            if (time === 0) {
-                this.startTest('∞ Trénink', 0);
-            } else {
-                this.startTest('⏱️ Na čas', time);
-            }
-        } else {
-            input.style.background = '#ef4444';
-            setTimeout(() => input.style.background = '#334155', 1000);
+    toggleTimerOperation(operation) {
+        const btn = document.getElementById('timer-op-' + operation);
+        
+        switch(operation) {
+            case 'multiply':
+                this.savedMultiply = !this.savedMultiply;
+                break;
+            case 'add':
+                this.savedAdd = !this.savedAdd;
+                break;
+            case 'subtract':
+                this.savedSubtract = !this.savedSubtract;
+                break;
+            case 'divide':
+                this.savedDivide = !this.savedDivide;
+                break;
         }
+        
+        if (btn) {
+            btn.classList.toggle('active');
+        }
+    }
+
+    startTimerTest() {
+        const minutesInput = document.getElementById('timer-minutes');
+        const secondsInput = document.getElementById('timer-seconds');
+        
+        const minutes = parseInt(minutesInput.value) || 0;
+        const seconds = parseInt(secondsInput.value) || 0;
+        const totalSeconds = (minutes * 60) + seconds;
+        
+        if (totalSeconds <= 0) {
+            minutesInput.style.borderColor = '#ef4444';
+            secondsInput.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                minutesInput.style.borderColor = '#334155';
+                secondsInput.style.borderColor = '#334155';
+            }, 1000);
+            return;
+        }
+        
+        // Uložíme stav operací
+        const opMultiply = document.getElementById('timer-op-multiply');
+        const opAdd = document.getElementById('timer-op-add');
+        const opSubtract = document.getElementById('timer-op-subtract');
+        const opDivide = document.getElementById('timer-op-divide');
+        
+        this.savedMultiply = opMultiply ? opMultiply.classList.contains('active') : true;
+        this.savedAdd = opAdd ? opAdd.classList.contains('active') : false;
+        this.savedSubtract = opSubtract ? opSubtract.classList.contains('active') : false;
+        this.savedDivide = opDivide ? opDivide.classList.contains('active') : false;
+        
+        // Startujeme test v režimu časovač
+        this.startTest('⏰ Časovač', totalSeconds);
     }
 
     startTest(mode, limit) {
@@ -462,6 +723,15 @@ showCreatedGameInList(gameCode) {
                 const avgTime = (totalTime / this.correctCount).toFixed(2);
                 timeStatsHTML = '<div class="time-stats"><div class="time-stat-row"><span class="time-stat-label">⏱️ Průměrný čas na příklad</span><span class="time-stat-value">' + avgTime + 's</span></div></div>';
             }
+            motivationalText = getMotivationalMessage('general', true);
+        } else if (this.mode === '⏰ Časovač') {
+            const totalTime = ((this.testEndTime - this.testStartTime) / 1000).toFixed(2);
+            let avgTime = '';
+            if (this.correctCount > 0) {
+                const avg = (totalTime / this.correctCount).toFixed(2);
+                avgTime = '<div class="time-stat-row"><span class="time-stat-label">⏱️ Průměrný čas na příklad</span><span class="time-stat-value">' + avg + 's</span></div>';
+            }
+            timeStatsHTML = '<div class="time-stats"><div class="time-stat-row"><span class="time-stat-label">⏱️ Celkový čas</span><span class="time-stat-value">' + totalTime + 's</span></div>' + avgTime + '</div>';
             motivationalText = getMotivationalMessage('general', true);
         } else if (this.mode === '∞ Trénink') {
             const totalTime = ((this.testEndTime - this.testStartTime) / 1000).toFixed(2);

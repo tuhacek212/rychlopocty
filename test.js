@@ -46,18 +46,13 @@ export class TestManager {
                 <div id="motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
             </div>
 
-            ${mode === '⏱️ Na čas' ? `
+            ${mode === '⏱️ Na čas' || mode === '⏰ Časovač' ? `
                 <div style="text-align: center;">
                     <div class="countdown">
                         <div class="countdown-text" id="countdown">⏱️ ${limit}s</div>
                     </div>
                 </div>
-            ` : `
-                <div style="text-align: center; margin: 20px 0;">
-                    <div class="countdown">
-                        <div class="countdown-text" id="elapsed-timer" style="color: #3b82f6;">⏱️ 0.0s</div>
-                    </div>
-                </div>
+            ` : mode === '∞ Trénink' ? `` : `
                 <div class="progress-section">
                     <div class="progress-label" id="progress-label">0/10</div>
                     <div class="progress-bar">
@@ -74,12 +69,11 @@ export class TestManager {
         document.getElementById('answer').focus();
         document.getElementById('answer').addEventListener('input', (e) => this.checkAnswer(e));
 
-        if (mode === '⏱️ Na čas') {
+        if (mode === '⏱️ Na čas' || mode === '⏰ Časovač') {
             this.app.remainingTime = limit;
             this.app.countdownInterval = setInterval(() => this.updateCountdown(), 1000);
         } else {
             this.app.progressInterval = setInterval(() => this.updateProgress(), 100);
-            this.app.timerInterval = setInterval(() => this.updateElapsedTimer(), 100);
         }
 
         this.scheduleNextMotivation();
@@ -405,28 +399,8 @@ export class TestManager {
         else fill.style.background = '#3b82f6';
     }
 
-    updateElapsedTimer() {
-        if (!this.app.running || this.app.mode === '⏱️ Na čas') return;
-        
-        const elapsed = (Date.now() - this.app.testStartTime) / 1000;
-        const timer = document.getElementById('elapsed-timer');
-        if (timer) {
-            timer.textContent = `⏱️ ${elapsed.toFixed(1)}s`;
-            
-            if (this.app.mode === '∞ Trénink') {
-                timer.style.color = '#8b5cf6';
-            } else if (elapsed > this.app.limit * 1.5) {
-                timer.style.color = '#ef4444';
-            } else if (elapsed > this.app.limit) {
-                timer.style.color = '#f59e0b';
-            } else {
-                timer.style.color = '#3b82f6';
-            }
-        }
-    }
-
     updateCountdown() {
-        if (!this.app.running || this.app.mode !== '⏱️ Na čas') return;
+        if (!this.app.running || (this.app.mode !== '⏱️ Na čas' && this.app.mode !== '⏰ Časovač')) return;
 
         this.app.remainingTime--;
         const countdown = document.getElementById('countdown');
