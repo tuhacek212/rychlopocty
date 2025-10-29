@@ -690,6 +690,7 @@ showCreatedGameInList(gameCode) {
         if (this.testManager) {
             this.testManager.clearMotivationTimers();
         }
+        updateFirebaseStats(this.correctCount, this.wrongCount)
         this.router.navigate('/');
     }
 
