@@ -22,6 +22,8 @@ export class MultiplayerManager {
         this.myPlayerId = null;
         this.opponentPlayerId = null;
         this.publicGamesListener = null;
+        this.myCorrectCount = 0;
+        this.myWrongCount = 0;
     }
 
     generateShortId() {
@@ -231,6 +233,8 @@ export class MultiplayerManager {
         this.gameActive = true;
         this.myScore = 0;
         this.opponentScore = 0;
+        this.myCorrectCount = 0;
+        this.myWrongCount = 0;
         this.lastGuestAnswer = null;
         this.lastHostAnswer = null;
 
@@ -401,13 +405,18 @@ export class MultiplayerManager {
         if (this.motivationInterval) {
             clearInterval(this.motivationInterval);
         }
+        console.log('EndGame voláno');
+        console.log('Správných odpovědí:', this.myCorrectCount);
+        console.log('Špatných odpovědí:', this.myWrongCount);
+
         this.gameActive = false;
 
-        if (typeof updateFirebaseStats === 'function') {
-            updateFirebaseStats(this.myScore, 0).catch(err => {
-                console.error('Chyba při ukládání statistik:', err);
-            });
-        }
+    if (typeof updateFirebaseStats === 'function') {
+        console.log('Ukládám statistiky v endGame...', this.myCorrectCount, this.myWrongCount);
+        updateFirebaseStats(this.myCorrectCount, this.myWrongCount).catch(err => {
+            console.error('Chyba při ukládání statistik:', err);
+        });
+    }
         
         const iWon = winner === this.myPlayerId;
         
@@ -523,107 +532,133 @@ export class MultiplayerManager {
         });
     }
 
-    async handleAnswerInput(e) {
-        if (!this.gameActive || !this.currentQuestion) {
-            return;
-        }
-        
-        const text = e.target.value;
-        
-        if (!/^\d+$/.test(text) && text !== '') {
-            return;
-        }
-        
-        if (text === '') return;
+async handleAnswerInput(e) {
+    if (!this.gameActive || !this.currentQuestion) {
+        return;
+    }
+    
+    const text = e.target.value;
+    
+    if (!/^\d+$/.test(text) && text !== '') {
+        return;
+    }
+    
+    if (text === '') return;
 
-        const {a, b, op} = this.currentQuestion;
-        let correct;
-        
-        if (op === '*') correct = a * b;
-        else if (op === '+') correct = a + b;
-        else if (op === '-') correct = a - b;
-        else if (op === '/') correct = Math.floor(a / b);
+    const {a, b, op} = this.currentQuestion;
+    let correct;
+    
+    if (op === '*') correct = a * b;
+    else if (op === '+') correct = a + b;
+    else if (op === '-') correct = a - b;
+    else if (op === '/') correct = Math.floor(a / b);
 
-        if (text.length >= correct.toString().length) {
-            const userAnswer = parseInt(text);
+    if (text.length >= correct.toString().length) {
+        const userAnswer = parseInt(text);
+        
+        if (userAnswer === correct) {
+            const responseTime = Date.now() - this.questionStartTime;
             
-            if (userAnswer === correct) {
-                const responseTime = Date.now() - this.questionStartTime;
-                
-                e.target.style.background = '#10b981';
-                e.target.disabled = true;
-                
-                this.myScore++;
-                
-                const updateData = {};
-                if (this.isHost) {
-                    updateData.hostScore = this.myScore;
-                    updateData.hostAnswer = {
-                        correct: true,
-                        time: responseTime,
-                        timestamp: Date.now()
-                    };
-                } else {
-                    updateData.guestScore = this.myScore;
-                    updateData.guestAnswer = {
-                        correct: true,
-                        time: responseTime,
-                        timestamp: Date.now()
-                    };
-                }
-                
-                await update(this.gameRef, updateData);
-                
-                this.updateScoreDisplay();
-                this.checkWinCondition();
-                
-                if (this.isHost) {
-                    setTimeout(() => {
-                        this.generateNewQuestion();
-                    }, 1500);
-                }
+            e.target.style.background = '#10b981';
+            e.target.disabled = true;
+            
+            this.myScore++;
+            this.myCorrectCount++;
+            
+            // DEBUG
+            console.log('Správná odpověď! myCorrectCount:', this.myCorrectCount);
+            
+            const updateData = {};
+            if (this.isHost) {
+                updateData.hostScore = this.myScore;
+                updateData.hostAnswer = {
+                    correct: true,
+                    time: responseTime,
+                    timestamp: Date.now()
+                };
             } else {
-                e.target.style.background = '#ef4444';
+                updateData.guestScore = this.myScore;
+                updateData.guestAnswer = {
+                    correct: true,
+                    time: responseTime,
+                    timestamp: Date.now()
+                };
+            }
+            
+            await update(this.gameRef, updateData);
+            
+            this.updateScoreDisplay();
+            this.checkWinCondition();
+            
+            if (this.isHost) {
                 setTimeout(() => {
-                    e.target.value = '';
-                    e.target.style.background = '#334155';
-                    e.target.focus();
-                }, 800);
+                    this.generateNewQuestion();
+                }, 1500);
             }
+        } else {
+            e.target.style.background = '#ef4444';
+            this.myWrongCount++;
+            
+            // DEBUG
+            console.log('Špatná odpověď! myWrongCount:', this.myWrongCount);
+            
+            setTimeout(() => {
+                e.target.value = '';
+                e.target.style.background = '#334155';
+                e.target.focus();
+            }, 800);
         }
     }
+}
 
-    async disconnect() {
-        if (this.motivationInterval) {
-            clearInterval(this.motivationInterval);
-        }
-        this.gameActive = false;
-        
-        this.stopPublicGamesListener();
-        
-        this.listeners.forEach(unsubscribe => {
-            if (typeof unsubscribe === 'function') {
-                unsubscribe();
-            }
-        });
-        this.listeners = [];
-        
-        if (this.gameRef) {
-            try {
-                if (this.isHost) {
-                    await remove(this.gameRef);
-                } else {
-                    await update(this.gameRef, {
-                        guestConnected: false
-                    });
-                }
-            } catch (err) {
-                console.error('Error disconnecting:', err);
-            }
-        }
-        
-        this.app.router.navigate('/');
+// Upravte metodu disconnect
+async disconnect() {
+    if (this.motivationInterval) {
+        clearInterval(this.motivationInterval);
     }
+    
+    // DEBUG
+    console.log('Disconnect voláno. gameActive:', this.gameActive);
+    console.log('Správných odpovědí:', this.myCorrectCount);
+    console.log('Špatných odpovědí:', this.myWrongCount);
+    
+    // Uložit statistiky při odpojení (pokud byla hra aktivní)
+    if (this.gameActive && typeof updateFirebaseStats === 'function') {
+        console.log('Ukládám statistiky...', this.myCorrectCount, this.myWrongCount);
+        updateFirebaseStats(this.myCorrectCount, this.myWrongCount).catch(err => {
+            console.error('Chyba při ukládání statistik při odpojení:', err);
+        });
+    } else {
+        console.log('Statistiky se NEUKLÁDAJÍ - gameActive:', this.gameActive, 'updateFirebaseStats exists:', typeof updateFirebaseStats);
+    }
+    
+    this.gameActive = false;
+    
+    this.stopPublicGamesListener();
+    
+    this.listeners.forEach(unsubscribe => {
+        if (typeof unsubscribe === 'function') {
+            unsubscribe();
+        }
+    });
+    this.listeners = [];
+    
+    if (this.gameRef) {
+        try {
+            if (this.isHost) {
+                await remove(this.gameRef);
+            } else {
+                await update(this.gameRef, {
+                    guestConnected: false
+                });
+            }
+        } catch (err) {
+            console.error('Error disconnecting:', err);
+        }
+    }
+    
+    this.app.router.navigate('/');
+}
     
     startMotivationMessages() {
         import('./messages.js').then(module => {
@@ -742,6 +777,8 @@ export class MultiplayerManager {
         this.opponentRematchRequested = false;
         this.myScore = 0;
         this.opponentScore = 0;
+        this.myCorrectCount = 0;
+        this.myWrongCount = 0;
         this.currentQuestion = null;
         this.questionStartTime = null;
         

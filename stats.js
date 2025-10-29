@@ -78,4 +78,5 @@ export async function updateFirebaseStats(correctCount, wrongCount) {
     } catch (error) {
         console.error('Chyba při aktualizaci stats:', error);
     }
+    window.testStats = updateFirebaseStats;
 }
