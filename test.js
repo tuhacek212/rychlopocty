@@ -1,4 +1,56 @@
-import { getDuringTestMessage } from './messages.js';
+import { getDuringTestMessage, getDynamicDuringTestMessage } from './messages.js';
+
+// ========= MOBILNÍ VYLEPŠENÍ - ZAČÁTEK =========
+// Pomocné funkce pro mobilní numerickou klávesnici
+window.mobileAddNumber = function(num) {
+    const input = document.getElementById('answer');
+    if (input) {
+        input.value += num;
+        const event = new Event('input', { bubbles: true });
+        input.dispatchEvent(event);
+    }
+};
+
+window.mobileBackspace = function() {
+    const input = document.getElementById('answer');
+    if (input) {
+        input.value = input.value.slice(0, -1);
+        const event = new Event('input', { bubbles: true });
+        input.dispatchEvent(event);
+    }
+};
+
+// Detekce mobilního zařízení
+window.isMobileDevice = function() {
+    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Zobrazení/skrytí mobilní klávesnice
+window.showMobileNumpad = function() {
+    const numpad = document.getElementById('mobile-numpad');
+    const input = document.getElementById('answer');
+    if (numpad && window.isMobileDevice()) {
+        numpad.style.display = 'grid';
+        // Zabráníme zobrazení systémové klávesnice
+        if (input) {
+            input.readOnly = true;
+            input.inputMode = 'none';
+        }
+    }
+};
+
+window.hideMobileNumpad = function() {
+    const numpad = document.getElementById('mobile-numpad');
+    const input = document.getElementById('answer');
+    if (numpad) {
+        numpad.style.display = 'none';
+    }
+    if (input) {
+        input.readOnly = false;
+        input.inputMode = 'numeric';
+    }
+};
+// ========= MOBILNÍ VYLEPŠENÍ - KONEC =========
 
 export class TestManager {
     constructor(app) {
@@ -61,10 +113,32 @@ export class TestManager {
                 </div>
             `}
 
+            <!-- MOBILNÍ NUMERICKÁ KLÁVESNICE -->
+            <div class="mobile-numpad" id="mobile-numpad" style="display: none;">
+                <button onclick="mobileAddNumber('1')">1</button>
+                <button onclick="mobileAddNumber('2')">2</button>
+                <button onclick="mobileAddNumber('3')">3</button>
+                <button onclick="mobileAddNumber('4')">4</button>
+                <button onclick="mobileAddNumber('5')">5</button>
+                <button onclick="mobileAddNumber('6')">6</button>
+                <button onclick="mobileAddNumber('7')">7</button>
+                <button onclick="mobileAddNumber('8')">8</button>
+                <button onclick="mobileAddNumber('9')">9</button>
+                <button onclick="mobileAddNumber('0')" class="num-0">0</button>
+                <button onclick="mobileBackspace()" class="backspace">⌫</button>
+            </div>
+
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-red" style="width: auto; padding: 12px 30px;" onclick="app.endTest()">🛑 Ukončit test</button>
             </div>
         `;
+
+        // MOBILNÍ VYLEPŠENÍ - zobrazíme numpad na mobilu
+        if (window.isMobileDevice()) {
+            setTimeout(() => {
+                window.showMobileNumpad();
+            }, 100);
+        }
 
         document.getElementById('answer').focus();
         document.getElementById('answer').addEventListener('input', (e) => this.checkAnswer(e));
@@ -231,91 +305,15 @@ export class TestManager {
     }
 
     getDynamicMotivationMessage() {
-        const { trend, remaining, avgTime } = this.getPerformanceStatus();
+        const performance = this.getPerformanceStatus();
 
         // Pokud je to neomezený trénink nebo na čas, použij původní náhodné věty
         if (this.app.mode === '⏱️ Na čas' || this.app.mode === '∞ Trénink') {
             return getDuringTestMessage();
         }
 
-        // Zbývá málo příkladů (1-3) - povzbuzující věty
-        if (remaining <= 3 && remaining > 0) {
-            const encouragingMessages = [
-                "Už jen kousek! Dokážeš to!",
-                "Skoro tam jsi! Ještě chvilku!",
-                "Pár příkladů a máš to!",
-                "Finiš! Ještě trochu vydržet!",
-                "Už to vidím! Dotáhni to!",
-                "Skoro hotovo! Nepouštěj to!",
-                "Ještě kousek! Makej!",
-                "Už to máš skoro v kapse!"
-            ];
-            return encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
-        }
-
-        // Zbývá hodně (7-10) a zhoršuje se - vtipné kritické věty
-        if (remaining >= 7 && trend === 'worsening') {
-            const criticalMessages = [
-                "Hele, to není závodění se šnekem!",
-                "Myslíš si, že mám celý den čas?",
-                "Hele, kalkulačka by to spočítala rychlejc!",
-                "Ty snad u toho svačíš!",
-                "Co to máš, spánkovou nemoc?",
-                "Tempo! Tempo!",
-                "Ty chceš, abych tady zestárnul?",
-                "Spi doma, tady se počítá!",
-                "Koukám jak se u toho trápíš!",
-                "To snad není nic tak složitého ne?",
-                "Klid, nespěchej ... já si počkám!",
-                "Dyť je to učivo základní školy!"
-            ];
-            return criticalMessages[Math.floor(Math.random() * criticalMessages.length)];
-        }
-
-        // Zbývá hodně (7-10) a je neutrální nebo se zlepšuje - lehce pobízející
-        if (remaining >= 7) {
-            const pushingMessages = [
-                "Zaber ty máslo!",
-                "Přidej! Makej!",
-                "Tak honem, honem!",
-                "Pohni kostrou!",
-                "Jedem! Jedem!",
-                "Hurá! Ať vidím ty prsténky létat!",
-                "Dělej ať stihneš taky něco dalšího dneska!",
-                "Nečti si a počítej!",
-                "To není úkol na celou hodinu!"
-            ];
-            return pushingMessages[Math.floor(Math.random() * pushingMessages.length)];
-        }
-
-        // Zbývá středně (4-6) a zhoršuje se
-        if (remaining >= 4 && trend === 'worsening') {
-            const mediumCriticalMessages = [
-                "Nechceš abych ti poradil, že ne?",
-                "Soustřeď se! Tohle není procházka růžovým sadem!",
-                "Co je, ztratil ses v číslech?",
-                "Budeme to mít dnes nebo zítra?",
-                "Hele, tady se nesní!",
-                "Nemysli! Počítej!"
-            ];
-            return mediumCriticalMessages[Math.floor(Math.random() * mediumCriticalMessages.length)];
-        }
-
-        // Zbývá středně (4-6) a zlepšuje se - povzbuzující
-        if (remaining >= 4 && trend === 'improving') {
-            const improvingMessages = [
-                "Tak to je lepší tempo!",
-                "Vidíš, když chceš!",
-                "Teď to jde!",
-                "Výborně! Takhle dál!",
-                "To je parádní zrychlení!",
-                "Konečně nějaké tempo!"
-            ];
-            return improvingMessages[Math.floor(Math.random() * improvingMessages.length)];
-        }
-
-        // Ostatní případy - neutrální motivace
-        return getDuringTestMessage();
+        // Pro ostatní režimy použij dynamické hlášky podle výkonu
+        return getDynamicDuringTestMessage(performance);
     }
 
     clearMotivationTimers() {
@@ -327,6 +325,8 @@ export class TestManager {
             clearTimeout(this.motivationTimeout);
             this.motivationTimeout = null;
         }
+        // MOBILNÍ VYLEPŠENÍ - skryjeme numpad při ukončení
+        window.hideMobileNumpad();
     }
 
     scheduleNextMotivation() {
