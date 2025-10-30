@@ -1,5 +1,57 @@
 import { getDuringTestMessage, getDynamicDuringTestMessage } from './messages.js';
 
+// ========= MOBILNÍ VYLEPŠENÍ - ZAČÁTEK =========
+// Pomocné funkce pro mobilní numerickou klávesnici
+window.mobileAddNumber = function(num) {
+    const input = document.getElementById('answer');
+    if (input) {
+        input.value += num;
+        const event = new Event('input', { bubbles: true });
+        input.dispatchEvent(event);
+    }
+};
+
+window.mobileBackspace = function() {
+    const input = document.getElementById('answer');
+    if (input) {
+        input.value = input.value.slice(0, -1);
+        const event = new Event('input', { bubbles: true });
+        input.dispatchEvent(event);
+    }
+};
+
+// Detekce mobilního zařízení
+window.isMobileDevice = function() {
+    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Zobrazení/skrytí mobilní klávesnice
+window.showMobileNumpad = function() {
+    const numpad = document.getElementById('mobile-numpad');
+    const input = document.getElementById('answer');
+    if (numpad && window.isMobileDevice()) {
+        numpad.style.display = 'grid';
+        // Zabráníme zobrazení systémové klávesnice
+        if (input) {
+            input.readOnly = true;
+            input.inputMode = 'none';
+        }
+    }
+};
+
+window.hideMobileNumpad = function() {
+    const numpad = document.getElementById('mobile-numpad');
+    const input = document.getElementById('answer');
+    if (numpad) {
+        numpad.style.display = 'none';
+    }
+    if (input) {
+        input.readOnly = false;
+        input.inputMode = 'numeric';
+    }
+};
+// ========= MOBILNÍ VYLEPŠENÍ - KONEC =========
+
 export class TestManager {
     constructor(app) {
         this.app = app;
@@ -61,10 +113,32 @@ export class TestManager {
                 </div>
             `}
 
+            <!-- MOBILNÍ NUMERICKÁ KLÁVESNICE -->
+            <div class="mobile-numpad" id="mobile-numpad" style="display: none;">
+                <button onclick="mobileAddNumber('1')">1</button>
+                <button onclick="mobileAddNumber('2')">2</button>
+                <button onclick="mobileAddNumber('3')">3</button>
+                <button onclick="mobileAddNumber('4')">4</button>
+                <button onclick="mobileAddNumber('5')">5</button>
+                <button onclick="mobileAddNumber('6')">6</button>
+                <button onclick="mobileAddNumber('7')">7</button>
+                <button onclick="mobileAddNumber('8')">8</button>
+                <button onclick="mobileAddNumber('9')">9</button>
+                <button onclick="mobileAddNumber('0')" class="num-0">0</button>
+                <button onclick="mobileBackspace()" class="backspace">⌫</button>
+            </div>
+
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-red" style="width: auto; padding: 12px 30px;" onclick="app.endTest()">🛑 Ukončit test</button>
             </div>
         `;
+
+        // MOBILNÍ VYLEPŠENÍ - zobrazíme numpad na mobilu
+        if (window.isMobileDevice()) {
+            setTimeout(() => {
+                window.showMobileNumpad();
+            }, 100);
+        }
 
         document.getElementById('answer').focus();
         document.getElementById('answer').addEventListener('input', (e) => this.checkAnswer(e));
@@ -251,6 +325,8 @@ export class TestManager {
             clearTimeout(this.motivationTimeout);
             this.motivationTimeout = null;
         }
+        // MOBILNÍ VYLEPŠENÍ - skryjeme numpad při ukončení
+        window.hideMobileNumpad();
     }
 
     scheduleNextMotivation() {

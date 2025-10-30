@@ -56,41 +56,65 @@ export const motivationalMessages = {
         "To zvládneš i se zavázanýma očima! Jdi výš!"
     ],
     
-    during_test: [
+    // Hlášky během testu - obecné
+    during_test_neutral: [
         "Přidej! Makej!",
         "Zaber ty máslo!",
-        "Ty snad u toho svačíš!",
-        "Nekoukej na čas a počítej!",
-        "To je ale makačka!",
-        "Nechceš abych ti poradil, že ne?",
-        "Rychleji! Mám tu celý den!",
-        "Hele, to není závodění se šnekem!",
         "Tak honem, honem!",
-        "Co to máš, spánkovou nemoc?",
-        "Soustřeď se! Tohle není procházka růžovým sadem!",
-        "Tempo! Tempo!",
-        "Myslíš si, že mám celý den čas?",
-        "Ty chceš, abych tady zestárnul?",
-        "Spi doma, tady se počítá!",
-        "Hledáš ta správná čísla?",
-        "Nemysli! Počítej!",
-        "Hele, kalkulačka by to spočítala rychlejc!",
-        "Tak co, bude to ještě to dneska?",
-        "Soustředění! To není pohádka na dobrou noc!",
-        "Hurá! Ať vidím ty prsteníčky létat!",
         "Pohni kostrou!",
         "Jedem! Jedem!",
-        "Hele, tady se nesní!",
-        "Co je, ztratil ses v číslech?",
-        "Budeme to mít dnes nebo zítra?",
-        "Nečti si a počítej!",
-        "To není úkol na celou hodinu!",
-        "Koukám jak se u toho trápíš!",
+        "Hurá! Ať vidím ty prsténky létat!",
         "Dělej ať stihneš taky něco dalšího dneska!",
+        "Nečti si a počítej!",
+        "To není úkol na celou hodinu!"
+    ],
+    
+    // Hlášky pro skoro hotovo (zbývá málo)
+    during_test_almost_done: [
+        "Už jen kousek! Dokážeš to!",
+        "Skoro tam jsi! Ještě chvilku!",
+        "Pár příkladů a máš to!",
+        "Finiš! Ještě trochu vydržet!",
+        "Už to vidím! Dotáhni to!",
+        "Skoro hotovo! Nepouštěj to!",
+        "Ještě kousek! Makej!",
+        "Už to máš skoro v kapse!"
+    ],
+    
+    // Hlášky když je pomalý (kritické)
+    during_test_too_slow: [
+        "Hele, to není závodění se šnekem!",
+        "Myslíš si, že mám celý den čas?",
+        "Hele, kalkulačka by to spočítala rychlejc!",
+        "Ty snad u toho svačíš!",
+        "Co to máš, spánkovou nemoc?",
+        "Tempo! Tempo!",
+        "Ty chceš, abych tady zestárnul?",
+        "Spi doma, tady se počítá!",
+        "Koukám jak se u toho trápíš!",
         "To snad není nic tak složitého ne?",
         "Klid, nespěchej ... já si počkám!",
-        "Dyť je to učivo základní školy!",
-        "Učitelka matiky měla pravdu, bude z tebe jůtuber!"
+        "Dyť je to učivo základní školy!"
+    ],
+    
+    // Hlášky když je středně pomalý
+    during_test_slow: [
+        "Nechceš abych ti poradil, že ne?",
+        "Soustřeď se! Tohle není procházka růžovým sadem!",
+        "Co je, ztratil ses v číslech?",
+        "Budeme to mít dnes nebo zítra?",
+        "Hele, tady se nesní!",
+        "Nemysli! Počítej!"
+    ],
+    
+    // Hlášky když se zlepšuje
+    during_test_improving: [
+        "Tak to je lepší tempo!",
+        "Vidíš, když chceš!",
+        "Teď to jde!",
+        "Výborně! Takhle dál!",
+        "To je parádní zrychlení!",
+        "Konečně nějaké tempo!"
     ],
     
     quit_test: [
@@ -126,6 +150,12 @@ export const motivationalMessages = {
     ]
 };
 
+// Pomocná funkce pro náhodný výběr z pole
+function getRandomMessage(messageArray) {
+    const randomIndex = Math.floor(Math.random() * messageArray.length);
+    return messageArray[randomIndex];
+}
+
 export function getMotivationalMessage(mode, success, wasQuit = false) {
     let messagePool = [];
     
@@ -147,13 +177,44 @@ export function getMotivationalMessage(mode, success, wasQuit = false) {
         messagePool = motivationalMessages.general_good;
     }
     
-    // Náhodný výběr z pole
-    const randomIndex = Math.floor(Math.random() * messagePool.length);
-    return messagePool[randomIndex];
+    return getRandomMessage(messagePool);
 }
 
+// Obecná funkce pro hlášky během testu
 export function getDuringTestMessage() {
-    const messages = motivationalMessages.during_test;
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    return messages[randomIndex];
+    return getRandomMessage(motivationalMessages.during_test_neutral);
+}
+
+// Nová funkce pro dynamické hlášky podle výkonu
+export function getDynamicDuringTestMessage(performance) {
+    const { trend, remaining } = performance;
+    
+    let messagePool;
+    
+    // Zbývá málo příkladů (1-3)
+    if (remaining <= 3 && remaining > 0) {
+        messagePool = motivationalMessages.during_test_almost_done;
+    }
+    // Zbývá hodně (7-10) a zhoršuje se
+    else if (remaining >= 7 && trend === 'worsening') {
+        messagePool = motivationalMessages.during_test_too_slow;
+    }
+    // Zbývá hodně (7-10) a je neutrální nebo se zlepšuje
+    else if (remaining >= 7) {
+        messagePool = motivationalMessages.during_test_neutral;
+    }
+    // Zbývá středně (4-6) a zhoršuje se
+    else if (remaining >= 4 && trend === 'worsening') {
+        messagePool = motivationalMessages.during_test_slow;
+    }
+    // Zbývá středně (4-6) a zlepšuje se
+    else if (remaining >= 4 && trend === 'improving') {
+        messagePool = motivationalMessages.during_test_improving;
+    }
+    // Ostatní případy
+    else {
+        messagePool = motivationalMessages.during_test_neutral;
+    }
+    
+    return getRandomMessage(messagePool);
 }
