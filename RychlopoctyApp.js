@@ -82,7 +82,7 @@ export class RychlopoctyApp {
         const app = document.getElementById('app');
         const header = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 20px;"><div style="text-align: left;"><div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">⚡ Rychlopočty</div><div style="font-size: 14px; color: #94a3b8;">Trénuj a sdílej své matematické dovednosti</div></div><div id="total-stats" style="text-align: right;"><div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">⏳ Načítání statistik...</div></div></div>';
         
-        const tabs = '<div class="tab-menu"><button class="tab-btn active" data-tab="training" onclick="app.switchTab(\'training\')">🏠 Trénink</button><button class="tab-btn" data-tab="timer" onclick="app.switchTab(\'timer\')">⏰ Časovač</button><button class="tab-btn" data-tab="leaderboard" onclick="app.switchTab(\'leaderboard\')">🏆 Žebříčky</button><button class="tab-btn" data-tab="multiplayer" onclick="app.switchTab(\'multiplayer\')">🎮 Multiplayer</button></div>';
+        const tabs = '<div class="tab-menu"><button class="tab-btn active" data-tab="training" onclick="app.switchTab(\'training\')">🏠 Trénink</button><button class="tab-btn" data-tab="leaderboard" onclick="app.switchTab(\'leaderboard\')">🏆 Žebříčky</button><button class="tab-btn" data-tab="multiplayer" onclick="app.switchTab(\'multiplayer\')">🎮 Multiplayer</button></div>';
         
         const content = '<div id="tab-content" class="tab-content">' + this.getTrainingContent() + '</div>';
         
@@ -785,4 +785,5 @@ showCreatedGameInList(gameCode) {
         
         app.innerHTML = '<div class="card" style="padding: 40px;"><div style="text-align: center; margin-bottom: 30px;"><div class="result-title" style="color: #ef4444;">❌ Chybné odpovědi</div><div class="result-mode">Celkem chyb: ' + this.wrongAnswers.length + '</div></div><div class="error-list">' + errorListHTML + '</div><div style="text-align: center; margin-top: 30px;"><button class="btn btn-blue" style="width: auto; padding: 12px 30px;" onclick="app.finishTest()">◀ Zpět na výsledky</button></div></div>';
     }
+
 }
