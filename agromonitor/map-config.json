@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "exportedAt": "2026-02-03T13:26:44.956Z",
+  "locations": {
+    "melkovice": {
+      "image": "Mělkovice.JPG",
+      "markers": [
+        {
+          "id": "1",
+          "siloId": "1",
+          "name": "Silo 1",
+          "x": 37.8,
+          "y": 41.2,
+          "shape": "circle"
+        },
+        {
+          "id": "2",
+          "siloId": "2",
+          "name": "Silo 2",
+          "x": 49.5,
+          "y": 41.2,
+          "shape": "circle"
+        },
+        {
+          "id": "3",
+          "siloId": "3",
+          "name": "Silo 3",
+          "x": 61.7,
+          "y": 42,
+          "shape": "circle"
+        },
+        {
+          "id": "4",
+          "siloId": "4",
+          "name": "Silo 4",
+          "x": 73.5,
+          "y": 41.6,
+          "shape": "circle"
+        },
+        {
+          "id": "5",
+          "siloId": "5",
+          "name": "Silo 5",
+          "x": 37.6,
+          "y": 61.8,
+          "shape": "circle"
+        },
+        {
+          "id": "6",
+          "siloId": "6",
+          "name": "Silo 6",
+          "x": 49.6,
+          "y": 62.6,
+          "shape": "circle"
+        },
+        {
+          "id": "7",
+          "siloId": "7",
+          "name": "Silo 7",
+          "x": 61.8,
+          "y": 63.4,
+          "shape": "circle"
+        },
+        {
+          "id": "8",
+          "siloId": "8",
+          "name": "Silo 8",
+          "x": 73.6,
+          "y": 63.2,
+          "shape": "circle"
+        }
+      ]
+    },
+    "stranecka": {
+      "image": "Stránecká Zhoř.JPG",
+      "markers": [
+        {
+          "id": "1",
+          "siloId": "1",
+          "name": "Silo 1",
+          "x": 75.5,
+          "y": 51.4,
+          "shape": "circle"
+        },
+        {
+          "id": "2",
+          "siloId": "2",
+          "name": "Silo 2",
+          "x": 60.5,
+          "y": 52,
+          "shape": "circle"
+        },
+        {
+          "id": "3",
+          "siloId": "3",
+          "name": "Silo 3",
+          "x": 44.3,
+          "y": 50.9,
+          "shape": "circle"
+        },
+        {
+          "id": "4",
+          "siloId": "4",
+          "name": "Silo 4",
+          "x": 30.3,
+          "y": 50.5,
+          "shape": "circle"
+        }
+      ]
+    },
+    "brniste": {
+      "image": "Brniště.JPG",
+      "markers": [
+        {
+          "id": "1",
+          "siloId": "1",
+          "name": "Silo 1",
+          "x": 41.8,
+          "y": 43.9,
+          "shape": "circle"
+        },
+        {
+          "id": "2",
+          "siloId": "2",
+          "name": "Silo 2",
+          "x": 53.1,
+          "y": 42.6,
+          "shape": "circle"
+        },
+        {
+          "id": "3",
+          "siloId": "3",
+          "name": "Silo 3",
+          "x": 62.7,
+          "y": 42.2,
+          "shape": "circle"
+        },
+        {
+          "id": "4",
+          "siloId": "4",
+          "name": "Silo 4",
+          "x": 70.7,
+          "y": 41.8,
+          "shape": "circle"
+        }
+      ]
+    }
+  }
+}

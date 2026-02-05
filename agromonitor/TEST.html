@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroMonitor - Test stránka</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        .test-section h2 {
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        .test-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        .test-item .icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+        .test-item .info {
+            flex: 1;
+        }
+        .test-item .label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        .test-item .desc {
+            font-size: 13px;
+            color: #718096;
+        }
+        .test-item .arrow {
+            color: #667eea;
+            font-size: 20px;
+        }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status.pending {
+            background: #feebc8;
+            color: #744210;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            color: #718096;
+            font-size: 13px;
+        }
+        .code {
+            background: #2d3748;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 AgroMonitor - Testovací stránka</h1>
+        <p class="subtitle">Ověřte funkčnost nové multi-page architektury</p>
+        
+        <div class="test-section">
+            <h2>🔑 Test přihlášení</h2>
+            <div class="test-item" onclick="window.location.href='login.html'">
+                <span class="icon">🔐</span>
+                <div class="info">
+                    <div class="label">Přihlašovací stránka</div>
+                    <div class="desc">Otevřít login.html a vyzkoušet přihlášení</div>
+                </div>
+                <span class="arrow">→</span>
+            </div>
+            <p style="margin-top: 15px; font-size: 13px; color: #4a5568;">
+                <strong>Testovací kódy:</strong><br>
+                <span class="code">123456</span> Agro Vysočina (2 střediska) → Dashboard<br>
+                <span class="code">234567</span> ZOD Brniště (1 středisko) → Přímo detail<br>
+                <span class="code">345678</span> Admin → Dashboard + admin funkce
+            </p>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test navigace</h2>
+            <div class="test-item" onclick="alert('Nejprve se přihlašte přes login.html')">
+                <span class="icon">🏠</span>
+                <div class="info">
+                    <div class="label">Dashboard</div>
+                    <div class="desc">Přehled středisek (po přihlášení)</div>
+                </div>
+                <span class="arrow">🔒</span>
+            </div>
+            <div class="test-item" onclick="alert('Nejprve se přihlašte přes login.html')">
+                <span class="icon">🏭</span>
+                <div class="info">
+                    <div class="label">Detail střediska</div>
+                    <div class="desc">Sila, grafy, log (po přihlášení)</div>
+                </div>
+                <span class="arrow">🔒</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📁 Test datových souborů</h2>
+            <div class="test-item" onclick="checkFile('data/melkovice/snapshot.csv')">
+                <span class="icon">📄</span>
+                <div class="info">
+                    <div class="label">Mělkovice snapshot.csv</div>
+                    <div class="desc">Klikněte pro kontrolu existence</div>
+                </div>
+                <span class="arrow">✓</span>
+            </div>
+            <div class="test-item" onclick="checkFile('data/stranecka/snapshot.csv')">
+                <span class="icon">📄</span>
+                <div class="info">
+                    <div class="label">Stránecká snapshot.csv</div>
+                    <div class="desc">Klikněte pro kontrolu existence</div>
+                </div>
+                <span class="arrow">✓</span>
+            </div>
+            <div class="test-item" onclick="checkFile('data/brniste/snapshot.csv')">
+                <span class="icon">📄</span>
+                <div class="info">
+                    <div class="label">Brniště snapshot.csv</div>
+                    <div class="desc">Klikněte pro kontrolu existence</div>
+                </div>
+                <span class="arrow">✓</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📖 Dokumentace</h2>
+            <div class="test-item" onclick="window.open('README.md', '_blank')">
+                <span class="icon">📘</span>
+                <div class="info">
+                    <div class="label">README.md</div>
+                    <div class="desc">Hlavní dokumentace aplikace</div>
+                </div>
+                <span class="arrow">→</span>
+            </div>
+            <div class="test-item" onclick="window.open('INSTALACE.md', '_blank')">
+                <span class="icon">⚙️</span>
+                <div class="info">
+                    <div class="label">INSTALACE.md</div>
+                    <div class="desc">Instrukce pro nasazení</div>
+                </div>
+                <span class="arrow">→</span>
+            </div>
+            <div class="test-item" onclick="window.open('CHANGELOG.md', '_blank')">
+                <span class="icon">📝</span>
+                <div class="info">
+                    <div class="label">CHANGELOG.md</div>
+                    <div class="desc">Seznam změn a vylepšení</div>
+                </div>
+                <span class="arrow">→</span>
+            </div>
+        </div>
+
+        <div class="status pending">
+            <span>⏳</span>
+            <span>Připraveno k testování</span>
+        </div>
+
+        <div class="footer">
+            <strong>AgroMonitor v2.0</strong> - Multi-page architecture<br>
+            Pro spuštění otevřete <strong>login.html</strong>
+        </div>
+    </div>
+
+    <script>
+        function checkFile(path) {
+            fetch(path)
+                .then(response => {
+                    if (response.ok) {
+                        alert('✅ Soubor existuje: ' + path);
+                    } else {
+                        alert('❌ Soubor nenalezen: ' + path);
+                    }
+                })
+                .catch(err => {
+                    alert('❌ Chyba při načítání: ' + path + '\n' + err.message);
+                });
+        }
+    </script>
+</body>
+</html>
