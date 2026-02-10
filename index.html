@@ -1,327 +1,61 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <title>PC usage &ndash; posledn&iacute;ch 7 dn&#367;</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- SEO -->
+    <title>Rychlopočty - Procvičování násobilky a počítání online zdarma</title>
+    <meta name="description" content="Rychlopočty - Zdarma procvičuj násobilku, sčítání, odčítání a dělení online. Interaktivní matematický trenažér pro žáky ZŠ s žebříčky a multiplayerem.">
+    <meta name="keywords" content="matematika online, procvičování matematiky, násobilka online, počítání online, matematika pro děti, matematika zš, procvičování násobilky, sčítání odčítání online, matematické příklady, matematika zdarma, rychlé počty, matematika česky">
+    <meta name="author" content="JT">
+    <meta name="robots" content="index, follow">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-mobile.css" media="(max-width: 768px)">
+    
+    <script>
+    // GitHub Pages SPA redirect handler
+    (function() {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect != location.href) {
+            history.replaceState(null, null, redirect);
+        }
+    })();
+    </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-
-  <style>
-    @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap");
-    body {
-      font-family: "Manrope", "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-      color: #0f172a;
-      padding: 32px 20px 48px;
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalApplication",
+      "name": "Rychlopočty",
+      "description": "Interaktivní nástroj pro procvičování matematiky pro žáky základních škol",
+      "applicationCategory": "EducationalApplication",
+      "educationalLevel": "Elementary School",
+      "educationalUse": "Practice",
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "student"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CZK"
+      }
     }
-    h1 {
-      margin: 0 0 18px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
-    .uptime {
-      margin: 6px 0 14px;
-      color: #475569;
-      font-size: 0.95rem;
-    }
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin: 0 0 10px;
-      background: #f1f5f9;
-      color: #334155;
-      border: 1px solid #e2e8f0;
-    }
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #94a3b8;
-    }
-    .status.online {
-      background: #ecfdf3;
-      color: #166534;
-      border-color: #bbf7d0;
-    }
-    .status.online .status-dot {
-      background: #22c55e;
-    }
-    .status.offline {
-      background: #fef2f2;
-      color: #991b1b;
-      border-color: #fecaca;
-    }
-    .status.offline .status-dot {
-      background: #ef4444;
-    }
-    .wrap {
-      max-width: 760px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 18px;
-      padding: 18px 18px 10px;
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-    }
-    canvas {
-      background: #f8fafc;
-      border-radius: 14px;
-      padding: 12px;
-      width: 100%;
-      height: 240px;
-      display: block;
-    }
-  </style>
+    </script>
 </head>
 <body>
-
-<div class="wrap">
-<h1>&#128421;&#65039; Vyu&#382;it&iacute; PC &ndash; posledn&iacute;ch 7 dn&#367;</h1>
-  <div id="pcStatus" class="status">
-    <span class="status-dot"></span>
-    <span id="pcStatusText">Stav: nezn&aacute;m&yacute;</span>
-  </div>
-  <p id="uptime" class="uptime">PC byl zapnut&yacute; 0 h 0 min za posledn&iacute;ch 7 dn&#367;</p>
-  <div class="card">
-    <canvas id="pcChart"></canvas>
-  </div>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getFirestore, collection, query, where, orderBy, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBoIYs2eHU07V5y2XQjN92M_VZscEAodr8",
-    authDomain: "pc-monitoring-2e611.firebaseapp.com",
-    projectId: "pc-monitoring-2e611",
-    storageBucket: "pc-monitoring-2e611.firebasestorage.app",
-    messagingSenderId: "819873968820",
-    appId: "1:819873968820:web:352702de4080cc40a95de1",
-    measurementId: "G-ZVYW4NN4EZ"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const PC_ID = "PC-DESKTOP-K0IDRVF-0d35d450";
-  const OFF_THRESHOLD_MINUTES = 15;
-  const PING_INTERVAL_MINUTES = 10;
-  const OFFLINE_AFTER_MINUTES = 11;
-  const DEBUG = true;
-
-  function normalizeDate(value) {
-    if (!value) return null;
-    if (value instanceof Timestamp) return value.toDate();
-    if (typeof value === "number") return new Date(value);
-    if (typeof value === "string") return new Date(value);
-    if (value.seconds) return new Date(value.seconds * 1000);
-    return null;
-  }
-
-  async function loadHistory() {
-  const now = new Date();
-  const from = new Date();
-  from.setDate(now.getDate() - 7);
-
-  const q = query(
-    collection(db, "monitoring", PC_ID, "history"),
-    orderBy("timestamp", "asc")
-  );
-
-  const snap = await getDocs(q);
-
-  const events = [];
-
-  snap.forEach(doc => {
-    const d = doc.data();
-    const t = normalizeDate(d.timestamp || d.time || d.created_at);
-    if (!t || t < from) return;
-
-    let online = null;
-    if (typeof d.status === "string") {
-      const s = d.status.toLowerCase();
-      if (s === "online") online = true;
-      if (s === "offline") online = false;
-    }
-    if (typeof d.isOnline === "boolean") online = d.isOnline;
-    if (typeof d.online === "boolean") online = d.online;
-
-    events.push({ t, online });
-  });
-
-  if (events.length === 0) return;
-  events.sort((a, b) => a.t - b.t);
-
-  const points = [];
-  const uptimeEl = document.getElementById("uptime");
-  const statusEl = document.getElementById("pcStatus");
-  const statusTextEl = document.getElementById("pcStatusText");
-  let totalOnlineMs = 0;
-
-  const hasStatus = events.some(e => e.online !== null);
-  const thresholdMs = OFF_THRESHOLD_MINUTES * 60 * 1000;
-  const pingMs = PING_INTERVAL_MINUTES * 60 * 1000;
-
-  if (hasStatus) {
-    let currentOnline = false;
-    let segmentStart = null;
-
-    for (const e of events) {
-      if (e.online === true) {
-        if (!currentOnline) {
-          segmentStart = e.t;
-          currentOnline = true;
-        }
-        points.push({ x: e.t, y: 1 });
-      } else if (e.online === false) {
-        if (currentOnline && segmentStart) {
-          totalOnlineMs += e.t - segmentStart;
-        }
-        currentOnline = false;
-        segmentStart = null;
-        points.push({ x: e.t, y: 0 });
-      }
-    }
-
-    if (currentOnline && segmentStart) {
-      const tail = Math.min(now - segmentStart, thresholdMs);
-      totalOnlineMs += tail;
-      points.push({ x: new Date(segmentStart.getTime() + tail), y: 1 });
-    }
-  } else {
-    // Heartbeat-only mode: count gaps between pings
-    const times = events.map(e => e.t);
-    if (DEBUG) {
-      console.log("Ping count:", times.length);
-      console.log("First ping:", times[0]);
-      console.log("Last ping:", times[times.length - 1]);
-    }
-    const lastPing = times[times.length - 1];
-    const minutesSinceLast = (now - lastPing) / 60000;
-    if (statusEl && statusTextEl) {
-      if (minutesSinceLast <= OFFLINE_AFTER_MINUTES) {
-        statusEl.classList.add("online");
-        statusEl.classList.remove("offline");
-        statusTextEl.textContent = "Stav: online";
-      } else {
-        statusEl.classList.add("offline");
-        statusEl.classList.remove("online");
-        statusTextEl.textContent = "Stav: offline";
-      }
-    }
-
-    // START ? prvn? online bod
-    points.push({ x: times[0], y: 1 });
-
-    for (let i = 1; i < times.length; i++) {
-      const prev = times[i - 1];
-      const curr = times[i];
-      const diff = curr - prev;
-
-      if (diff <= thresholdMs) {
-        totalOnlineMs += diff;
-        points.push({ x: curr, y: 1 });
-      } else {
-        // offline gap: do not add time, just mark offline after threshold
-        points.push({ x: new Date(prev.getTime() + thresholdMs), y: 1 });
-        points.push({ x: new Date(prev.getTime() + thresholdMs), y: 0 });
-        points.push({ x: curr, y: 1 });
-      }
-      if (DEBUG) {
-        console.log("Diff (min):", Math.round(diff / 60000), "at", curr);
-      }
-    }
-
-    // Tail not counted: we only sum differences between recorded pings
-  }
-
-  const totalMinutes = Math.round(totalOnlineMs / 60000);
-  if (DEBUG) {
-    console.log("Total minutes:", totalMinutes);
-  }
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (uptimeEl) {
-    uptimeEl.innerHTML = `PC byl zapnut&yacute; ${hours} h ${minutes} min za posledn&iacute;ch 7 dn&#367;`;
-  }
-
-  renderChart(points);
-}
-
-  function renderChart(data) {
-    const ctx = document.getElementById("pcChart");
-
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        datasets: [{
-          label: "Stav PC",
-          data,
-          stepped: true,
-          borderWidth: 2,
-          pointRadius: 0,
-          borderColor: "#22c55e",
-          backgroundColor: "#22c55e"
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: "#0f172a" }
-          },
-          tooltip: {
-            callbacks: {
-              label: ctx => ctx.parsed.y === 1 ? "Online" : "Offline"
-            }
-          }
-        },
-        scales: {
-          x: {
-            type: "time",
-            min: (() => {
-              const d = new Date();
-              d.setDate(d.getDate() - 7);
-              return d;
-            })(),
-            max: new Date(),
-            time: {
-              unit: "day",
-              displayFormats: {
-                day: "EEE d.M"
-              }
-            },
-            ticks: { color: "#475569" },
-            grid: { color: "#e2e8f0" }
-          },
-          y: {
-            min: 0,
-            max: 1,
-            ticks: {
-              stepSize: 1,
-              callback: v => v === 1 ? "Online" : "Offline",
-              color: "#475569"
-            },
-            grid: { color: "#e2e8f0" }
-          }
-        }
-      }
-    });
-  }
-
-  loadHistory();
-</script>
-
+    <div class="container" id="app"></div>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
