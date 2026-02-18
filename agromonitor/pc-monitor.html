@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>PC usage – posledních 7 dní</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    canvas {
+      background: #020617;
+      border-radius: 12px;
+      padding: 10px;
+    }
+        
+#pcChart {
+    max-height: 220px;
+    max-width:
+  }
+
+    
+  </style>
+</head>
+<body>
+
+<h1>🖥️ Jak moc čumí Kuba do počítače</h1>
+<canvas id="pcChart" height="120"></canvas>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getFirestore, collection, query, where, orderBy, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBoIYs2eHU07V5y2XQjN92M_VZscEAodr8",
+    authDomain: "pc-monitoring-2e611.firebaseapp.com",
+    projectId: "pc-monitoring-2e611",
+    storageBucket: "pc-monitoring-2e611.firebasestorage.app",
+    messagingSenderId: "819873968820",
+    appId: "1:819873968820:web:352702de4080cc40a95de1",
+    measurementId: "G-ZVYW4NN4EZ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const PC_ID = "PC-DESKTOP-K0IDRVF-0d35d450";
+  const OFF_THRESHOLD_MINUTES = 3;
+
+
+  function normalizeDate(value) {
+    if (!value) return null;
+    if (value instanceof Timestamp) return value.toDate();
+    if (typeof value === "number") return new Date(value);
+    if (typeof value === "string") return new Date(value);
+    if (value.seconds) return new Date(value.seconds * 1000);
+    return null;
+  }
+
+async function loadHistory() {
+  const now = new Date();
+  const from = new Date();
+  from.setDate(now.getDate() - 7);
+
+  const q = query(
+    collection(db, "monitoring", PC_ID, "history"),
+    orderBy("timestamp", "asc")
+  );
+
+  const snap = await getDocs(q);
+
+  const times = [];
+
+  snap.forEach(doc => {
+    const d = doc.data();
+    if (!d.timestamp) return;
+
+    const t = new Date(d.timestamp);
+    if (isNaN(t)) return;
+    if (t < from) return;
+
+    times.push(t);
+  });
+
+  if (times.length === 0) return;
+
+  const points = [];
+  const thresholdMs = OFF_THRESHOLD_MINUTES * 60 * 1000;
+
+  // START – první online bod
+  points.push({ x: times[0], y: 1 });
+
+  for (let i = 1; i < times.length; i++) {
+    const prev = times[i - 1];
+    const curr = times[i];
+
+    // mezera = OFF
+    if (curr - prev > thresholdMs) {
+      // konec ONLINE
+      points.push({ x: new Date(prev.getTime() + thresholdMs), y: 1 });
+      // začátek OFF
+      points.push({ x: new Date(prev.getTime() + thresholdMs), y: 0 });
+      // začátek ONLINE
+      points.push({ x: curr, y: 1 });
+    }
+  }
+
+  // konec ONLINE až do teď
+  points.push({ x: now, y: 1 });
+
+  renderChart(points);
+}
+
+
+
+
+
+  function renderChart(data) {
+    const ctx = document.getElementById("pcChart");
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        datasets: [{
+          label: "Stav PC",
+          data,
+          stepped: true,
+          borderWidth: 2,
+          pointRadius: 0,
+          borderColor: "#22c55e",
+          backgroundColor: "#22c55e"
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: { color: "#e5e7eb" }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.parsed.y === 1 ? "🟢 Online" : "🔴 Offline"
+            }
+          }
+        },
+scales: {
+  x: {
+    type: "time",
+    min: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      return d;
+    })(),
+    max: new Date(),
+    time: {
+      unit: "day",
+      displayFormats: {
+        day: "EEE d.M"
+      }
+    },
+    ticks: {
+      color: "#cbd5f5"
+    },
+    grid: {
+      color: "#1e293b"
+    }
+  },
+
+  y: {
+    min: 0,
+    max: 1,
+    ticks: {
+      stepSize: 1,
+      callback: v => (v === 1 ? "Online" : "Offline"),
+      color: "#cbd5f5"
+    },
+    grid: {
+      color: "#1e293b"
+    }
+  }
+   }
+        
+      }
+    });
+  }
+
+  loadHistory();
+</script>
+
+</body>
+</html>

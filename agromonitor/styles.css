@@ -103,7 +103,15 @@ body {
     gap: 12px;
 }
 
+.login-code-row span:first-child {
+    flex: 1;
+}
+
+
 .login-code-row span:last-child {
+    margin-left: auto;
+    min-width: 72px;
+    text-align: right;
     font-family: 'Inter', sans-serif;
     font-weight: 700;
     letter-spacing: 1px;
@@ -393,7 +401,7 @@ body {
 .admin-alerts-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-bottom: 6px;
     gap: 10px;
 }
@@ -584,6 +592,7 @@ select:focus {
 }
 
 .silo-commodity {
+    margin-left: auto;
     font-size: 12px;
     color: var(--muted);
     font-weight: 500;
@@ -705,7 +714,7 @@ select:focus {
 
 .chart-legend {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-top: 6px;
     font-size: 10px;
     color: #64748b;
@@ -812,7 +821,7 @@ select:focus {
 .modal-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 16px 20px;
     border-bottom: 1px solid #e2e8f0;
     background: rgba(255, 255, 255, 0.7);
@@ -919,7 +928,7 @@ select:focus {
 
 .map-toolbar {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     gap: 12px;
     padding: 10px 20px;
@@ -1258,7 +1267,7 @@ select:focus {
 
 .ventilation-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     margin-bottom: 10px;
 }
@@ -1377,6 +1386,153 @@ select:focus {
     color: #5a6470;
 }
 
+.docs-panel {
+    margin-top: 15px;
+}
+
+.docs-entries {
+    display: grid;
+    gap: 10px;
+}
+
+.doc-link {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #dbe5ef;
+    border-radius: 10px;
+    text-decoration: none;
+    background: #f8fafc;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.doc-link:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.doc-link-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.doc-link-arrow {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.docs-loading,
+.docs-empty {
+    font-size: 12px;
+    color: #6b7280;
+    padding: 10px 12px;
+    border: 1px dashed #d1d5db;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.doc-tree {
+    display: grid;
+    gap: 6px;
+}
+
+.doc-node {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+
+.doc-summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.doc-summary::-webkit-details-marker {
+    display: none;
+}
+
+.doc-summary::before {
+    content: '+';
+    color: #64748b;
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+.doc-node[open] > .doc-summary::before {
+    content: '-';
+}
+
+.doc-node[open] > .doc-summary {
+    border-bottom: 1px solid #edf2f7;
+}
+
+
+.doc-summary-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.doc-node-action {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.doc-node-action:hover {
+    text-decoration: underline;
+}
+
+.doc-file-link {
+    display: block;
+    text-decoration: none;
+}
+
+.doc-file-link:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.doc-node-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 7px 10px;
+}
+
+.doc-icon {
+    font-size: 10px;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9;
+    border-radius: 999px;
+    padding: 2px 7px;
+    white-space: nowrap;
+}
+
+.doc-name {
+    text-align: left;
+    font-size: 12px;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.doc-children {
+    margin-left: 14px;
+    border-left: 2px solid #e2e8f0;
+    padding-left: 8px;
+    padding-bottom: 6px;
+}
+
 .bottom-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -1420,4 +1576,26 @@ select:focus {
     .map-body {
         grid-template-columns: 1fr;
     }
+}
+
+
+.onedrive-link,
+.doc-link.onedrive-link,
+.doc-file-link.onedrive-link,
+.doc-link.onedrive-link .doc-link-label,
+.doc-link.onedrive-link .doc-link-arrow,
+.doc-file-link.onedrive-link .doc-name,
+.doc-file-link.onedrive-link .doc-node-action,
+.doc-node-action.onedrive-link {
+    color: #0364b8 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px;
+}
+
+.doc-link.onedrive-link .doc-link-label,
+.doc-link.onedrive-link .doc-link-arrow,
+.doc-file-link.onedrive-link .doc-name,
+.doc-file-link.onedrive-link .doc-node-action,
+.doc-node-action.onedrive-link {
+    font-weight: 700;
 }

@@ -1,44 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgroMonitor - Přihlášení</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <title>AgroMonitor - Presmerovani</title>
+    <meta http-equiv="refresh" content="0; url=index.html">
 </head>
 <body>
-    <div class="login-screen">
-        <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-            <div class="login-brand">AgroMonitor</div>
-            <div class="login-title" id="loginTitle">Přihlášení do systému</div>
-            <div class="login-subtitle">Zadejte 6místný přístupový kód. Přístup bude omezen na přiřazená střediska.</div>
-            <div class="login-codes">
-                <div class="login-code-row"><span>Agro Vysočina s.r.o.</span><span>123456</span></div>
-                <div class="login-code-row"><span>ZOD Brniště a.s.</span><span>234567</span></div>
-                <div class="login-code-row"><span>Admin</span><span>345678</span></div>
-            </div>
-            <form class="login-form" id="loginForm">
-                <label class="login-label" for="accessCodeInput">Přístupový kód</label>
-                <input 
-                    class="login-input" 
-                    id="accessCodeInput" 
-                    type="password" 
-                    inputmode="numeric" 
-                    pattern="[0-9]{6}" 
-                    maxlength="6" 
-                    autocomplete="one-time-code" 
-                    placeholder="******" 
-                    aria-describedby="loginHint loginError"
-                    autofocus
-                >
-                <div class="login-hint" id="loginHint">Pokud kód nefunguje, kontaktujte správce.</div>
-                <div class="login-error" id="loginError" role="alert" aria-live="polite"></div>
-                <button class="login-button" id="loginButton" type="submit">Odemknout přístup</button>
-            </form>
-        </div>
-    </div>
-
-    <script src="auth.js"></script>
+    <p>Presmerovavam na <a href="index.html">index.html</a>...</p>
+    <script>
+        window.location.replace('index.html');
+    </script>
 </body>
 </html>

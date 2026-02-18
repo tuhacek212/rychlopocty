@@ -8,11 +8,11 @@ const currentUserRole = 'MASTER';
 const AUTH_STORAGE_KEY = 'agromonitor_access_v1';
 const AUTH_LOCK_KEY = 'agromonitor_lock_v1';
 const ACCESS_CODES = {
-    '123456': { label: 'Agro Vysocina s.r.o.', locations: ['melkovice', 'stranecka'], defaultLocation: 'melkovice' },
+    '123456': { label: 'Admin', locations: ['melkovice', 'stranecka', 'brniste'], defaultLocation: 'melkovice' },
     '234567': { label: 'ZOD Brniste a.s.', locations: ['brniste'], defaultLocation: 'brniste' },
-    '345678': { label: 'Admin', locations: ['melkovice', 'stranecka', 'brniste'], defaultLocation: 'melkovice' }
+    '345678': { label: 'Agro Vysocina s.r.o.', locations: ['melkovice', 'stranecka'], defaultLocation: 'melkovice' }
 };
-const ADMIN_ACCESS_CODE = '345678';
+const ADMIN_ACCESS_CODE = '123456';
 const ADMIN_TEMP_MIN = 5;
 const ADMIN_TEMP_MAX = 20;
 const BAD_COOLING_MIN_TEMP = 20.5;
@@ -36,12 +36,21 @@ let lastLoginAttempt = 0;
 let uiInitialized = false;
 let loginInitialized = false;
 let mapConfigLoaded = false;
+let docsRenderToken = 0;
 const MAP_CONFIG = {
     melkovice: { image: 'Mělkovice.JPG', markers: [] },
     stranecka: { image: 'Stránecká Zhoř.JPG', markers: [] },
     brniste: { image: 'Brniště.JPG', markers: [] }
 };
 const MAP_CONFIG_URL = 'map-config.json';
+const ONE_DRIVE_FOLDERS = {
+    // `url` je odkaz na korenovou OneDrive slozku strediska.
+    // Volitelne: `itemUrlTemplate` pro odkazy na konkretni soubory/slozky.
+    // Priklad: 'https://contoso.sharepoint.com/.../{path}'
+    melkovice: { url: 'https://onedrive.live.com/' },
+    stranecka: { url: 'https://onedrive.live.com/' },
+    brniste: { url: 'https://onedrive.live.com/' }
+};
 
 function hashStringToSeed(str) {
     let h = 2166136261;
@@ -64,6 +73,67 @@ function mulberry32(seed) {
 
 function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function getUtcDayStart(ts) {
+    const d = new Date(ts);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function aggregateTempSeriesByDay(series) {
+    const byDay = {};
+    series.forEach(point => {
+        const dayTs = getUtcDayStart(point.t);
+        if (!byDay[dayTs]) {
+            byDay[dayTs] = { sumAvg: 0, count: 0, min: null, max: null };
+        }
+        const bucket = byDay[dayTs];
+        bucket.sumAvg += point.avg;
+        bucket.count += 1;
+        bucket.min = bucket.min === null ? point.min : Math.min(bucket.min, point.min);
+        bucket.max = bucket.max === null ? point.max : Math.max(bucket.max, point.max);
+    });
+
+    return Object.keys(byDay).map(tsStr => {
+        const t = parseInt(tsStr, 10);
+        const bucket = byDay[tsStr];
+        return {
+            t,
+            avg: bucket.sumAvg / Math.max(1, bucket.count),
+            min: bucket.min,
+            max: bucket.max,
+        };
+    }).sort((a, b) => a.t - b.t);
+}
+
+function aggregateValueSeriesByDay(series) {
+    const byDay = {};
+    series.forEach(point => {
+        const dayTs = getUtcDayStart(point.t);
+        if (!byDay[dayTs]) {
+            byDay[dayTs] = { sum: 0, count: 0 };
+        }
+        byDay[dayTs].sum += point.value;
+        byDay[dayTs].count += 1;
+    });
+
+    return Object.keys(byDay).map(tsStr => {
+        const bucket = byDay[tsStr];
+        return {
+            t: parseInt(tsStr, 10),
+            value: bucket.sum / Math.max(1, bucket.count),
+        };
+    }).sort((a, b) => a.t - b.t);
+}
+
+function filterSeriesForPeriod(series, period) {
+    if (!series.length) return [];
+    const now = series[series.length - 1].t;
+    const days = period === '1y' ? 365 : 30;
+    const cutoff = now - days * MS_PER_DAY;
+    return series.filter(point => point.t >= cutoff);
 }
 
 function pickRandomThermometerKeys(rows, count) {
@@ -795,62 +865,24 @@ function buildLevelChartSvg(series, options = {}) {
 
 function getSeriesForSilo(siloKey, period, maxPoints) {
     const series = historySeries[siloKey] || [];
-    if (!series.length) return [];
-
-    const now = series[series.length - 1].t;
-    const days = period === '1y' ? 365 : 30;
-    const cutoff = now - days * 24 * 60 * 60 * 1000;
-    const filtered = series.filter(p => p.t >= cutoff);
-
-    if (filtered.length <= maxPoints) return filtered;
-
-    const step = Math.ceil(filtered.length / maxPoints);
-    const sampled = [];
-    for (let i = 0; i < filtered.length; i += step) {
-        sampled.push(filtered[i]);
-    }
-    return sampled;
+    const filtered = filterSeriesForPeriod(series, period);
+    return aggregateTempSeriesByDay(filtered);
 }
 
 function getFanSeriesForSilo(siloKey, period, maxPoints) {
     const series = fanSeries[siloKey] || [];
-    if (!series.length) return [];
-    const now = series[series.length - 1].t;
-    const days = period === '1y' ? 365 : 30;
-    const cutoff = now - days * 24 * 60 * 60 * 1000;
-    const filtered = series.filter(p => p.t >= cutoff);
-    if (filtered.length <= maxPoints) return filtered;
-    const step = Math.ceil(filtered.length / maxPoints);
-    const sampled = [];
-    for (let i = 0; i < filtered.length; i += step) {
-        sampled.push(filtered[i]);
-    }
-    return sampled;
+    const filtered = filterSeriesForPeriod(series, period);
+    return aggregateValueSeriesByDay(filtered);
 }
 
 function getLevelSeriesForSilo(siloKey, period, maxPoints) {
     const series = levelSeries[siloKey] || [];
-    if (!series.length) return [];
-    const now = series[series.length - 1].t;
-    const days = period === '1y' ? 365 : 30;
-    const cutoff = now - days * 24 * 60 * 60 * 1000;
-    const filtered = series.filter(p => p.t >= cutoff);
-    if (filtered.length <= maxPoints) return filtered;
-    const step = Math.ceil(filtered.length / maxPoints);
-    const sampled = [];
-    for (let i = 0; i < filtered.length; i += step) {
-        sampled.push(filtered[i]);
-    }
-    return sampled;
+    const filtered = filterSeriesForPeriod(series, period);
+    return aggregateValueSeriesByDay(filtered);
 }
 
 function getVentBands(siloKey, period) {
-    const series = fanSeries[siloKey] || [];
-    if (!series.length) return [];
-    const now = series[series.length - 1].t;
-    const days = period === '1y' ? 365 : 30;
-    const cutoff = now - days * 24 * 60 * 60 * 1000;
-    const filtered = series.filter(p => p.t >= cutoff);
+    const filtered = getFanSeriesForSilo(siloKey, period);
     if (filtered.length < 2) return [];
 
     const bands = [];
@@ -863,7 +895,7 @@ function getVentBands(siloKey, period) {
             current = { start: point.t, end: point.t };
         }
         if (isOn && current) {
-            current.end = next ? next.t : point.t + 24 * 60 * 60 * 1000;
+            current.end = next ? next.t : point.t + MS_PER_DAY;
         }
         if (!isOn && current) {
             bands.push(current);
@@ -982,6 +1014,109 @@ function renderCleanserCard(location) {
     `;
 }
 
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function appendDownloadParam(url) {
+    if (!url) return '';
+    try {
+        const parsed = new URL(url, window.location.href);
+        parsed.searchParams.set('download', '1');
+        return parsed.toString();
+    } catch {
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}download=1`;
+    }
+}
+
+function resolveOneDriveItemUrl(locationId, itemPath, item) {
+    if (item && item.oneDriveUrl) return item.oneDriveUrl;
+    const config = ONE_DRIVE_FOLDERS[locationId] || {};
+    if (config.itemUrlTemplate) {
+        return config.itemUrlTemplate.replace('{path}', encodeURIComponent(itemPath));
+    }
+    return config.url || '';
+}
+
+function renderOneDriveTree(locationId, items, depth = 0, parentPath = '') {
+    if (!items || !items.length) {
+        return depth === 0
+            ? '<div class="docs-empty">Slozka je prazdna.</div>'
+            : '';
+    }
+
+    const html = items.map(item => {
+        const rawName = item.name || 'Bez nazvu';
+        const safeName = escapeHtml(rawName);
+        const itemPath = parentPath ? `${parentPath}/${rawName}` : rawName;
+        const itemUrl = resolveOneDriveItemUrl(locationId, itemPath, item);
+        if (item.type === 'folder') {
+            const childHtml = renderOneDriveTree(locationId, item.items || [], depth + 1, itemPath);
+            const folderAction = itemUrl
+                ? `<a class="doc-node-action onedrive-link" href="${escapeHtml(itemUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">OneDrive</a>`
+                : '';
+            return `
+                <details class="doc-node folder depth-${depth}">
+                    <summary class="doc-node-row doc-summary"><span class="doc-summary-main"><span class="doc-icon">SLOZKA</span><span class="doc-name">${safeName}</span></span>${folderAction}</summary>
+                    <div class="doc-children">${childHtml}</div>
+                </details>
+            `;
+        }
+
+        const downloadUrl = appendDownloadParam(itemUrl);
+        if (downloadUrl) {
+            return `
+                <a class="doc-node file depth-${depth} doc-file-link onedrive-link" href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer">
+                    <div class="doc-node-row"><span class="doc-icon">SOUBOR</span><span class="doc-name">${safeName}</span><span class="doc-node-action">Stahnout</span></div>
+                </a>
+            `;
+        }
+
+        return `
+            <div class="doc-node file depth-${depth}">
+                <div class="doc-node-row"><span class="doc-icon">SOUBOR</span><span class="doc-name">${safeName}</span></div>
+            </div>
+        `;
+    }).join('');
+
+    return `<div class="doc-tree depth-${depth}">${html}</div>`;
+}
+
+async function renderDocuments(locationId) {
+    const container = document.getElementById('docsEntries');
+    if (!container) return;
+
+    const token = ++docsRenderToken;
+    const folder = ONE_DRIVE_FOLDERS[locationId] || {};
+    const openButton = folder.url
+        ? `<a class="doc-link onedrive-link" href="${folder.url}" target="_blank" rel="noopener noreferrer"><span class="doc-link-label">Otevrit slozku strediska v OneDrive</span><span class="doc-link-arrow">Microsoft</span></a>`
+        : '<div class="docs-empty">OneDrive slozka pro toto stredisko zatim neni nastavena.</div>';
+
+    container.innerHTML = `${openButton}<div class="docs-loading">Nacitam ukazkovou strukturu...</div>`;
+
+    try {
+        const response = await fetch(`data/${locationId}/Onedrive/structure.json`);
+        if (!response.ok) {
+            throw new Error('Structure file missing');
+        }
+
+        const structure = await response.json();
+        if (token !== docsRenderToken) return;
+
+        const items = Array.isArray(structure.items) ? structure.items : [];
+        container.innerHTML = `${openButton}${renderOneDriveTree(locationId, items)}`;
+    } catch {
+        if (token !== docsRenderToken) return;
+        container.innerHTML = `${openButton}<div class="docs-empty">Ukazkova struktura neni k dispozici.</div>`;
+    }
+}
+
 function changeLocation() {
     const locationKeys = getEnterpriseLocationKeys();
     const locationKey = currentLocation || locationKeys[0];
@@ -1028,6 +1163,8 @@ function changeLocation() {
         </div>`
     ).join('');
     document.getElementById('logEntries').innerHTML = logHTML;
+
+    renderDocuments(locationKey);
 
     if (mapState.open) {
         renderMap(currentLocation);
@@ -2010,9 +2147,8 @@ function setupChartHover() {
             const d = new Date(t);
             const day = d.getDate();
             const month = d.getMonth() + 1;
-            const hours = String(d.getHours()).padStart(2, '0');
-            const mins = String(d.getMinutes()).padStart(2, '0');
-            return `${day}.${month}. ${hours}:${mins}`;
+            const year = d.getFullYear();
+            return `${day}.${month}.${year}`;
         };
 
         const update = (evt) => {
@@ -2020,15 +2156,18 @@ function setupChartHover() {
             pt.x = evt.clientX;
             pt.y = evt.clientY;
             const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
-            const x = clamp(cursor.x, padding, width - padding);
-            const ratio = (x - padding) / Math.max(1, (width - padding * 2));
-            const t = tMin + ratio * (tMax - tMin);
+            const rawX = clamp(cursor.x, padding, width - padding);
+            const ratio = (rawX - padding) / Math.max(1, (width - padding * 2));
+            const rawT = tMin + ratio * (tMax - tMin);
+            const snappedT = clamp(getUtcDayStart(rawT), tMin, tMax);
+            const snappedRatio = (snappedT - tMin) / Math.max(1, (tMax - tMin));
+            const x = padding + snappedRatio * (width - padding * 2);
 
             line.setAttribute('x1', x);
             line.setAttribute('x2', x);
             line.setAttribute('visibility', 'visible');
 
-            label.textContent = toDateLabel(t);
+            label.textContent = toDateLabel(snappedT);
             const labelY = padding + 12;
             const labelWidth = 80;
             if (x > width - padding - labelWidth) {
