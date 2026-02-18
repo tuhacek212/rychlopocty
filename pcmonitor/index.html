@@ -113,6 +113,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  const PC_ID = "PC-DESKTOP-K0IDRVF-0d35d450";
   const OFF_THRESHOLD_MINUTES = 15;
   const PING_INTERVAL_MINUTES = 10;
   const OFFLINE_AFTER_MINUTES = 11;
@@ -132,22 +133,8 @@
   const from = new Date();
   from.setDate(now.getDate() - 7);
 
-  // Načteme všechny PC z kolekce monitoring
-  const monitoringSnap = await getDocs(collection(db, "monitoring"));
-  
-  if (monitoringSnap.empty) {
-    console.error("Žádná PC v kolekci monitoring");
-    return;
-  }
-
-  // Vezmeme první PC (nebo můžeš přidat logiku pro výběr konkrétního)
-  const pcId = monitoringSnap.docs[0].id;
-  if (DEBUG) {
-    console.log("Načítám data pro PC:", pcId);
-  }
-
   const q = query(
-    collection(db, "monitoring", pcId, "history"),
+    collection(db, "monitoring", PC_ID, "history"),
     orderBy("timestamp", "asc")
   );
 
