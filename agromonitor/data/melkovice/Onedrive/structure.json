@@ -1,0 +1,23 @@
+{
+  "name": "Onedrive",
+  "type": "folder",
+  "items": [
+    {
+      "name": "Zápisy z KD",
+      "type": "folder",
+      "items": []
+    },
+    {
+      "name": "elektro projekt.pdf",
+      "type": "file"
+    },
+    {
+      "name": "technická zpráva.pdf",
+      "type": "file"
+    },
+    {
+      "name": "výkresy technologie.pdf",
+      "type": "file"
+    }
+  ]
+}
