@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
@@ -11,19 +11,19 @@
     <div class="login-screen" id="loginScreen" aria-hidden="false">
         <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
             <div class="login-brand">AgroMonitor</div>
-            <div class="login-title" id="loginTitle">Prihlaseni do systemu</div>
-            <div class="login-subtitle">Zadejte 6 mistny pristupovy kod. Pristup bude omezen na prirazena strediska.</div>
+            <div class="login-title" id="loginTitle">Přihlášení do systému</div>
+            <div class="login-subtitle">Zadejte 6místný přístupový kód. Přístup bude omezen na přiřazená střediska.</div>
             <div class="login-codes">
                 <div class="login-code-row"><span>Admin</span><span>123456</span></div>
-                <div class="login-code-row"><span>ZOD Brniste a.s.</span><span>234567</span></div>
-                <div class="login-code-row"><span>Agro Vysocina s.r.o.</span><span>345678</span></div>
+                <div class="login-code-row"><span>ZOD Brniště a.s.</span><span>234567</span></div>
+                <div class="login-code-row"><span>Agro Vysočina s.r.o.</span><span>345678</span></div>
             </div>
             <form class="login-form" id="loginForm">
-                <label class="login-label" for="accessCodeInput">Pristupovy kod</label>
+                <label class="login-label" for="accessCodeInput">Přístupový kód</label>
                 <input class="login-input" id="accessCodeInput" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="******" aria-describedby="loginHint loginError">
-                <div class="login-hint" id="loginHint">Pokud kod nefunguje, kontaktujte spravce.</div>
+                <div class="login-hint" id="loginHint">Pokud kód nefunguje, kontaktujte správce.</div>
                 <div class="login-error" id="loginError" role="alert" aria-live="polite"></div>
-                <button class="login-button" id="loginButton" type="submit">Odemknout pristup</button>
+                <button class="login-button" id="loginButton" type="submit">Odemknout přístup</button>
             </form>
         </div>
     </div>
@@ -34,24 +34,24 @@
         <div class="header-controls">
             <div class="location-picker" id="locationPicker">
                 <button class="location-trigger" id="locationTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="header-text" id="locationName">Nacitani...</span>
+                    <span class="header-text" id="locationName">Načítání...</span>
                     <span class="status-dot" id="locationStatusDot" aria-label="Online"></span>
                 </button>
-                <div class="location-menu" id="locationMenu" role="listbox" aria-label="Vyber stredisko"></div>
+                <div class="location-menu" id="locationMenu" role="listbox" aria-label="Vyber středisko"></div>
             </div>
             <span class="header-separator">|</span>
             <div class="enterprise-picker" id="enterprisePicker">
                 <button class="location-trigger" id="enterpriseTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="header-text" id="accountName">Agro Vysocina s.r.o.</span>
+                    <span class="header-text" id="accountName">Agro Vysočina s.r.o.</span>
                 </button>
                 <div class="location-menu" id="enterpriseMenu" role="listbox" aria-label="Vyber podnik"></div>
             </div>
             <span class="header-separator">|</span>
-            <span class="header-text" id="userName">Jan Novak</span>
+            <span class="header-text" id="userName">Jan Novák</span>
             <span class="header-separator">|</span>
-            <span class="header-text last-update" id="lastUpdateLabel">Data: neznamy cas</span>
+            <span class="header-text last-update" id="lastUpdateLabel">Data: neznámý čas</span>
             <button class="map-button" id="mapButton" type="button">Mapa sil</button>
-            <button class="logout-button" id="logoutButton" type="button">Odhlasit</button>
+            <button class="logout-button" id="logoutButton" type="button">Odhlásit</button>
         </div>
     </div>
 
@@ -105,11 +105,11 @@
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
                 <div class="modal-title" id="modalTitle">Detail grafu</div>
-                <button class="modal-close" type="button" aria-label="Zavrit">×</button>
+                <button class="modal-close" type="button" aria-label="Zavřít">×</button>
             </div>
             <div class="modal-controls">
                 <div class="history-toggle">
-                    <button class="history-btn active" data-period="30d" type="button">30 dni</button>
+                    <button class="history-btn active" data-period="30d" type="button">30 dní</button>
                     <button class="history-btn" data-period="1y" type="button">1 rok</button>
                 </div>
             </div>
@@ -121,18 +121,18 @@
         <div class="modal-card map-card" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
             <div class="modal-header">
                 <div class="modal-title" id="mapTitle">Mapa sil</div>
-                <button class="modal-close" type="button" aria-label="Zavrit">×</button>
+                <button class="modal-close" type="button" aria-label="Zavřít">×</button>
             </div>
             <div class="map-toolbar">
-                <div class="map-location" id="mapLocationLabel">Stredisko</div>
-                <div class="map-help" id="mapHelp">Kliknete na silo pro zvyrazneni.</div>
+                <div class="map-location" id="mapLocationLabel">Středisko</div>
+                <div class="map-help" id="mapHelp">Klikněte na silo pro zvýraznění.</div>
                 <div class="map-actions">
                     <button class="map-export-button" id="mapExportButton" type="button">Export pozic</button>
                 </div>
             </div>
             <div class="map-body">
                 <div class="map-stage" id="mapStage">
-                    <img class="map-image" id="mapImage" alt="Mapa arealu">
+                    <img class="map-image" id="mapImage" alt="Mapa areálu">
                     <div class="map-overlay" id="mapOverlay"></div>
                 </div>
                 <div class="map-legend" id="mapLegend"></div>
@@ -142,6 +142,7 @@
     </div>
 </body>
 </html>
+
 
 
 

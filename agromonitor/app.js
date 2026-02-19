@@ -9,13 +9,36 @@ const AUTH_STORAGE_KEY = 'agromonitor_access_v1';
 const AUTH_LOCK_KEY = 'agromonitor_lock_v1';
 const ACCESS_CODES = {
     '123456': { label: 'Admin', locations: ['melkovice', 'stranecka', 'brniste'], defaultLocation: 'melkovice' },
-    '234567': { label: 'ZOD Brniste a.s.', locations: ['brniste'], defaultLocation: 'brniste' },
-    '345678': { label: 'Agro Vysocina s.r.o.', locations: ['melkovice', 'stranecka'], defaultLocation: 'melkovice' }
+    '234567': { label: 'ZOD Brniště a.s.', locations: ['brniste'], defaultLocation: 'brniste' },
+    '345678': { label: 'Agro Vysočina s.r.o.', locations: ['melkovice', 'stranecka'], defaultLocation: 'melkovice' }
 };
 const ADMIN_ACCESS_CODE = '123456';
 const ADMIN_TEMP_MIN = 5;
 const ADMIN_TEMP_MAX = 20;
 const BAD_COOLING_MIN_TEMP = 20.5;
+const DATA_FRESHNESS_LIMIT_MINUTES = 30;
+const LOCATION_CAPACITY_M3 = {
+    melkovice: { default: 1092 },
+    stranecka: { default: 2746 },
+    brniste: { large: 3324, small: 1603 }
+};
+const COMMODITY_DENSITY_T_PER_M3 = {
+    psenice: 0.78,
+    jecmen: 0.62,
+    repka: 0.67,
+    kukurice: 0.72,
+    oves: 0.50,
+    default: 0.75
+};
+const LOCATION_DISPLAY_NAMES = {
+    melkovice: 'Mělkovice',
+    stranecka: 'Stránecká Zhoř',
+    brniste: 'Brniště'
+};
+const ENTERPRISE_DISPLAY_NAMES = {
+    agro_vysocina: 'Agro Vysočina s.r.o.',
+    agro_monitor: 'ZOD Brniště a.s.'
+};
 const BAD_COOLING_SILOS = new Set([
     'melkovice:2',
     'melkovice:6'
@@ -449,10 +472,13 @@ function renderLocationMenu() {
     const locationKeys = getEnterpriseLocationKeys();
     const itemsHTML = locationKeys.map(id => {
         const isActive = id === currentLocation;
+        const info = getLastUpdateInfo(locations[id].lastUpdateTs);
+        const statusClass = info.isStale ? ' offline' : '';
+        const statusLabel = info.isStale ? 'Offline' : 'Online';
         return `
             <button class="location-item ${isActive ? 'active' : ''}" type="button" data-location="${id}">
                 <span>${locations[id].name}</span>
-                <span class="status-dot" aria-hidden="true"></span>
+                <span class="status-dot${statusClass}" aria-label="${statusLabel}" title="${statusLabel}"></span>
             </button>
         `;
     }).join('');
@@ -477,19 +503,104 @@ function timeToMinutes(timeStr) {
 
 function getLastUpdateInfo(timestamp) {
     if (!timestamp) {
-        return { text: 'Data: neznamy cas', isStale: true, minutes: null };
+        return { text: 'Data: neznámý čas', isStale: true, minutes: null };
     }
     const diffMs = Math.max(0, Date.now() - timestamp);
     const minutes = Math.floor(diffMs / 60000);
     let text = '';
-    if (minutes <= 0) text = 'Data: prave aktualni';
-    else if (minutes === 1) text = 'Data: 1 minuta stara';
-    else text = `Data: ${minutes} minut stara`;
-    return { text, isStale: minutes >= 263, minutes };
+    if (minutes <= 0) text = 'Data: právě aktuální';
+    else if (minutes === 1) text = 'Data: 1 minuta stará';
+    else text = `Data: ${minutes} minut stará`;
+    return { text, isStale: minutes >= DATA_FRESHNESS_LIMIT_MINUTES, minutes };
+}
+
+function getLocationDisplayName(locationId, fallbackName) {
+    return LOCATION_DISPLAY_NAMES[locationId] || fallbackName || locationId;
+}
+
+function getEnterpriseDisplayName(enterpriseId, fallbackName) {
+    return ENTERPRISE_DISPLAY_NAMES[enterpriseId] || fallbackName || enterpriseId;
+}
+
+function normalizeCommodityName(value) {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function getCommodityDensityTPerM3(commodity) {
+    const normalized = normalizeCommodityName(commodity);
+    if (normalized.includes('psenice')) return COMMODITY_DENSITY_T_PER_M3.psenice;
+    if (normalized.includes('jecmen')) return COMMODITY_DENSITY_T_PER_M3.jecmen;
+    if (normalized.includes('repka')) return COMMODITY_DENSITY_T_PER_M3.repka;
+    if (normalized.includes('kukurice')) return COMMODITY_DENSITY_T_PER_M3.kukurice;
+    if (normalized.includes('oves')) return COMMODITY_DENSITY_T_PER_M3.oves;
+    return COMMODITY_DENSITY_T_PER_M3.default;
+}
+
+function resolveSiloCapacityM3(locationId, silo) {
+    const config = LOCATION_CAPACITY_M3[locationId];
+    if (!config) return 0;
+    if (Number.isFinite(config.default)) return config.default;
+
+    if (locationId === 'brniste') {
+        const siloIdNum = Number.parseInt(silo.id, 10);
+        if (Number.isFinite(siloIdNum)) {
+            return siloIdNum <= 2 ? config.large : config.small;
+        }
+        return silo.thermometers >= 3 ? config.large : config.small;
+    }
+
+    return 0;
+}
+
+function formatTons(value) {
+    const floored = Math.max(0, Math.floor(Number(value) || 0));
+    return `${floored} t`;
+}
+
+function buildSiloCapacityEstimate(silo, locationId) {
+    const capacityM3 = resolveSiloCapacityM3(locationId, silo);
+    if (!Number.isFinite(capacityM3) || capacityM3 <= 0) return null;
+
+    const density = getCommodityDensityTPerM3(silo.commodity);
+    const safeLevel = clamp(Number(silo.level) || 0, 0, 100) / 100;
+    const filledM3 = capacityM3 * safeLevel;
+    const remainingM3 = Math.max(0, capacityM3 - filledM3);
+    const totalTons = capacityM3 * density;
+    const filledTons = totalTons * safeLevel;
+    const remainingTons = Math.max(0, totalTons - filledTons);
+
+    return {
+        capacityM3,
+        filledM3,
+        remainingM3,
+        density,
+        totalTons,
+        filledTons,
+        remainingTons
+    };
+}
+
+function getSiloContextByKey(siloKey) {
+    const parts = String(siloKey || '').split(':');
+    if (parts.length < 2) return null;
+    const locationId = parts[0];
+    const siloId = parts[1];
+    const location = locations[locationId];
+    if (!location || !location.siloMap) return null;
+    const silo = location.siloMap[siloId];
+    if (!silo) return null;
+    return { locationId, siloId, location, silo };
+}
+
+function formatDensity(value) {
+    return `${(Number(value) || 0).toFixed(2)} t/m3`;
 }
 
 function formatAgeMinutes(minutes) {
-    if (!Number.isFinite(minutes)) return 'neznamy cas';
+    if (!Number.isFinite(minutes)) return 'neznámý čas';
     if (minutes < 60) return `${minutes} min`;
     if (minutes < 1440) return `${Math.round(minutes / 60)} h`;
     return `${Math.round(minutes / 1440)} d`;
@@ -515,8 +626,8 @@ function collectAdminAlerts() {
                 : Math.round((Date.now() - location.lastUpdateTs) / 60000);
             alerts.push({
                 severity: 'danger',
-                title: `Stredisko ${location.name} je offline`,
-                detail: `Posledni data pred ${formatAgeMinutes(minutes)}.`
+                title: `Středisko ${location.name} je offline`,
+                detail: `Poslední data před ${formatAgeMinutes(minutes)}.`
             });
         }
 
@@ -525,7 +636,7 @@ function collectAdminAlerts() {
             if (airflow < 20 || airflow > 70) {
                 alerts.push({
                     severity: 'danger',
-                    title: `Cisticka mimo hodnoty - ${location.name}`,
+                    title: `Čistička mimo hodnoty - ${location.name}`,
                     detail: `Vzduch ${airflow}%, mimo bezny rozsah 20-70%.`
                 });
             }
@@ -556,7 +667,7 @@ function collectAdminAlerts() {
                 alerts.push({
                     severity: 'danger',
                     title: `Silo ${silo.name} - neplatna teplota`,
-                    detail: `Stredisko ${location.name}, senzor hlasi extremni hodnotu.`
+                    detail: `Středisko ${location.name}, senzor hlásí extrémní hodnotu.`
                 });
                 return;
             }
@@ -565,7 +676,7 @@ function collectAdminAlerts() {
                 alerts.push({
                     severity: 'warning',
                     title: `Silo ${silo.name} - teploty mimo standard`,
-                    detail: `Stredisko ${location.name}, rozsah ${min.toFixed(1)} - ${max.toFixed(1)} C.`
+                    detail: `Středisko ${location.name}, rozsah ${min.toFixed(1)} - ${max.toFixed(1)} C.`
                 });
             }
         });
@@ -787,7 +898,7 @@ function buildFanChartSvg(series, options = {}) {
         <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"
             class="${cssClass} chart-interactive"
             role="img"
-            aria-label="Historie ventilatoru"
+            aria-label="Historie ventilátorů"
             data-chart="time"
             data-t-min="${tMin}"
             data-t-max="${tMax}"
@@ -847,7 +958,7 @@ function buildLevelChartSvg(series, options = {}) {
         <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"
             class="${cssClass} chart-interactive"
             role="img"
-            aria-label="Historie naplneni sila"
+            aria-label="Historie naplnění sila"
             data-chart="time"
             data-t-min="${tMin}"
             data-t-max="${tMax}"
@@ -951,6 +1062,25 @@ function renderSilo(silo, locationId) {
     const chartHtml = buildTempChartSvg(series, { cssClass: 'history-chart', showAxes: true, padding: 18, bands, periodDays: 30 });
     const fanSeriesSmall = getFanSeriesForSilo(siloKey, '30d', 60);
     const fanChart = buildFanChartSvg(fanSeriesSmall, { cssClass: 'fan-chart', showAxes: true, height: 90, padding: 18, periodDays: 30 });
+    const capacityEstimate = buildSiloCapacityEstimate(silo, locationId);
+    const capacityHTML = capacityEstimate
+        ? `
+            <div class="silo-capacity-estimate" title="Odhad podle objemové hmotnosti ${capacityEstimate.density.toFixed(2)} t/m3">
+                <div class="capacity-metric">
+                    <span class="capacity-label">Kapacita</span>
+                    <span class="capacity-value">${formatTons(capacityEstimate.totalTons)}</span>
+                </div>
+                <div class="capacity-metric">
+                    <span class="capacity-label">Naskladněno</span>
+                    <span class="capacity-value">${formatTons(capacityEstimate.filledTons)}</span>
+                </div>
+                <div class="capacity-metric">
+                    <span class="capacity-label">Zbyva</span>
+                    <span class="capacity-value">${formatTons(capacityEstimate.remainingTons)}</span>
+                </div>
+            </div>
+        `
+        : '';
 
     return `
         <div class="silo-card">
@@ -958,6 +1088,7 @@ function renderSilo(silo, locationId) {
                 <div class="silo-name">${silo.name}</div>
                 <div class="silo-commodity">${silo.commodity}</div>
             </div>
+            ${capacityHTML}
 
             <div class="temp-section">
                 <div class="temp-visual">
@@ -977,7 +1108,7 @@ function renderSilo(silo, locationId) {
             </div>
 
             <div class="fan-section" data-silo-key="${siloKey}" data-silo-name="${silo.name}">
-                <div class="temp-label">Ventilatory</div>
+                <div class="temp-label">Ventilátory</div>
                 ${fanChart}
             </div>
 
@@ -997,11 +1128,11 @@ function renderCleanserCard(location) {
     return `
         <div class="silo-card cleanser-card">
             <div class="silo-header">
-                <div class="silo-name">Cisticka</div>
+                <div class="silo-name">Čistička</div>
             </div>
             <div class="cleanser-body">
                 <div class="cleanser-gauge ${airflowOk ? '' : 'gauge-danger'}">
-                    <svg viewBox="0 0 120 120" class="gauge-svg" role="img" aria-label="Cisticka - prutok vzduchu ${safeAirflow}%">
+                    <svg viewBox="0 0 120 120" class="gauge-svg" role="img" aria-label="Čistička - prutok vzduchu ${safeAirflow}%">
                         <circle class="gauge-track" cx="60" cy="60" r="${radius}" />
                         <circle class="gauge-value" cx="60" cy="60" r="${radius}"
                             style="stroke-dasharray:${circumference}; stroke-dashoffset:${offset};" />
@@ -1047,12 +1178,12 @@ function resolveOneDriveItemUrl(locationId, itemPath, item) {
 function renderOneDriveTree(locationId, items, depth = 0, parentPath = '') {
     if (!items || !items.length) {
         return depth === 0
-            ? '<div class="docs-empty">Slozka je prazdna.</div>'
+            ? '<div class="docs-empty">Složka je prázdná.</div>'
             : '';
     }
 
     const html = items.map(item => {
-        const rawName = item.name || 'Bez nazvu';
+        const rawName = item.name || 'Bez názvu';
         const safeName = escapeHtml(rawName);
         const itemPath = parentPath ? `${parentPath}/${rawName}` : rawName;
         const itemUrl = resolveOneDriveItemUrl(locationId, itemPath, item);
@@ -1095,10 +1226,10 @@ async function renderDocuments(locationId) {
     const token = ++docsRenderToken;
     const folder = ONE_DRIVE_FOLDERS[locationId] || {};
     const openButton = folder.url
-        ? `<a class="doc-link onedrive-link" href="${folder.url}" target="_blank" rel="noopener noreferrer"><span class="doc-link-label">Otevrit slozku strediska v OneDrive</span><span class="doc-link-arrow">Microsoft</span></a>`
-        : '<div class="docs-empty">OneDrive slozka pro toto stredisko zatim neni nastavena.</div>';
+        ? `<a class="doc-link onedrive-link" href="${folder.url}" target="_blank" rel="noopener noreferrer"><span class="doc-link-label">Otevřít složku střediska v OneDrive</span><span class="doc-link-arrow">Microsoft</span></a>`
+        : '<div class="docs-empty">OneDrive složka pro toto středisko zatím není nastavena.</div>';
 
-    container.innerHTML = `${openButton}<div class="docs-loading">Nacitam ukazkovou strukturu...</div>`;
+    container.innerHTML = `${openButton}<div class="docs-loading">Načítám ukázkovou strukturu...</div>`;
 
     try {
         const response = await fetch(`data/${locationId}/Onedrive/structure.json`);
@@ -1113,7 +1244,7 @@ async function renderDocuments(locationId) {
         container.innerHTML = `${openButton}${renderOneDriveTree(locationId, items)}`;
     } catch {
         if (token !== docsRenderToken) return;
-        container.innerHTML = `${openButton}<div class="docs-empty">Ukazkova struktura neni k dispozici.</div>`;
+        container.innerHTML = `${openButton}<div class="docs-empty">Ukázková struktura není k dispozici.</div>`;
     }
 }
 
@@ -1131,13 +1262,13 @@ function changeLocation() {
     }
 
     const lastUpdateLabel = document.getElementById('lastUpdateLabel');
+    const updateInfo = getLastUpdateInfo(location.lastUpdateTs);
     if (lastUpdateLabel) {
-        const info = getLastUpdateInfo(location.lastUpdateTs);
-        lastUpdateLabel.textContent = info.text;
-        lastUpdateLabel.classList.toggle('is-stale', info.isStale);
+        lastUpdateLabel.textContent = updateInfo.text;
+        lastUpdateLabel.classList.toggle('is-stale', updateInfo.isStale);
     }
 
-    const isOnline = true;
+    const isOnline = !updateInfo.isStale;
     const statusDot = document.getElementById('locationStatusDot');
 
     if (statusDot) {
@@ -1259,7 +1390,7 @@ function updateLoginLockUI() {
         const minutes = Math.ceil(remainingMs / 60000);
         input.setAttribute('disabled', 'true');
         button.setAttribute('disabled', 'true');
-        error.textContent = `Prihlaseni je docasne blokovane. Zkuste to za ${minutes} min.`;
+        error.textContent = `Přihlášení je dočasně blokované. Zkuste to za ${minutes} min.`;
     } else {
         input.removeAttribute('disabled');
         button.removeAttribute('disabled');
@@ -1439,11 +1570,11 @@ function buildData(snapshotRows, historyRows) {
     };
 
     const commodities = [
-        'Psenice potravina',
-        'Psenice krmna',
-        'Jecmen jarni',
-        'Repka',
-        'Kukurice',
+        'Pšenice potravinářská',
+        'Pšenice krmná',
+        'Ječmen jarní',
+        'Řepka',
+        'Kukuřice',
         'Oves'
     ];
 
@@ -1461,13 +1592,13 @@ function buildData(snapshotRows, historyRows) {
 
     snapshotRows.forEach(row => {
         const entId = row.enterprise_id;
-        const entName = row.enterprise_name;
+        const entName = getEnterpriseDisplayName(entId, row.enterprise_name);
         if (!enterprises[entId]) {
             enterprises[entId] = { name: entName, locations: [] };
         }
 
         const locId = row.location_id;
-        const locName = row.location_name;
+        const locName = getLocationDisplayName(locId, row.location_name);
         if (!locations[locId]) {
             const meta = locationMeta[locId] || {};
             const baseTs = lastDataTimestamp || Date.now();
@@ -1485,9 +1616,9 @@ function buildData(snapshotRows, historyRows) {
                 hasDryer: !!meta.hasDryer,
                 lastUpdateTs,
                 log: [
-                    { time: '16:23', message: 'Silo 4 - Ventilator 1 aktivovan' },
+                    { time: '16:23', message: 'Silo 4 - Ventilátor 1 aktivovan' },
                     { time: '14:15', message: 'Silo 2 - Kontrola teploty OK' },
-                    { time: '12:40', message: 'System pripojen' },
+                    { time: '12:40', message: 'Systém připojen' },
                 ],
             };
             enterprises[entId].locations.push(locId);
@@ -1544,7 +1675,7 @@ function buildData(snapshotRows, historyRows) {
 
         if (fanId) {
             if (!silo.fanMap[fanId]) {
-                silo.fanMap[fanId] = { name: `Ventilator ${fanId.replace('F', '')}`, running: false, history: [] };
+                silo.fanMap[fanId] = { name: `Ventilátor ${fanId.replace('F', '')}`, running: false, history: [] };
             }
             silo.fanMap[fanId].running = silo.fanMap[fanId].running || fanRunning;
         }
@@ -1788,6 +1919,7 @@ function setupModal() {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
         modalState = { open: false, type: 'temp', siloKey: '', siloName: '' };
+        updateBodyModalLock();
     };
 
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
@@ -1885,7 +2017,7 @@ function renderMap(locationId) {
     if (!location) {
         mapImage.removeAttribute('src');
         overlay.innerHTML = '';
-        legend.innerHTML = '<div class="map-help">Stredisko neni dostupne.</div>';
+        legend.innerHTML = '<div class="map-help">Středisko není dostupné.</div>';
         return;
     }
 
@@ -1900,7 +2032,7 @@ function renderMap(locationId) {
     } else {
         mapImage.removeAttribute('src');
     }
-    mapImage.alt = `Mapa arealu - ${location.name}`;
+    mapImage.alt = `Mapa areálu - ${location.name}`;
     label.textContent = location.name;
 
     const silos = location.silos || [];
@@ -1920,7 +2052,7 @@ function renderMap(locationId) {
 
     if (!markers.length) {
         overlay.innerHTML = '';
-        legend.innerHTML = '<div class="map-help">Zadne dostupne silo pro mapu.</div>';
+        legend.innerHTML = '<div class="map-help">Žádné dostupné silo pro mapu.</div>';
         return;
     }
 
@@ -1937,7 +2069,7 @@ function renderMap(locationId) {
 
     overlay.classList.toggle('is-editable', canEdit);
     legend.classList.toggle('is-editable', canEdit);
-    const helpText = canEdit ? 'Admin: marker lze posouvat tazenim.' : 'Kliknete na silo pro zvyrazneni.';
+    const helpText = canEdit ? 'Admin: marker lze posouvat tažením.' : 'Klikněte na silo pro zvýraznění.';
     if (help) help.textContent = helpText;
     overlay.innerHTML = markers.map(marker => `
         <button
@@ -2016,6 +2148,7 @@ function openMapModal(locationId) {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     mapState = { open: true, locationId };
+    updateBodyModalLock();
     loadMapConfig().then(() => {
         renderMap(locationId);
     });
@@ -2027,6 +2160,7 @@ function closeMapModal() {
     modal.classList.add('hidden');
     modal.setAttribute('aria-hidden', 'true');
     mapState = { open: false, locationId: '' };
+    updateBodyModalLock();
 }
 
 function setupMap() {
@@ -2213,11 +2347,20 @@ function openModal(type, siloKey, siloName) {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     modalState = { open: true, type, siloKey, siloName };
+    updateBodyModalLock();
     const buttons = modal.querySelectorAll('.history-btn');
     buttons.forEach(b => b.classList.remove('active'));
     const active = modal.querySelector(`.history-btn[data-period="${modalPeriod}"]`);
     if (active) active.classList.add('active');
     renderModalContent();
+}
+
+function updateBodyModalLock() {
+    const detailModal = document.getElementById('detailModal');
+    const mapModal = document.getElementById('mapModal');
+    const detailOpen = detailModal && !detailModal.classList.contains('hidden');
+    const mapOpen = mapModal && !mapModal.classList.contains('hidden');
+    document.body.classList.toggle('modal-open', !!(detailOpen || mapOpen));
 }
 
 function renderModalContent() {
@@ -2250,7 +2393,7 @@ function renderModalContent() {
         `;
     } else {
         if (modalState.type === 'fan') {
-            title.textContent = `Detail ventilatoru - ${modalState.siloName}`;
+            title.textContent = `Detail ventilátorů - ${modalState.siloName}`;
             const series = getFanSeriesForSilo(modalState.siloKey, modalPeriod, 200);
             const periodDays = modalPeriod === '1y' ? 365 : 30;
             const chart = buildFanChartSvg(series, { width: 860, height: 220, padding: 36, cssClass: 'fan-chart fan-chart-large', periodDays });
@@ -2258,21 +2401,38 @@ function renderModalContent() {
                 <div class="fan-section">
                     ${chart}
                     <div class="chart-legend">
-                        <span class="legend-strong">Podil aktivnich ventilatoru</span>
+                        <span class="legend-strong">Podíl aktivních ventilátorů</span>
                     </div>
                 </div>
             `;
         } else {
-            title.textContent = `Detail naplneni sila - ${modalState.siloName}`;
+            title.textContent = `Detail naplnění sila - ${modalState.siloName}`;
             const series = getLevelSeriesForSilo(modalState.siloKey, modalPeriod, 200);
             const periodDays = modalPeriod === '1y' ? 365 : 30;
             const chart = buildLevelChartSvg(series, { width: 860, height: 220, padding: 36, cssClass: 'level-chart level-chart-large', periodDays });
+            const siloContext = getSiloContextByKey(modalState.siloKey);
+            const estimate = siloContext ? buildSiloCapacityEstimate(siloContext.silo, siloContext.locationId) : null;
+            const detailsHtml = estimate && siloContext
+                ? `
+                    <div class="modal-details-grid">
+                        <div class="modal-detail-row"><span class="modal-detail-label">Materiál</span><span class="modal-detail-value">${siloContext.silo.commodity}</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Objemová hmotnost</span><span class="modal-detail-value">${formatDensity(estimate.density)}</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Kapacita sila</span><span class="modal-detail-value">${Math.floor(estimate.capacityM3)} m3</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Volny objem</span><span class="modal-detail-value">${Math.floor(estimate.remainingM3)} m3</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Kapacita sila (odhad)</span><span class="modal-detail-value">${formatTons(estimate.totalTons)}</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Naskladněno</span><span class="modal-detail-value">${formatTons(estimate.filledTons)}</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Zbývá volně</span><span class="modal-detail-value">${formatTons(estimate.remainingTons)}</span></div>
+                        <div class="modal-detail-row"><span class="modal-detail-label">Aktuální naplnění</span><span class="modal-detail-value">${Math.floor(clamp(Number(siloContext.silo.level) || 0, 0, 100))}%</span></div>
+                    </div>
+                `
+                : '';
             body.innerHTML = `
                 <div class="level-section">
                     ${chart}
                     <div class="chart-legend">
-                        <span class="legend-strong">Naplneni sila v %</span>
+                        <span class="legend-strong">Naplnění sila v %</span>
                     </div>
+                    ${detailsHtml}
                 </div>
             `;
         }
@@ -2308,18 +2468,33 @@ function showLoadingError() {
 document.addEventListener('DOMContentLoaded', function() {
     loadMapConfig();
     const locations = ['melkovice', 'stranecka', 'brniste'];
-    const snapshotRequests = locations.map(loc => fetch(`data/${loc}/snapshot.csv`).then(r => r.text()));
-    const historyRequests = locations.map(loc => fetch(`data/${loc}/history.csv`).then(r => r.text()));
+    const snapshotRequests = locations.map(loc =>
+        fetch(`data/${loc}/snapshot.csv`).then(r => {
+            if (!r.ok) throw new Error(`snapshot ${loc} ${r.status}`);
+            return r.text();
+        })
+    );
+    const historyRequests = locations.map(loc =>
+        fetch(`data/${loc}/history.csv`).then(r => {
+            if (!r.ok) throw new Error(`history ${loc} ${r.status}`);
+            return r.text();
+        })
+    );
 
     Promise.all(snapshotRequests).then((snapshots) => {
         const snapshotRows = snapshots.flatMap(text => parseCsv(text));
-        initApp(snapshotRows, []);
+        const validSnapshotRows = snapshotRows.filter(r => r.location_id && r.enterprise_id && r.silo_id);
+        if (!validSnapshotRows.length) {
+            showLoadingError();
+            return;
+        }
+        initApp(validSnapshotRows, []);
 
         Promise.all(historyRequests).then((histories) => {
             const historyRows = USE_SYNTHETIC_HISTORY
-                ? buildSyntheticHistoryRows(snapshotRows)
+                ? buildSyntheticHistoryRows(validSnapshotRows)
                 : histories.flatMap(text => parseCsv(text));
-            initApp(snapshotRows, historyRows);
+            initApp(validSnapshotRows, historyRows);
         }).catch(() => {
             // keep snapshot-only view if history fails
         });
@@ -2327,4 +2502,5 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoadingError();
     });
 });
+
 
