@@ -87,6 +87,7 @@ export class RychlopoctyApp {
         const content = '<div id="tab-content" class="tab-content">' + this.getTrainingContent() + '</div>';
         
         const footer = '<div style="text-align: center; padding: 20px 0; margin-top: 30px;"><div style="font-size: 11px; color: #475569;">Made by JT</div></div>';
+        const footer = '<div style="text-align: center; padding: 20px 0; margin-top: 30px;"><div style="font-size: 11px; color: #475569;"><a href="http://www.rychlopocty.cz/agromonitor/index.html">Agromonitor</a></div></div>';
         
         app.innerHTML = header + tabs + content + footer;
 
@@ -787,3 +788,4 @@ showCreatedGameInList(gameCode) {
     }
 
 }
+
