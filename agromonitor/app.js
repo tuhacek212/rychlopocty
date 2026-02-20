@@ -1,8 +1,8 @@
 ﻿// AgroMonitor - Demo version loading from CSV
 let currentLocation = '';
 let currentEnterprise = '';
-let modalPeriod = '30d';
-let modalState = { open: false, type: 'temp', siloKey: '', siloName: '' };
+let modalPeriod = '1y';
+let modalState = { open: false, type: 'overview', siloKey: '', siloName: '' };
 let mapState = { open: false, locationId: '' };
 const currentUserRole = 'MASTER';
 const AUTH_STORAGE_KEY = 'agromonitor_access_v1';
@@ -1057,11 +1057,11 @@ function renderSilo(silo, locationId) {
 
     const ventilationHTML = renderVentilationTimeline(silo.fans);
     const siloKey = `${locationId}:${silo.id}`;
-    const series = getSeriesForSilo(siloKey, '30d', 90);
-    const bands = getVentBands(siloKey, '30d');
-    const chartHtml = buildTempChartSvg(series, { cssClass: 'history-chart', showAxes: true, padding: 18, bands, periodDays: 30 });
-    const fanSeriesSmall = getFanSeriesForSilo(siloKey, '30d', 60);
-    const fanChart = buildFanChartSvg(fanSeriesSmall, { cssClass: 'fan-chart', showAxes: true, height: 90, padding: 18, periodDays: 30 });
+    const series = getSeriesForSilo(siloKey, '1y', 90);
+    const bands = getVentBands(siloKey, '1y');
+    const chartHtml = buildTempChartSvg(series, { cssClass: 'history-chart', showAxes: false, padding: 10, bands, periodDays: 365 });
+    const fanSeriesSmall = getFanSeriesForSilo(siloKey, '1y', 60);
+    const fanChart = buildFanChartSvg(fanSeriesSmall, { cssClass: 'fan-chart', showAxes: false, height: 90, padding: 10, periodDays: 365 });
     const capacityEstimate = buildSiloCapacityEstimate(silo, locationId);
     const capacityHTML = capacityEstimate
         ? `
@@ -1559,7 +1559,9 @@ function buildData(snapshotRows, historyRows) {
     const historyBuckets = {};
     const thermometerChoice = {};
     const fanDedup = {};
+    const tempPointSeen = new Set();
     const siloDepthByKey = {};
+    const shallowestDepthByKey = {};
     const fanSeriesBuckets = {};
     const levelBuckets = {};
 
@@ -1670,6 +1672,9 @@ function buildData(snapshotRows, historyRows) {
 
         silo.depth = Math.max(silo.depth, depth);
         siloDepthByKey[siloKey] = Math.max(siloDepthByKey[siloKey] || 0, depth);
+        if (!Number.isFinite(shallowestDepthByKey[siloKey]) || depth < shallowestDepthByKey[siloKey]) {
+            shallowestDepthByKey[siloKey] = depth;
+        }
         silo.sensorsPerThermometer = Math.max(silo.sensorsPerThermometer, silo.sensorIdsByThermometer[thermId].length);
         silo.thermometers = Math.max(silo.thermometers, silo.thermometerIds.length);
 
@@ -1709,6 +1714,9 @@ function buildData(snapshotRows, historyRows) {
         const maxDepth = Math.max(siloDepthByKey[key] || 0, depth);
         const levelMeters = (levelPct / 100) * maxDepth;
         const isActive = depth <= levelMeters;
+        const shallowestDepth = shallowestDepthByKey[key];
+        const isFallbackActive = levelPct > 0 && Number.isFinite(shallowestDepth) && depth <= shallowestDepth + 1e-9;
+        const includeForTemp = isActive || isFallbackActive;
 
         if (!levelBuckets[key]) levelBuckets[key] = {};
         if (!levelBuckets[key][ts]) {
@@ -1744,9 +1752,86 @@ function buildData(snapshotRows, historyRows) {
             }
         }
 
-        if (!isActive) {
+        if (!includeForTemp) {
             return;
         }
+
+        const sensorId = row.sensor_id || '';
+        const tempPointKey = `${key}|${ts}|${thermId}|${sensorId}`;
+        if (tempPointSeen.has(tempPointKey)) {
+            return;
+        }
+        tempPointSeen.add(tempPointKey);
+
+        if (!thermometerChoice[key]) {
+            thermometerChoice[key] = thermId;
+        }
+
+        if (!historyBuckets[key]) historyBuckets[key] = {};
+        if (!historyBuckets[key][ts]) {
+            historyBuckets[key][ts] = { sum: 0, count: 0, min: null, max: null, tMin: null, tMax: null };
+        }
+
+        const bucket = historyBuckets[key][ts];
+        bucket.sum += temp;
+        bucket.count += 1;
+        bucket.min = bucket.min === null ? temp : Math.min(bucket.min, temp);
+        bucket.max = bucket.max === null ? temp : Math.max(bucket.max, temp);
+
+        if (thermId === thermometerChoice[key]) {
+            bucket.tMin = bucket.tMin === null ? temp : Math.min(bucket.tMin, temp);
+            bucket.tMax = bucket.tMax === null ? temp : Math.max(bucket.tMax, temp);
+        }
+    });
+
+    // Ensure modal history reflects current snapshot values too (history.csv can lag behind).
+    snapshotRows.forEach(row => {
+        const locId = row.location_id;
+        const siloId = row.silo_id;
+        const key = `${locId}:${siloId}`;
+        const thermId = row.thermometer_id;
+        const thermKey = `${locId}:${siloId}:${thermId}`;
+        const sensorId = row.sensor_id || '';
+        let temp = parseFloat(row.temp_c || '0');
+        if (faultySet.has(thermKey)) {
+            temp = 255;
+        }
+        const ts = Date.parse(row.timestamp);
+        if (!Number.isFinite(ts)) return;
+        const depth = parseFloat(row.depth_m || '0');
+        const levelPct = parseFloat(row.level_pct || '0');
+        const maxDepth = Math.max(siloDepthByKey[key] || 0, depth);
+        const levelMeters = (levelPct / 100) * maxDepth;
+        const isActive = depth <= levelMeters;
+        const shallowestDepth = shallowestDepthByKey[key];
+        const isFallbackActive = levelPct > 0 && Number.isFinite(shallowestDepth) && depth <= shallowestDepth + 1e-9;
+        const includeForTemp = isActive || isFallbackActive;
+
+        if (!levelBuckets[key]) levelBuckets[key] = {};
+        if (!levelBuckets[key][ts]) {
+            levelBuckets[key][ts] = levelPct;
+        }
+
+        const fanId = row.fan_id;
+        if (fanId) {
+            if (!fanSeriesBuckets[key]) fanSeriesBuckets[key] = {};
+            if (!fanSeriesBuckets[key][ts]) {
+                fanSeriesBuckets[key][ts] = { total: 0, running: 0, seen: {} };
+            }
+            if (!fanSeriesBuckets[key][ts].seen[fanId]) {
+                fanSeriesBuckets[key][ts].seen[fanId] = true;
+                fanSeriesBuckets[key][ts].total += 1;
+                if (row.fan_running === 'true') {
+                    fanSeriesBuckets[key][ts].running += 1;
+                }
+            }
+        }
+
+        if (!includeForTemp) return;
+
+        const tempPointKey = `${key}|${ts}|${thermId}|${sensorId}`;
+        if (tempPointSeen.has(tempPointKey)) return;
+        tempPointSeen.add(tempPointKey);
 
         if (!thermometerChoice[key]) {
             thermometerChoice[key] = thermId;
@@ -1918,7 +2003,7 @@ function setupModal() {
     const closeModal = () => {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
-        modalState = { open: false, type: 'temp', siloKey: '', siloName: '' };
+        modalState = { open: false, type: 'overview', siloKey: '', siloName: '' };
         updateBodyModalLock();
     };
 
@@ -2002,6 +2087,13 @@ function setActiveMapMarker(markerId) {
     });
 }
 
+function openSiloDetailFromMap(marker, locationId) {
+    if (!marker || !locationId) return;
+    const siloKey = `${locationId}:${marker.siloId}`;
+    closeMapModal();
+    openModal('overview', siloKey, marker.name || `Silo ${marker.siloId}`);
+}
+
 function renderMap(locationId) {
     const mapImage = document.getElementById('mapImage');
     const overlay = document.getElementById('mapOverlay');
@@ -2069,7 +2161,9 @@ function renderMap(locationId) {
 
     overlay.classList.toggle('is-editable', canEdit);
     legend.classList.toggle('is-editable', canEdit);
-    const helpText = canEdit ? 'Admin: marker lze posouvat tažením.' : 'Klikněte na silo pro zvýraznění.';
+    const helpText = canEdit
+        ? 'Admin: marker lze posouvat tažením. Klik otevře detail sila.'
+        : 'Klikněte na silo pro otevření detailu.';
     if (help) help.textContent = helpText;
     overlay.innerHTML = markers.map(marker => `
         <button
@@ -2081,6 +2175,10 @@ function renderMap(locationId) {
             type="button"
             aria-label="${marker.name}">
         </button>
+        <div
+            class="map-marker-label"
+            style="--x:${marker.x}%; --y:${marker.y}%;"
+            aria-hidden="true">${marker.name}</div>
     `).join('');
 
     legend.innerHTML = markers.map(marker => `
@@ -2092,8 +2190,10 @@ function renderMap(locationId) {
 
     overlay.querySelectorAll('.map-marker').forEach(marker => {
         const markerId = marker.getAttribute('data-id');
+        const markerData = markers.find(item => String(item.id) === String(markerId));
         marker.addEventListener('click', () => {
             setActiveMapMarker(markerId);
+            openSiloDetailFromMap(markerData, locationId);
         });
 
         if (canEdit) {
@@ -2126,20 +2226,21 @@ function renderMap(locationId) {
     });
 
     legend.querySelectorAll('.map-legend-item').forEach(item => {
+        const markerId = item.getAttribute('data-id');
+        const markerData = markers.find(marker => String(marker.id) === String(markerId));
         item.addEventListener('click', () => {
-            setActiveMapMarker(item.getAttribute('data-id'));
+            setActiveMapMarker(markerId);
+            openSiloDetailFromMap(markerData, locationId);
         });
         item.addEventListener('keypress', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                setActiveMapMarker(item.getAttribute('data-id'));
+                setActiveMapMarker(markerId);
+                openSiloDetailFromMap(markerData, locationId);
             }
         });
     });
 
-    if (markers.length) {
-        setActiveMapMarker(markers[0].id);
-    }
 }
 
 function openMapModal(locationId) {
@@ -2151,6 +2252,223 @@ function openMapModal(locationId) {
     updateBodyModalLock();
     loadMapConfig().then(() => {
         renderMap(locationId);
+    });
+}
+
+function buildOverviewChartSvg(tempSeries, fanSeriesData, levelSeriesData, options = {}) {
+    const width = options.width || 760;
+    const height = options.height || 220;
+    const leftPad = options.leftPad || 56;
+    const rightPad = options.rightPad || 64;
+    const topPad = options.topPad || 30;
+    const bottomPad = options.bottomPad || 32;
+    const periodDays = options.periodDays || 365;
+
+    const hasTemp = Array.isArray(tempSeries) && tempSeries.length > 1;
+    const hasFan = Array.isArray(fanSeriesData) && fanSeriesData.length > 1;
+    const hasLevel = Array.isArray(levelSeriesData) && levelSeriesData.length > 1;
+    if (!hasTemp && !hasFan && !hasLevel) {
+        return '<div class="chart-empty">Není k dispozici historie</div>';
+    }
+
+    const allTimes = []
+        .concat((tempSeries || []).map(p => p.t))
+        .concat((fanSeriesData || []).map(p => p.t))
+        .concat((levelSeriesData || []).map(p => p.t))
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+    const tMax = allTimes.length ? allTimes[allTimes.length - 1] : Date.now();
+    const tMin = tMax - periodDays * MS_PER_DAY;
+
+    const tempMin = 0;
+    const tempMax = 30;
+    const tempRange = tempMax - tempMin;
+
+    const plotWidth = width - leftPad - rightPad;
+    const plotHeight = height - topPad - bottomPad;
+    const scaleX = (t) => leftPad + ((t - tMin) / Math.max(1, tMax - tMin)) * plotWidth;
+    const scaleTempY = (value) => topPad + (1 - ((value - tempMin) / tempRange)) * plotHeight;
+    const scalePctY = (value) => topPad + (1 - (clamp(value, 0, 100) / 100)) * plotHeight;
+
+    const inRange = (t) => t >= tMin && t <= tMax;
+    const tempInRange = (tempSeries || []).filter(p => inRange(p.t));
+    const fanInRange = (fanSeriesData || []).filter(p => inRange(p.t));
+    const levelInRange = (levelSeriesData || []).filter(p => inRange(p.t));
+
+    const tempAvgSeries = tempInRange.map(p => ({
+        t: p.t,
+        x: scaleX(p.t),
+        y: scaleTempY(p.avg)
+    }));
+    const tempMinSeries = tempInRange.map(p => ({
+        t: p.t,
+        x: scaleX(p.t),
+        y: scaleTempY(p.min)
+    }));
+    const tempMinYByTime = new Map(tempMinSeries.map(p => [p.t, p.y]));
+    const pointsTempAvg = tempAvgSeries.map(p => `${p.x},${p.y}`).join(' ');
+    const pointsTempMin = tempInRange.map(p => `${scaleX(p.t)},${scaleTempY(p.min)}`).join(' ');
+    const pointsTempMax = tempInRange.map(p => `${scaleX(p.t)},${scaleTempY(p.max)}`).join(' ');
+    const smoothFanSeries = fanInRange.map((point, index, arr) => {
+        const from = Math.max(0, index - 2);
+        const to = Math.min(arr.length - 1, index + 2);
+        let sum = 0;
+        let count = 0;
+        for (let i = from; i <= to; i++) {
+            sum += arr[i].value;
+            count += 1;
+        }
+        return { t: point.t, value: sum / Math.max(1, count) };
+    });
+    const firstTempT = tempMinSeries.length ? tempMinSeries[0].t : 0;
+    const lastTempT = tempMinSeries.length ? tempMinSeries[tempMinSeries.length - 1].t : 0;
+    const getVentAnchorY = (t) => {
+        if (t < firstTempT || t > lastTempT) return null;
+        if (tempMinYByTime.has(t)) return tempMinYByTime.get(t);
+
+        for (let i = 0; i < tempMinSeries.length - 1; i++) {
+            const a = tempMinSeries[i];
+            const b = tempMinSeries[i + 1];
+            if (t >= a.t && t <= b.t) {
+                const ratio = (t - a.t) / Math.max(1, b.t - a.t);
+                return a.y + (b.y - a.y) * ratio;
+            }
+        }
+        return null;
+    };
+    const fanAreaSegments = smoothFanSeries.length && tempMinSeries.length
+        ? (() => {
+            const baseY = height - bottomPad;
+            const threshold = 1;
+            const ventilatingSegments = [];
+            let current = [];
+
+            smoothFanSeries.forEach(point => {
+                const y = getVentAnchorY(point.t);
+                const isOn = point.value > threshold && Number.isFinite(y);
+                if (isOn) {
+                    current.push({
+                        t: point.t,
+                        x: scaleX(point.t),
+                        y,
+                        value: point.value
+                    });
+                } else if (current.length) {
+                    ventilatingSegments.push(current);
+                    current = [];
+                }
+            });
+            if (current.length) ventilatingSegments.push(current);
+
+            let shapes = '';
+            ventilatingSegments.forEach(segment => {
+                if (!segment.length) return;
+
+                const avgValue = segment.reduce((sum, p) => sum + p.value, 0) / segment.length;
+                const opacity = 0.14 + clamp(avgValue / 100, 0, 1) * 0.30;
+
+                if (segment.length === 1) {
+                    const x1 = Math.max(leftPad, segment[0].x - 2);
+                    const x2 = Math.min(width - rightPad, segment[0].x + 2);
+                    const y = segment[0].y;
+                    const d = `M ${x1} ${baseY} L ${x1} ${y} L ${x2} ${y} L ${x2} ${baseY} Z`;
+                    shapes += `<path class="overview-fan-band" data-series="fan" d="${d}" style="opacity:${opacity.toFixed(3)}" />`;
+                    return;
+                }
+
+                const top = segment.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                const bottom = segment.slice().reverse().map(p => `L ${p.x} ${baseY}`).join(' ');
+                const d = `${top} ${bottom} Z`;
+                shapes += `<path class="overview-fan-band" data-series="fan" d="${d}" style="opacity:${opacity.toFixed(3)}" />`;
+            });
+            return shapes;
+        })()
+        : '';
+    const pointsLevel = levelInRange.map(p => `${scaleX(p.t)},${scalePctY(p.value)}`).join(' ');
+
+    let yAxisLeft = '';
+    const leftTicks = 4;
+    for (let i = 0; i <= leftTicks; i++) {
+        const val = tempMin + (tempRange / leftTicks) * i;
+        const y = scaleTempY(val);
+        yAxisLeft += `<line class="chart-tick" x1="${leftPad}" x2="${width - rightPad}" y1="${y}" y2="${y}" />`;
+        yAxisLeft += `<text class="chart-label" x="${leftPad - 8}" y="${y + 3}" text-anchor="end">${val.toFixed(1)}°C</text>`;
+    }
+
+    let yAxisRight = '';
+    [0, 25, 50, 75, 100].forEach(val => {
+        const y = scalePctY(val);
+        yAxisRight += `<text class="chart-label" x="${width - 8}" y="${y + 3}" text-anchor="end">${val}%</text>`;
+    });
+
+    const xAxis = buildMonthAxis(tMin, tMax, scaleX, leftPad, height, width - rightPad);
+    const encodeSeries = (arr, pickValue) => arr.map(p => `${p.t}:${pickValue(p).toFixed(2)}`).join('|');
+    const encodedTempAvg = encodeSeries(tempInRange, p => p.avg);
+    const encodedFan = encodeSeries(fanInRange, p => p.value);
+    const encodedLevel = encodeSeries(levelInRange, p => p.value);
+
+    return `
+        <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"
+            class="overview-chart chart-interactive"
+            role="img"
+            aria-label="Souhrnný graf sila"
+            data-chart="time"
+            data-t-min="${tMin}"
+            data-t-max="${tMax}"
+            data-width="${width}"
+            data-height="${height}"
+            data-padding="${leftPad}"
+            data-overview-temp="${encodedTempAvg}"
+            data-overview-fan="${encodedFan}"
+            data-overview-level="${encodedLevel}">
+            <line class="chart-axis" x1="${leftPad}" x2="${leftPad}" y1="${topPad}" y2="${height - bottomPad}" />
+            <line class="chart-axis" x1="${width - rightPad}" x2="${width - rightPad}" y1="${topPad}" y2="${height - bottomPad}" />
+            <line class="chart-axis" x1="${leftPad}" x2="${width - rightPad}" y1="${height - bottomPad}" y2="${height - bottomPad}" />
+            <text class="chart-label" x="${leftPad}" y="${topPad - 10}" text-anchor="start">Teplota (°C)</text>
+            <text class="chart-label" x="${width - rightPad}" y="${topPad - 10}" text-anchor="end">Ventilátory / Naplnění (%)</text>
+            ${yAxisLeft}
+            ${yAxisRight}
+            ${xAxis}
+
+            <polyline class="overview-line overview-temp-min" data-series="tempMin" points="${pointsTempMin}" />
+            <polyline class="overview-line overview-temp-max" data-series="tempMax" points="${pointsTempMax}" />
+            <polyline class="overview-line overview-temp-avg" data-series="tempAvg" points="${pointsTempAvg}" />
+            ${fanAreaSegments}
+            <polyline class="overview-line overview-level" data-series="level" points="${pointsLevel}" />
+
+            <rect class="chart-hover-capture" x="${leftPad}" y="${topPad}" width="${plotWidth}" height="${plotHeight}" />
+            <line class="chart-hover-line" x1="${leftPad}" x2="${leftPad}" y1="${topPad}" y2="${height - bottomPad}" visibility="hidden" />
+            <text class="chart-hover-label" x="${leftPad}" y="${topPad + 12}" text-anchor="start" visibility="hidden"></text>
+            <g class="overview-tooltip" visibility="hidden">
+                <rect class="overview-tooltip-bg" x="0" y="0" width="168" height="48" rx="8" ry="8"></rect>
+                <text class="overview-tooltip-text overview-tooltip-date" x="8" y="15">Datum</text>
+                <text class="overview-tooltip-text overview-tooltip-line1" x="8" y="30">Teplota: -</text>
+                <text class="overview-tooltip-text overview-tooltip-line3" x="8" y="44">Naplnění: -</text>
+            </g>
+        </svg>
+    `;
+}
+
+function setupOverviewChartToggles() {
+    const groups = document.querySelectorAll('.overview-toggle-group');
+    groups.forEach(group => {
+        const chart = group.closest('.overview-section')?.querySelector('.overview-chart');
+        if (!chart) return;
+        const toggles = group.querySelectorAll('input[type="checkbox"][data-series]');
+        const syncSeriesVisibility = (toggle) => {
+            const key = toggle.getAttribute('data-series');
+            const visible = toggle.checked;
+            chart.querySelectorAll(`[data-series="${key}"]`).forEach(line => {
+                line.classList.toggle('hidden-series', !visible);
+            });
+        };
+        toggles.forEach(toggle => {
+            // Apply initial checkbox state right after modal render.
+            syncSeriesVisibility(toggle);
+            toggle.addEventListener('change', () => {
+                syncSeriesVisibility(toggle);
+            });
+        });
     });
 }
 
@@ -2238,7 +2556,7 @@ function setupChartInteractions() {
         section.addEventListener('click', () => {
             const siloKey = section.getAttribute('data-silo-key');
             const siloName = section.getAttribute('data-silo-name');
-            openModal('temp', siloKey, siloName);
+            openModal('overview', siloKey, siloName);
         });
     });
 
@@ -2246,7 +2564,7 @@ function setupChartInteractions() {
         section.addEventListener('click', () => {
             const siloKey = section.getAttribute('data-silo-key');
             const siloName = section.getAttribute('data-silo-name');
-            openModal('fan', siloKey, siloName);
+            openModal('overview', siloKey, siloName);
         });
     });
 
@@ -2254,9 +2572,35 @@ function setupChartInteractions() {
         display.addEventListener('click', () => {
             const siloKey = display.getAttribute('data-silo-key');
             const siloName = display.getAttribute('data-silo-name');
-            openModal('level', siloKey, siloName);
+            openModal('overview', siloKey, siloName);
         });
     });
+}
+
+function parseEncodedSeries(encoded) {
+    if (!encoded) return [];
+    return encoded.split('|').map(chunk => {
+        const idx = chunk.indexOf(':');
+        if (idx <= 0) return null;
+        const t = parseInt(chunk.slice(0, idx), 10);
+        const v = parseFloat(chunk.slice(idx + 1));
+        if (!Number.isFinite(t) || !Number.isFinite(v)) return null;
+        return { t, v };
+    }).filter(Boolean);
+}
+
+function getNearestSeriesValue(series, t) {
+    if (!series || !series.length) return null;
+    let lo = 0;
+    let hi = series.length - 1;
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (series[mid].t < t) lo = mid + 1;
+        else hi = mid;
+    }
+    const right = series[lo];
+    const left = lo > 0 ? series[lo - 1] : right;
+    return Math.abs(right.t - t) < Math.abs(left.t - t) ? right.v : left.v;
 }
 
 function setupChartHover() {
@@ -2285,6 +2629,28 @@ function setupChartHover() {
             return `${day}.${month}.${year}`;
         };
 
+        const isOverview = svg.classList.contains('overview-chart');
+        let overviewTemp = [];
+        let overviewFan = [];
+        let overviewLevel = [];
+        let tooltipGroup = null;
+        let tooltipDate = null;
+        let tooltipL1 = null;
+        let tooltipL3 = null;
+        let tooltipBg = null;
+        const tooltipWidth = 168;
+        const tooltipHeight = 48;
+        if (isOverview) {
+            overviewTemp = parseEncodedSeries(svg.getAttribute('data-overview-temp'));
+            overviewFan = parseEncodedSeries(svg.getAttribute('data-overview-fan'));
+            overviewLevel = parseEncodedSeries(svg.getAttribute('data-overview-level'));
+            tooltipGroup = svg.querySelector('.overview-tooltip');
+            tooltipDate = svg.querySelector('.overview-tooltip-date');
+            tooltipL1 = svg.querySelector('.overview-tooltip-line1');
+            tooltipL3 = svg.querySelector('.overview-tooltip-line3');
+            tooltipBg = svg.querySelector('.overview-tooltip-bg');
+        }
+
         const update = (evt) => {
             const pt = svg.createSVGPoint();
             pt.x = evt.clientX;
@@ -2301,18 +2667,43 @@ function setupChartHover() {
             line.setAttribute('x2', x);
             line.setAttribute('visibility', 'visible');
 
-            label.textContent = toDateLabel(snappedT);
-            const labelY = padding + 12;
-            const labelWidth = 80;
-            if (x > width - padding - labelWidth) {
-                label.setAttribute('text-anchor', 'end');
-                label.setAttribute('x', x - 6);
+            if (isOverview) {
+                label.setAttribute('visibility', 'hidden');
             } else {
-                label.setAttribute('text-anchor', 'start');
-                label.setAttribute('x', x + 6);
+                label.textContent = toDateLabel(snappedT);
+                const labelY = padding + 12;
+                const labelWidth = 80;
+                if (x > width - padding - labelWidth) {
+                    label.setAttribute('text-anchor', 'end');
+                    label.setAttribute('x', x - 6);
+                } else {
+                    label.setAttribute('text-anchor', 'start');
+                    label.setAttribute('x', x + 6);
+                }
+                label.setAttribute('y', labelY);
+                label.setAttribute('visibility', 'visible');
             }
-            label.setAttribute('y', labelY);
-            label.setAttribute('visibility', 'visible');
+
+            if (isOverview && tooltipGroup && tooltipDate && tooltipL1 && tooltipL3 && tooltipBg) {
+                const tempVal = getNearestSeriesValue(overviewTemp, snappedT);
+                const levelVal = getNearestSeriesValue(overviewLevel, snappedT);
+
+                tooltipDate.textContent = toDateLabel(snappedT);
+                tooltipL1.textContent = `Teplota: ${Number.isFinite(tempVal) ? tempVal.toFixed(1) + ' °C' : '-'}`;
+                tooltipL3.textContent = `Naplnění: ${Number.isFinite(levelVal) ? levelVal.toFixed(0) + ' %' : '-'}`;
+
+                const tx = x > width - padding - tooltipWidth - 8 ? x - tooltipWidth - 8 : x + 8;
+                const ty = padding + 18;
+                tooltipBg.setAttribute('x', tx);
+                tooltipBg.setAttribute('y', ty);
+                tooltipDate.setAttribute('x', tx + 8);
+                tooltipDate.setAttribute('y', ty + 15);
+                tooltipL1.setAttribute('x', tx + 8);
+                tooltipL1.setAttribute('y', ty + 30);
+                tooltipL3.setAttribute('x', tx + 8);
+                tooltipL3.setAttribute('y', ty + 44);
+                tooltipGroup.setAttribute('visibility', 'visible');
+            }
         };
 
         const showDefault = () => {
@@ -2331,6 +2722,7 @@ function setupChartHover() {
 
         const hide = () => {
             showDefault();
+            if (tooltipGroup) tooltipGroup.setAttribute('visibility', 'hidden');
         };
 
         capture.addEventListener('mousemove', update);
@@ -2370,73 +2762,71 @@ function renderModalContent() {
     const body = document.getElementById('modalBody');
     if (!modal || !title || !body) return;
 
-    if (modalState.type === 'temp') {
-        title.textContent = `Detail teplot - ${modalState.siloName}`;
-        const series = getSeriesForSilo(modalState.siloKey, modalPeriod, 200);
-        const periodDays = modalPeriod === '1y' ? 365 : 30;
-        const bands = getVentBands(modalState.siloKey, modalPeriod);
-        const chart = buildTempChartSvg(series, { width: 860, height: 260, padding: 36, cssClass: 'history-chart history-chart-large', bands, periodDays });
-        body.innerHTML = `
-            <div class="history-section">
-                ${chart}
-                <div class="chart-legend">
-                    <span class="legend-soft">Min/Max teplomer</span>
-                    <span class="legend-strong">Prumer sila</span>
+    title.textContent = `Detail sila - ${modalState.siloName}`;
+
+    const periodDays = modalPeriod === '1y' ? 365 : 30;
+    const siloContext = getSiloContextByKey(modalState.siloKey);
+    const estimate = siloContext ? buildSiloCapacityEstimate(siloContext.silo, siloContext.locationId) : null;
+
+    const tempSeries = getSeriesForSilo(modalState.siloKey, modalPeriod, 200);
+    const fanSeriesData = getFanSeriesForSilo(modalState.siloKey, modalPeriod, 200);
+    const levelSeriesData = getLevelSeriesForSilo(modalState.siloKey, modalPeriod, 200);
+    const overviewChart = buildOverviewChartSvg(tempSeries, fanSeriesData, levelSeriesData, {
+        width: 760,
+        height: 220,
+        leftPad: 56,
+        rightPad: 64,
+        topPad: 30,
+        bottomPad: 32,
+        periodDays
+    });
+
+    const fanCount = siloContext && Array.isArray(siloContext.silo.fans) ? siloContext.silo.fans.length : 0;
+    const runningFans = fanCount ? siloContext.silo.fans.filter(fan => fan.running).length : 0;
+    const detailsHtml = estimate && siloContext
+        ? `
+            <div class="commodity-summary">
+                <div class="commodity-summary-head">
+                    <strong>${siloContext.silo.commodity} <span>(objemová hmotnost ${formatDensity(estimate.density)})</span></strong>
+                    <span>${locations[siloContext.locationId]?.name || '-'}</span>
                 </div>
-                <div class="modal-legend">
-                    <div><strong>Prumer teplot</strong> = prumer teplot zaplnenych cidel.</div>
-                    <div><strong>Min/Max teplomer</strong> = minimum a maximum z jednoho vybraneho teplomeru.</div>
-                    <div><strong>Zelene oblasti</strong> = casy, kdy bezela ventilace.</div>
-                    <div>Nezaplnena cidla (nad hladinou) se do vypoctu nezahrnuji.</div>
+                <div class="commodity-summary-grid">
+                    <div class="commodity-item"><span>Kapacita v tunách</span><strong>${formatTons(estimate.totalTons)}</strong></div>
+                    <div class="commodity-item"><span>Naskladněno</span><strong>${formatTons(estimate.filledTons)}</strong></div>
+                    <div class="commodity-item"><span>Volný prostor</span><strong>${formatTons(estimate.remainingTons)}</strong></div>
+                    <div class="commodity-item"><span>Ventilátory v provozu</span><strong>${runningFans}/${fanCount}</strong></div>
+                    <div class="commodity-item"><span>Kapacita sila</span><strong>${Math.floor(estimate.capacityM3)} m3</strong></div>
+                    <div class="commodity-item"><span>Volný objem</span><strong>${Math.floor(estimate.remainingM3)} m3</strong></div>
                 </div>
             </div>
-        `;
-    } else {
-        if (modalState.type === 'fan') {
-            title.textContent = `Detail ventilátorů - ${modalState.siloName}`;
-            const series = getFanSeriesForSilo(modalState.siloKey, modalPeriod, 200);
-            const periodDays = modalPeriod === '1y' ? 365 : 30;
-            const chart = buildFanChartSvg(series, { width: 860, height: 220, padding: 36, cssClass: 'fan-chart fan-chart-large', periodDays });
-            body.innerHTML = `
-                <div class="fan-section">
-                    ${chart}
-                    <div class="chart-legend">
-                        <span class="legend-strong">Podíl aktivních ventilátorů</span>
-                    </div>
-                </div>
-            `;
-        } else {
-            title.textContent = `Detail naplnění sila - ${modalState.siloName}`;
-            const series = getLevelSeriesForSilo(modalState.siloKey, modalPeriod, 200);
-            const periodDays = modalPeriod === '1y' ? 365 : 30;
-            const chart = buildLevelChartSvg(series, { width: 860, height: 220, padding: 36, cssClass: 'level-chart level-chart-large', periodDays });
-            const siloContext = getSiloContextByKey(modalState.siloKey);
-            const estimate = siloContext ? buildSiloCapacityEstimate(siloContext.silo, siloContext.locationId) : null;
-            const detailsHtml = estimate && siloContext
-                ? `
-                    <div class="modal-details-grid">
-                        <div class="modal-detail-row"><span class="modal-detail-label">Materiál</span><span class="modal-detail-value">${siloContext.silo.commodity}</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Objemová hmotnost</span><span class="modal-detail-value">${formatDensity(estimate.density)}</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Kapacita sila</span><span class="modal-detail-value">${Math.floor(estimate.capacityM3)} m3</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Volny objem</span><span class="modal-detail-value">${Math.floor(estimate.remainingM3)} m3</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Kapacita sila (odhad)</span><span class="modal-detail-value">${formatTons(estimate.totalTons)}</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Naskladněno</span><span class="modal-detail-value">${formatTons(estimate.filledTons)}</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Zbývá volně</span><span class="modal-detail-value">${formatTons(estimate.remainingTons)}</span></div>
-                        <div class="modal-detail-row"><span class="modal-detail-label">Aktuální naplnění</span><span class="modal-detail-value">${Math.floor(clamp(Number(siloContext.silo.level) || 0, 0, 100))}%</span></div>
-                    </div>
-                `
-                : '';
-            body.innerHTML = `
-                <div class="level-section">
-                    ${chart}
-                    <div class="chart-legend">
-                        <span class="legend-strong">Naplnění sila v %</span>
-                    </div>
-                    ${detailsHtml}
-                </div>
-            `;
-        }
-    }
+        `
+        : '';
+
+    body.innerHTML = `
+        <div class="overview-section">
+            ${overviewChart}
+            <div class="overview-toggle-group" role="group" aria-label="Viditelné křivky">
+                <label class="overview-toggle"><input type="checkbox" data-series="tempAvg" checked> Teplota průměr</label>
+                <label class="overview-toggle"><input type="checkbox" data-series="tempMin" checked> Teplota minimum</label>
+                <label class="overview-toggle"><input type="checkbox" data-series="tempMax" checked> Teplota maximum</label>
+                <label class="overview-toggle"><input type="checkbox" data-series="fan" checked> Ventilátory (%)</label>
+                <label class="overview-toggle"><input type="checkbox" data-series="level" checked> Naplnění (%)</label>
+            </div>
+            <div class="overview-line-legend" aria-hidden="true">
+                <span class="overview-legend-item"><span class="overview-swatch overview-swatch-temp-avg"></span>Teplota průměr</span>
+                <span class="overview-legend-item"><span class="overview-swatch overview-swatch-temp-min"></span>Teplota min</span>
+                <span class="overview-legend-item"><span class="overview-swatch overview-swatch-temp-max"></span>Teplota max</span>
+                <span class="overview-legend-item"><span class="overview-swatch overview-swatch-fan"></span>Ventilátory</span>
+                <span class="overview-legend-item"><span class="overview-swatch overview-swatch-level"></span>Naplnění</span>
+            </div>
+            ${detailsHtml}
+            <div class="modal-legend">
+                <div><strong>Levá osa</strong> = teplota (°C), <strong>pravá osa</strong> = ventilátory/naplnění (%)</div>
+                <div>Kliknutím na zaškrtávátka nahoře můžeš jednotlivé křivky skrýt nebo zobrazit.</div>
+            </div>
+        </div>
+    `;
+    setupOverviewChartToggles();
     setupChartHover();
 }
 
@@ -2468,14 +2858,15 @@ function showLoadingError() {
 document.addEventListener('DOMContentLoaded', function() {
     loadMapConfig();
     const locations = ['melkovice', 'stranecka', 'brniste'];
+    const dataVersion = '20260220_histfix1';
     const snapshotRequests = locations.map(loc =>
-        fetch(`data/${loc}/snapshot.csv`).then(r => {
+        fetch(`data/${loc}/snapshot.csv?v=${dataVersion}`).then(r => {
             if (!r.ok) throw new Error(`snapshot ${loc} ${r.status}`);
             return r.text();
         })
     );
     const historyRequests = locations.map(loc =>
-        fetch(`data/${loc}/history.csv`).then(r => {
+        fetch(`data/${loc}/history.csv?v=${dataVersion}`).then(r => {
             if (!r.ok) throw new Error(`history ${loc} ${r.status}`);
             return r.text();
         })
@@ -2502,5 +2893,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoadingError();
     });
 });
+
 
 
