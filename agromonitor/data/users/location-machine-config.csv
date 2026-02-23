@@ -1,0 +1,4 @@
+﻿location_id,enterprise_id,location_name,silos_count,thermometers_per_silo,sensors_per_thermometer,silo_capacity_m3,has_cleanser,cleanser_airflow,has_dryer,dryer_heating_temp,dryer_discharge_minutes,notes
+melkovice,agro_vysocina,Melkovice,8,1,8,1092,false,0,false,0,0,
+stranecka,agro_vysocina,Stranecka Zhor,4,6,8,2746,true,40,false,0,0,
+brniste,agro_monitor,Brniste,4,5,8,3324,true,100,true,102,42,

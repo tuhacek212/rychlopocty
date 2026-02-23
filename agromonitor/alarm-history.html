@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroMonitor - Historie alarmů</title>
+    <style>
+        :root {
+            --bg: #f3f6fb;
+            --surface: #ffffff;
+            --line: #d8e1ee;
+            --text: #1f2937;
+            --muted: #5f7085;
+            --accent: #0f63cc;
+            --accent-soft: #e8f1ff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: "Inter", "Segoe UI", sans-serif;
+            color: var(--text);
+            background: linear-gradient(180deg, #edf3fc 0%, var(--bg) 100%);
+        }
+
+        .wrap {
+            max-width: 1120px;
+            margin: 0 auto;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            padding: 18px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 23px;
+        }
+
+        .subtitle {
+            margin: 0 0 16px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .toolbar-left {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        select {
+            min-width: 230px;
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #f8fafc;
+            font-size: 14px;
+        }
+
+        .location-tag {
+            font-size: 12px;
+            color: #1e40af;
+            background: #e9efff;
+            border: 1px solid #bfdbfe;
+            padding: 6px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .location-switches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 6px 0 14px;
+        }
+
+        .location-btn {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            border-radius: 999px;
+            padding: 6px 11px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .location-btn.active {
+            background: var(--accent-soft);
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+
+        .group-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .group {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fbfdff;
+        }
+
+        .group-head {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #e5edf7;
+            background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+        }
+
+        .group-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .caret {
+            color: #475569;
+            font-size: 12px;
+            min-width: 16px;
+        }
+
+        .group-meta {
+            font-size: 12px;
+            color: #64748b;
+            background: #eef2ff;
+            border: 1px solid #dbeafe;
+            padding: 3px 8px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .group-body {
+            padding: 0;
+        }
+
+        .group-body.hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border-bottom: 1px solid #e6edf7;
+            text-align: left;
+            font-size: 13px;
+            padding: 9px 11px;
+            vertical-align: top;
+        }
+
+        th {
+            font-size: 11px;
+            letter-spacing: 0.35px;
+            text-transform: uppercase;
+            color: #64748b;
+            background: #f8fafd;
+        }
+
+        tbody tr:hover {
+            background: #f7fbff;
+        }
+
+        .issue-chip {
+            display: inline-block;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .empty {
+            padding: 12px;
+            font-size: 13px;
+            color: #6b7280;
+            background: #fcfdff;
+        }
+
+        @media (max-width: 820px) {
+            body { padding: 12px; }
+            .wrap { padding: 12px; }
+            .toolbar { align-items: flex-start; }
+            table { display: block; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+    <main class="wrap">
+        <h1>Historie alarmů</h1>
+        <p class="subtitle">Ukázkový výpis poruch. Řádky jsou rozdělené jako složky: posledních 7 dnů, minulý měsíc a starší.</p>
+
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <label for="sortMode">Sledování alarmů:</label>
+                <select id="sortMode">
+                    <option value="datetime">Podle data a času</option>
+                    <option value="machine">Podle stroje</option>
+                </select>
+            </div>
+            <div class="location-tag" id="locationTag">Středisko: -</div>
+        </div>
+
+        <div class="location-switches" id="locationSwitches"></div>
+        <div class="group-list" id="groupsRoot"></div>
+    </main>
+
+    <script>
+        const AUTH_STORAGE_KEY = 'agromonitor_access_v1';
+        const ACCESS_CODES = {
+            '123456': { locations: ['melkovice', 'stranecka', 'brniste'] },
+            '234567': { locations: ['brniste'] },
+            '345678': { locations: ['melkovice', 'stranecka'] }
+        };
+
+        const LOCATION_NAMES = {
+            melkovice: 'Mělkovice',
+            stranecka: 'Stránecká Zhoř',
+            brniste: 'Brniště'
+        };
+
+        const alarms = [
+            { location: 'melkovice', date: '2026-02-20', time: '06:12', machine: 'Elevátor E-2', issue: 'tepelná ochrana' },
+            { location: 'stranecka', date: '2026-02-18', time: '14:20', machine: 'Čistička C-1', issue: 'čidlo vibrací' },
+            { location: 'brniste', date: '2026-02-16', time: '22:05', machine: 'Sušárna S-1', issue: 'výpadek hořáku' },
+            { location: 'melkovice', date: '2026-01-27', time: '09:31', machine: 'Redler R-1', issue: 'čidlo přeplnění' },
+            { location: 'stranecka', date: '2026-01-19', time: '11:48', machine: 'Klapka K-2', issue: 'tepelná ochrana' },
+            { location: 'brniste', date: '2026-01-09', time: '04:42', machine: 'Redler R-3', issue: 'tepelná ochrana' },
+            { location: 'melkovice', date: '2025-12-18', time: '05:27', machine: 'Sušárna S-1', issue: 'výpadek hořáku' },
+            { location: 'stranecka', date: '2025-11-05', time: '15:34', machine: 'Elevátor E-1', issue: 'tepelná ochrana' },
+            { location: 'brniste', date: '2025-10-09', time: '09:15', machine: 'Čistička C-2', issue: 'čidlo vibrací' },
+            { location: 'melkovice', date: '2025-08-14', time: '07:21', machine: 'Klapka K-1', issue: 'tepelná ochrana' },
+            { location: 'stranecka', date: '2025-07-22', time: '13:52', machine: 'Redler R-2', issue: 'čidlo přeplnění' }
+        ];
+
+        const params = new URLSearchParams(window.location.search);
+        const sortMode = document.getElementById('sortMode');
+        const locationTag = document.getElementById('locationTag');
+        const locationSwitches = document.getElementById('locationSwitches');
+        const groupsRoot = document.getElementById('groupsRoot');
+        const collapsedGroups = new Set();
+
+        function readLoggedAllowedLocations() {
+            try {
+                const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !parsed.code || !ACCESS_CODES[parsed.code]) return null;
+                return ACCESS_CODES[parsed.code].locations.slice();
+            } catch {
+                return null;
+            }
+        }
+
+        function parseQueryAllowedLocations() {
+            const raw = (params.get('allowed') || '').trim();
+            if (!raw) return null;
+            const list = raw.split(',').map(v => v.trim()).filter(Boolean);
+            return list.length ? list : null;
+        }
+
+        function unique(values) {
+            return Array.from(new Set(values));
+        }
+
+        function resolveAllowedLocations() {
+            const fromLogin = readLoggedAllowedLocations();
+            const fromQuery = parseQueryAllowedLocations();
+            if (fromLogin && fromQuery) {
+                const allowedSet = new Set(fromLogin);
+                const merged = fromQuery.filter(loc => allowedSet.has(loc));
+                return merged.length ? unique(merged) : fromLogin;
+            }
+            if (fromLogin && fromLogin.length) return unique(fromLogin);
+            if (fromQuery && fromQuery.length) return unique(fromQuery);
+            return unique(Object.keys(LOCATION_NAMES));
+        }
+
+        const allowedLocations = resolveAllowedLocations();
+        let selectedLocation = allowedLocations.includes(params.get('location')) ? params.get('location') : allowedLocations[0];
+
+        function toDateTimeValue(row) {
+            return new Date(`${row.date}T${row.time}:00`).getTime();
+        }
+
+        function startOfToday() {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function getPreviousMonthRange(referenceDate) {
+            const currentMonthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+            const previousMonthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
+            return { start: previousMonthStart.getTime(), end: currentMonthStart.getTime() };
+        }
+
+        function sortRows(rows) {
+            if (sortMode.value === 'machine') {
+                return rows.sort((a, b) => {
+                    const byMachine = a.machine.localeCompare(b.machine, 'cs');
+                    if (byMachine !== 0) return byMachine;
+                    return toDateTimeValue(b) - toDateTimeValue(a);
+                });
+            }
+            return rows.sort((a, b) => toDateTimeValue(b) - toDateTimeValue(a));
+        }
+
+        function getGroupedRows(rows) {
+            const todayStart = startOfToday().getTime();
+            const sevenDaysStart = todayStart - (7 * 24 * 60 * 60 * 1000);
+            const prevMonth = getPreviousMonthRange(new Date(todayStart));
+
+            const groups = {
+                recent: [],
+                prevMonth: [],
+                older: []
+            };
+
+            rows.forEach(row => {
+                const ts = toDateTimeValue(row);
+                if (ts >= sevenDaysStart) {
+                    groups.recent.push(row);
+                    return;
+                }
+                if (ts >= prevMonth.start && ts < prevMonth.end) {
+                    groups.prevMonth.push(row);
+                    return;
+                }
+                groups.older.push(row);
+            });
+
+            groups.recent = sortRows(groups.recent);
+            groups.prevMonth = sortRows(groups.prevMonth);
+            groups.older = sortRows(groups.older);
+
+            return groups;
+        }
+
+        function renderLocationSwitches() {
+            locationSwitches.innerHTML = '';
+            if (allowedLocations.length <= 1) {
+                return;
+            }
+
+            locationSwitches.innerHTML = allowedLocations.map(loc => `
+                <button type="button" class="location-btn${loc === selectedLocation ? ' active' : ''}" data-loc="${loc}">
+                    ${LOCATION_NAMES[loc] || loc}
+                </button>
+            `).join('');
+
+            locationSwitches.querySelectorAll('[data-loc]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedLocation = btn.getAttribute('data-loc');
+                    render();
+                });
+            });
+        }
+
+        function renderRows(rows) {
+            if (!rows.length) {
+                return '<div class="empty">V této skupině zatím není žádná porucha.</div>';
+            }
+            return `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Čas</th>
+                            <th>Stroj</th>
+                            <th>Popis závady</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row.date}</td>
+                                <td>${row.time}</td>
+                                <td>${row.machine}</td>
+                                <td><span class="issue-chip">${row.issue}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderGroups(groups) {
+            const groupDefs = [
+                { id: 'recent', title: 'Posledních 7 dnů', rows: groups.recent },
+                { id: 'prevMonth', title: 'Minulý měsíc', rows: groups.prevMonth },
+                { id: 'older', title: 'Starší', rows: groups.older }
+            ];
+
+            groupsRoot.innerHTML = groupDefs.map(group => {
+                const isCollapsed = collapsedGroups.has(group.id);
+                return `
+                    <section class="group">
+                        <button type="button" class="group-head" data-group="${group.id}">
+                            <span class="group-title">
+                                <span class="caret">${isCollapsed ? '▶' : '▼'}</span>
+                                ${group.title}
+                            </span>
+                            <span class="group-meta">${group.rows.length} záznamů</span>
+                        </button>
+                        <div class="group-body${isCollapsed ? ' hidden' : ''}" data-group-body="${group.id}">
+                            ${renderRows(group.rows)}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+
+            groupsRoot.querySelectorAll('[data-group]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const groupId = btn.getAttribute('data-group');
+                    if (collapsedGroups.has(groupId)) collapsedGroups.delete(groupId);
+                    else collapsedGroups.add(groupId);
+                    render();
+                });
+            });
+        }
+
+        function render() {
+            const filtered = alarms.filter(row => row.location === selectedLocation);
+            const grouped = getGroupedRows(filtered);
+            const locationName = LOCATION_NAMES[selectedLocation] || selectedLocation;
+
+            locationTag.textContent = `Středisko: ${locationName}`;
+            renderLocationSwitches();
+            renderGroups(grouped);
+        }
+
+        sortMode.addEventListener('change', render);
+        render();
+    </script>
+</body>
+</html>

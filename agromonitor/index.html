@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgroMonitor - Monitoring skladů</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260220zf">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=20260222ar">
 </head>
 <body>
     <div class="login-screen" id="loginScreen" aria-hidden="false">
@@ -48,7 +48,6 @@
             </div>
             <span class="header-separator">|</span>
             <span class="header-text last-update" id="lastUpdateLabel">Data: neznámý čas</span>
-            <button class="map-button" id="mapButton" type="button">Mapa sil</button>
             <span class="header-separator">|</span>
             <span class="header-text" id="userName">Jan Novák</span>
             <button class="logout-button" id="logoutButton" type="button">Odhlásit</button>
@@ -57,11 +56,14 @@
 
         <div class="container">
         <div class="admin-alerts hidden" id="adminAlerts" aria-live="polite"></div>
+        <div class="silos-toolbar">
+            <button class="map-button" id="mapButton" data-open-map="location" type="button">Mapa sil střediska</button>
+        </div>
         <div id="silosContainer"></div>
 
         <div class="bottom-grid">
             <div class="log-panel">
-                <div class="panel-title">Log událostí</div>
+                <div class="panel-title">Historie alarmů</div>
                 <div class="log-entries" id="logEntries"></div>
             </div>
             <div class="log-panel docs-panel">
@@ -98,13 +100,22 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260220zi"></script>
+    <script src="core/config.js?v=20260222ar"></script>
+    <script src="core/state.js?v=20260222ar"></script>
+    <script src="modules/utils.js?v=20260222ar"></script>
+    <script src="modules/org.js?v=20260222ar"></script>
+    <script src="modules/admin-users.js?v=20260222ar"></script>
+    <script src="modules/ui-main.js?v=20260222ar"></script>
+    <script src="modules/auth.js?v=20260222ar"></script>
+    <script src="modules/map-detail.js?v=20260222ar"></script>
+    <script src="modules/app-init.js?v=20260222ar"></script>
 
     <div class="modal hidden" id="detailModal" aria-hidden="true">
         <div class="modal-backdrop" data-close="true"></div>
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
                 <div class="modal-title" id="modalTitle">Detail grafu</div>
+                <button class="map-button modal-map-button" id="detailMapButton" data-open-map="detail" type="button">Mapa sil střediska</button>
                 <button class="modal-close" type="button" aria-label="Zavřít">×</button>
             </div>
             <div class="modal-controls">
@@ -142,6 +153,15 @@
     </div>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 
 
 

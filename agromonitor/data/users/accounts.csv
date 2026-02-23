@@ -1,0 +1,4 @@
+code,label,enterprise_id,locations,default_location,active,is_admin
+234567,ZOD Brniste a.s.,,brniste,brniste,true,false
+345678,Agro Vysocina s.r.o.,,melkovice|stranecka,melkovice,true,false
+456789,Servis AgroMonitor,,brniste,brniste,true,true
