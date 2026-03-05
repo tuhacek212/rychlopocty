@@ -1087,9 +1087,20 @@ html {
         border-color: #ef4444;
         font-size: 28px;
     }
+
+    .mobile-numpad button.quit-key {
+        grid-column: 1;
+        background: #f59e0b;
+        border-color: #f59e0b;
+        font-size: 28px;
+    }
     
     .mobile-numpad button.backspace:active {
         background: #dc2626;
+    }
+
+    .mobile-numpad button.quit-key:active {
+        background: #d97706;
     }
     
     /* Když je numpad aktivní, upravíme input */
@@ -1123,5 +1134,448 @@ html {
 @media (min-width: 769px) {
     .mobile-numpad {
         display: none !important;
+    }
+}
+
+/* ============================================
+   MOBILE TEST UX - active only during test
+   ============================================ */
+@media (max-width: 768px) {
+    body.mobile-test-active .container {
+        padding-bottom: calc(390px + env(safe-area-inset-bottom, 0px));
+    }
+
+    body.mobile-test-active .stats-bar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        background: #1e293b;
+        padding-right: 58px;
+    }
+
+    body.mobile-test-active .mobile-answer-zone {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        margin: 0;
+        padding: 12px 12px 10px;
+        z-index: 50;
+        border-radius: 4px;
+        box-shadow: 0 -10px 28px rgba(2, 6, 23, 0.75);
+    }
+
+    body.mobile-test-active .mobile-answer-zone .history-text {
+        margin-bottom: 8px;
+        min-height: 18px;
+        font-size: 12px;
+    }
+
+    body.mobile-test-active .mobile-answer-zone .example-text {
+        font-size: 42px !important;
+        line-height: 1.05;
+        margin: 8px 0 12px !important;
+    }
+
+    body.mobile-test-active .mobile-answer-zone .answer-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 64px !important;
+        font-size: 34px !important;
+        margin: 0 auto 10px !important;
+        border-radius: 2px !important;
+    }
+
+    body.mobile-test-active .mobile-answer-zone #motivation-text {
+        font-size: 13px !important;
+        min-height: 18px !important;
+        margin-top: 8px !important;
+    }
+
+    body.mobile-test-active .mobile-numpad {
+        max-width: 100% !important;
+        margin: 10px auto 0 !important;
+        padding: 0 !important;
+        gap: 7px !important;
+    }
+
+    body.mobile-test-active .mobile-numpad button {
+        min-height: 56px !important;
+        padding: 12px 10px !important;
+        font-size: 26px !important;
+        border-radius: 4px !important;
+    }
+
+    body.mobile-test-active .mobile-numpad button.backspace {
+        font-size: 30px !important;
+    }
+
+    body.mobile-test-active .mobile-numpad button.quit-key {
+        font-size: 30px !important;
+    }
+
+    body.mobile-test-active .test-actions {
+        display: none !important;
+    }
+
+    .mobile-quit-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 4px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        z-index: 60;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    body.mobile-test-active .mobile-quit-btn {
+        display: none !important;
+    }
+}
+
+.mobile-quit-btn {
+    display: none;
+}
+
+/* ============================================
+   MOBILE MAIN UI REFRESH (HOME/TABS/CARDS)
+   ============================================ */
+@media (max-width: 768px) {
+    #app {
+        max-width: 100%;
+    }
+
+    .container {
+        padding: 10px !important;
+    }
+
+    /* Header block on main pages */
+    #app > div:first-child {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 14px 14px 12px !important;
+        margin-bottom: 12px !important;
+        gap: 8px !important;
+        align-items: flex-start !important;
+    }
+
+    #app > div:first-child > div:first-child > div:first-child {
+        font-size: 30px !important;
+        line-height: 1.05;
+        margin-bottom: 4px !important;
+        letter-spacing: -0.3px;
+    }
+
+    #app > div:first-child > div:first-child > div:last-child {
+        font-size: 13px !important;
+        color: #94a3b8 !important;
+    }
+
+    #total-stats {
+        width: 100%;
+        text-align: left !important;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 8px 10px;
+    }
+
+    #total-stats > div {
+        font-size: 11px !important;
+        color: #64748b !important;
+        margin: 0 !important;
+    }
+
+    /* Tab switcher */
+    .tab-menu {
+        position: sticky;
+        top: 8px;
+        z-index: 25;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px !important;
+        margin-bottom: 12px !important;
+        padding: 6px;
+        border-radius: 4px;
+        border: 1px solid #334155;
+        background: #0f172a;
+    }
+
+    .tab-btn {
+        border: none !important;
+        border-radius: 2px;
+        padding: 10px 6px !important;
+        font-size: 12px !important;
+        color: #94a3b8 !important;
+        background: transparent;
+    }
+
+    .tab-btn.active {
+        color: #3b82f6 !important;
+        background: rgba(59, 130, 246, 0.08) !important;
+        box-shadow: none;
+    }
+
+    /* Training/timer main layout */
+    .two-column {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .two-column > .card:first-child,
+    .two-column > .card:last-child {
+        order: initial !important;
+    }
+
+    .card {
+        border-radius: 4px !important;
+        padding: 14px !important;
+        border: 1px solid #334155 !important;
+        background: #1e293b !important;
+    }
+
+    .section-title {
+        font-size: 15px !important;
+        margin-bottom: 10px !important;
+        text-align: left !important;
+    }
+
+    .btn {
+        min-height: 58px;
+        border-radius: 4px !important;
+        padding: 14px 14px !important;
+        font-size: 15px !important;
+        font-weight: 700;
+        margin-bottom: 8px !important;
+    }
+
+    .time-desc {
+        display: block !important;
+        font-size: 12px !important;
+        margin-top: -2px;
+        margin-bottom: 8px;
+        color: #94a3b8 !important;
+    }
+
+    .operations-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .operations-grid br {
+        display: none;
+    }
+
+    .operation-btn {
+        margin: 0 !important;
+        min-height: 58px;
+        padding: 12px 10px !important;
+        border-radius: 4px !important;
+        font-size: 14px !important;
+        font-weight: 700;
+    }
+
+    /* Intro cards and tab content spacing */
+    #tab-content > div:first-child {
+        border-radius: 4px !important;
+        padding: 12px 12px !important;
+        margin-bottom: 10px !important;
+    }
+
+    #tab-content > div:first-child > div {
+        font-size: 13px !important;
+        line-height: 1.45 !important;
+    }
+
+    /* Timer fields */
+    #timer-minutes,
+    #timer-seconds {
+        border-radius: 4px !important;
+        font-size: 26px !important;
+        min-height: 62px;
+    }
+
+    /* Multiplayer top row */
+    #tab-content > div[style*="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;"] {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 12px;
+    }
+
+    #mp-name {
+        width: 100% !important;
+        border-radius: 4px !important;
+    }
+
+    /* Result cards on mobile */
+    .result-stats {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px !important;
+    }
+
+    .result-box {
+        min-width: 0 !important;
+        padding: 14px 10px !important;
+    }
+
+    .result-card {
+        max-width: 100% !important;
+        margin: 10px auto !important;
+        padding: 18px 12px !important;
+        text-align: center !important;
+    }
+
+    .result-card .result-title,
+    .result-card .result-mode,
+    .result-card .success-rate {
+        text-align: center !important;
+    }
+
+    .result-card .time-stats {
+        margin: 12px auto !important;
+        padding: 12px !important;
+        max-width: 100% !important;
+    }
+
+    .result-card .time-stat-row {
+        gap: 8px;
+    }
+
+    .result-card .btn {
+        width: min(100%, 320px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+/* Final mobile consistency + compact spacing */
+@media (max-width: 768px) {
+    .card { padding: 12px !important; }
+    .stats-bar { padding: 10px !important; gap: 6px !important; }
+    .btn,
+    .operation-btn { min-height: 56px !important; }
+    .time-stats { padding: 12px !important; margin: 10px auto !important; }
+    .time-stat-row { padding: 8px 0 !important; }
+    .result-card { padding: 16px 12px !important; }
+}
+
+/* Mobile typography normalization */
+@media (max-width: 768px) {
+    :root {
+        --m-fs-sm: 14px;
+        --m-fs-md: 16px;
+        --m-fs-lg: 20px;
+        --m-fs-xl: 32px;
+    }
+
+    /* Main page readability */
+    #app > div:first-child > div:first-child > div:first-child {
+        font-size: 28px !important;
+    }
+
+    #app > div:first-child > div:first-child > div:last-child {
+        font-size: var(--m-fs-sm) !important;
+    }
+
+    #total-stats > div {
+        font-size: var(--m-fs-sm) !important;
+    }
+
+    .tab-btn {
+        font-size: var(--m-fs-sm) !important;
+    }
+
+    .section-title {
+        font-size: var(--m-fs-md) !important;
+    }
+
+    #tab-content > div:first-child > div {
+        font-size: var(--m-fs-md) !important;
+        line-height: 1.4 !important;
+    }
+
+    .btn,
+    .operation-btn {
+        min-height: 52px !important;
+        font-size: var(--m-fs-md) !important;
+    }
+
+    .time-desc {
+        font-size: var(--m-fs-sm) !important;
+    }
+
+    /* Result page consistency */
+    .result-card .result-title {
+        font-size: var(--m-fs-lg) !important;
+    }
+
+    .result-card .result-mode,
+    .result-card .time-stat-label,
+    .result-card .result-label {
+        font-size: var(--m-fs-sm) !important;
+    }
+
+    .result-card .time-stat-value,
+    .result-card .success-rate {
+        font-size: var(--m-fs-md) !important;
+    }
+
+    .result-card .result-number {
+        font-size: 30px !important;
+    }
+
+    .result-card .btn {
+        min-height: 42px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        width: min(100%, 300px) !important;
+        padding: 8px 14px !important;
+        border-radius: 8px !important;
+        margin-top: 6px !important;
+    }
+
+    .result-card .result-stats {
+        gap: 8px !important;
+        margin: 10px 0 !important;
+    }
+
+    .result-card .result-box {
+        padding: 10px 8px !important;
+    }
+
+    .result-card .name-input {
+        max-width: 300px !important;
+        min-height: 40px !important;
+        font-size: 16px !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+    }
+
+    .result-card .time-stats {
+        padding: 10px 12px !important;
+        margin: 10px auto !important;
     }
 }

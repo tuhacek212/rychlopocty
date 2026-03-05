@@ -481,7 +481,7 @@ html {
 
 .result-emoji {
     font-size: 48px;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
 }
 
 @media (max-width: 768px) {
@@ -494,7 +494,7 @@ html {
 .result-title {
     font-size: 24px;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 @media (max-width: 768px) {
@@ -506,7 +506,7 @@ html {
 .result-mode {
     font-size: 12px;
     color: #94a3b8;
-    margin: 5px 0;
+    margin: 2px 0;
 }
 
 @media (max-width: 768px) {
@@ -518,8 +518,8 @@ html {
 .result-stats {
     display: flex;
     justify-content: center;
-    gap: 30px;
-    margin: 30px 0;
+    gap: 16px;
+    margin: 14px 0;
     flex-wrap: wrap;
 }
 
@@ -532,11 +532,11 @@ html {
 
 .result-box {
     background: #334155;
-    padding: 20px 40px;
+    padding: 14px 22px;
     border-radius: 2px;
     border: 1px solid;
     text-align: center;
-    min-width: 120px;
+    min-width: 104px;
 }
 
 @media (max-width: 768px) {
@@ -563,7 +563,7 @@ html {
 
 .result-icon {
     font-size: 24px;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 @media (max-width: 768px) {
@@ -573,9 +573,9 @@ html {
 }
 
 .result-number {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 600;
-    margin: 5px 0;
+    margin: 0;
 }
 
 @media (max-width: 768px) {
@@ -595,6 +595,7 @@ html {
 .result-label {
     font-size: 10px;
     color: #94a3b8;
+    margin-top: 2px;
 }
 
 @media (max-width: 768px) {
@@ -607,7 +608,7 @@ html {
     font-size: 16px;
     font-weight: 600;
     color: #3b82f6;
-    margin: 20px 0;
+    margin: 10px 0;
 }
 
 @media (max-width: 768px) {
@@ -620,9 +621,9 @@ html {
     background: #334155;
     border: 1px solid #3b82f6;
     border-radius: 2px;
-    padding: 20px;
-    margin: 20px auto;
-    max-width: 600px;
+    padding: 12px 14px;
+    margin: 10px auto;
+    max-width: 640px;
 }
 
 @media (max-width: 768px) {
@@ -637,7 +638,7 @@ html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 7px 0;
     border-bottom: 1px solid #475569;
 }
 
@@ -657,7 +658,7 @@ html {
 }
 
 .time-stat-value {
-    font-size: 18px;
+    font-size: 28px;
     font-weight: 600;
     color: #3b82f6;
 }
@@ -772,6 +773,51 @@ html {
     margin-left: 10px;
 }
 
+.result-card {
+    max-width: 760px;
+    margin: 10px auto;
+    padding: 22px 24px !important;
+}
+
+.result-card .btn {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 8px !important;
+}
+
+/* Result screen typography system */
+.result-card {
+    --r-fs-sm: 14px;
+    --r-fs-md: 18px;
+    --r-fs-lg: 22px;
+    --r-fs-xl: 38px;
+}
+
+.result-card .result-title {
+    font-size: var(--r-fs-lg);
+    margin-bottom: 6px;
+}
+
+.result-card .result-mode,
+.result-card .time-stat-label,
+.result-card .result-label {
+    font-size: var(--r-fs-sm);
+}
+
+.result-card .time-stat-value,
+.result-card .success-rate {
+    font-size: var(--r-fs-md);
+}
+
+.result-card .result-number {
+    font-size: var(--r-fs-xl);
+    line-height: 1;
+}
+
+.result-card > div[style*="font-size: 18px"] {
+    font-size: var(--r-fs-md) !important;
+}
+
 @media (max-width: 768px) {
     .leaderboard-date {
         display: none;
@@ -877,6 +923,10 @@ html {
     display: none;
 }
 
+.mobile-quit-btn {
+    display: none;
+}
+
 /* Tab Menu */
 .tab-menu {
     display: flex;
@@ -938,4 +988,27 @@ html {
         flex: 1;
         text-align: center;
     }
+}
+
+/* Global UI consistency */
+:root {
+    --ui-radius: 4px;
+}
+
+.card,
+.btn,
+.operation-btn,
+.name-input,
+.answer-input,
+.progress-bar,
+.countdown,
+.time-stats,
+.leaderboard,
+.leaderboard-item,
+.error-item,
+.info-box,
+.tab-menu,
+.tab-btn,
+.result-box {
+    border-radius: var(--ui-radius) !important;
 }

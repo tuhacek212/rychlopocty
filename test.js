@@ -57,6 +57,8 @@ export class TestManager {
         this.app = app;
         this.currentExample = null;
         this.lastProcessedAnswer = null;
+        this.answerLocked = false;
+        this.nextExampleTimeout = null;
         this.motivationInterval = null;
         this.nextMotivationDelay = 8000;
         this.motivationTimeout = null;
@@ -73,6 +75,11 @@ export class TestManager {
         this.nextMotivationDelay = 8000;
         this.clearMotivationTimers();
         this.lastAnswerTimes = [];
+        this.answerLocked = false;
+        if (this.nextExampleTimeout) {
+            clearTimeout(this.nextExampleTimeout);
+            this.nextExampleTimeout = null;
+        }
 
         const appElement = document.getElementById('app');
         appElement.innerHTML = `
@@ -81,9 +88,10 @@ export class TestManager {
                 <div class="stat-item" style="color: #10b981;">✅ <span id="correct-count">0</span></div>
                 <div class="stat-item" style="color: #ef4444;">❌ <span id="wrong-count">0</span></div>
                 <div class="stat-item" style="color: #94a3b8; font-size: 12px;">🔢 ${opNames.join(', ')}</div>
+                <button class="mobile-quit-btn" onclick="app.endTest()" aria-label="Ukončit test">✕</button>
             </div>
 
-            <div class="card example-area">
+            <div class="card example-area mobile-answer-zone">
                 <div class="history-text" id="history"></div>
                 <div class="example-text" id="example">Načítání...</div>
                 <input type="text" 
@@ -96,6 +104,22 @@ export class TestManager {
                        autocapitalize="off"
                        spellcheck="false">
                 <div id="motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
+
+                <!-- MOBILNÍ NUMERICKÁ KLÁVESNICE -->
+                <div class="mobile-numpad" id="mobile-numpad" style="display: none;">
+                    <button onclick="mobileAddNumber('1')">1</button>
+                    <button onclick="mobileAddNumber('2')">2</button>
+                    <button onclick="mobileAddNumber('3')">3</button>
+                    <button onclick="mobileAddNumber('4')">4</button>
+                    <button onclick="mobileAddNumber('5')">5</button>
+                    <button onclick="mobileAddNumber('6')">6</button>
+                    <button onclick="mobileAddNumber('7')">7</button>
+                    <button onclick="mobileAddNumber('8')">8</button>
+                    <button onclick="mobileAddNumber('9')">9</button>
+                    <button onclick="app.endTest()" class="quit-key">✕</button>
+                    <button onclick="mobileAddNumber('0')" class="num-0">0</button>
+                    <button onclick="mobileBackspace()" class="backspace">⌫</button>
+                </div>
             </div>
 
             ${mode === '⏱️ Na čas' || mode === '⏰ Časovač' ? `
@@ -113,28 +137,14 @@ export class TestManager {
                 </div>
             `}
 
-            <!-- MOBILNÍ NUMERICKÁ KLÁVESNICE -->
-            <div class="mobile-numpad" id="mobile-numpad" style="display: none;">
-                <button onclick="mobileAddNumber('1')">1</button>
-                <button onclick="mobileAddNumber('2')">2</button>
-                <button onclick="mobileAddNumber('3')">3</button>
-                <button onclick="mobileAddNumber('4')">4</button>
-                <button onclick="mobileAddNumber('5')">5</button>
-                <button onclick="mobileAddNumber('6')">6</button>
-                <button onclick="mobileAddNumber('7')">7</button>
-                <button onclick="mobileAddNumber('8')">8</button>
-                <button onclick="mobileAddNumber('9')">9</button>
-                <button onclick="mobileAddNumber('0')" class="num-0">0</button>
-                <button onclick="mobileBackspace()" class="backspace">⌫</button>
-            </div>
-
-            <div style="text-align: center; margin-top: 20px;">
+            <div class="test-actions" style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-red" style="width: auto; padding: 12px 30px;" onclick="app.endTest()">🛑 Ukončit test</button>
             </div>
         `;
 
         // MOBILNÍ VYLEPŠENÍ - zobrazíme numpad na mobilu
         if (window.isMobileDevice()) {
+            document.body.classList.add('mobile-test-active');
             setTimeout(() => {
                 window.showMobileNumpad();
             }, 100);
@@ -185,16 +195,20 @@ export class TestManager {
 
         this.currentExample = {a, b, op, display, startTime: Date.now()};
         this.lastProcessedAnswer = null;
+        this.answerLocked = false;
 
         document.getElementById('example').textContent = `${a} ${display} ${b}`;
         document.getElementById('example').style.color = '#f1f5f9';
         const input = document.getElementById('answer');
+        input.disabled = false;
         input.value = '';
         input.style.background = '#334155';
         input.focus();
     }
 
     checkAnswer(e) {
+        if (this.answerLocked || !this.currentExample) return;
+
         const text = e.target.value;
         if (!/^\d+$/.test(text)) return;
 
@@ -210,6 +224,8 @@ export class TestManager {
         const answerKey = `${a}-${b}-${op}-${text}`;
         if (this.lastProcessedAnswer === answerKey) return;
         this.lastProcessedAnswer = answerKey;
+        this.answerLocked = true;
+        e.target.disabled = true;
 
         const userAnswer = parseInt(text);
         const currentTime = Date.now();
@@ -237,7 +253,7 @@ export class TestManager {
             document.getElementById('history').textContent = `Předchozí: ${a} ${symbols[op]} ${b} = ${userAnswer} ✓`;
             document.getElementById('history').style.color = '#10b981';
 
-            setTimeout(() => this.newExample(), 200);
+            this.scheduleNextExample(200);
 
             if (this.app.mode !== '⏱️ Na čas' && this.app.mode !== '∞ Trénink' && this.app.correctTimes.length === 10) {
                 const totalTime = (this.app.correctTimes[9] - this.app.correctTimes[0]) / 1000;
@@ -269,8 +285,18 @@ export class TestManager {
 
             this.updateStats();
 
-            setTimeout(() => this.newExample(), 1500);
+            this.scheduleNextExample(1500);
         }
+    }
+
+    scheduleNextExample(delayMs) {
+        if (this.nextExampleTimeout) {
+            clearTimeout(this.nextExampleTimeout);
+        }
+        this.nextExampleTimeout = setTimeout(() => {
+            this.nextExampleTimeout = null;
+            this.newExample();
+        }, delayMs);
     }
 
     getPerformanceStatus() {
@@ -325,6 +351,11 @@ export class TestManager {
             clearTimeout(this.motivationTimeout);
             this.motivationTimeout = null;
         }
+        if (this.nextExampleTimeout) {
+            clearTimeout(this.nextExampleTimeout);
+            this.nextExampleTimeout = null;
+        }
+        document.body.classList.remove('mobile-test-active');
         // MOBILNÍ VYLEPŠENÍ - skryjeme numpad při ukončení
         window.hideMobileNumpad();
     }

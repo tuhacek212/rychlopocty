@@ -1,4 +1,4 @@
-import { collection, query, limit, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { collection, query, limit, getDocs, addDoc, orderBy, doc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 import { db } from './firebase.js';
 
 export function getOperationsSymbols(operations) {
@@ -144,7 +144,77 @@ function renderLeaderboard() {
 // Přidat globální funkci pro filtrování
 window.filterLeaderboard = renderLeaderboard;
 
-export async function saveToLeaderboard(mode, time, userName, correctCount, wrongCount, operations) {
+export async function getProjectedRank(timeValue) {
+    const time = parseFloat(timeValue);
+    if (!Number.isFinite(time) || time <= 0) return null;
+
+    try {
+        const q = query(
+            collection(db, 'leaderboard'),
+            orderBy('time', 'asc'),
+            limit(50)
+        );
+        const snapshot = await getDocs(q);
+        const top = [];
+        snapshot.forEach((d) => top.push(d.data()));
+
+        let rank = top.findIndex((entry) => time <= Number(entry.time));
+        if (rank === -1) rank = top.length;
+
+        const position = rank + 1;
+        return {
+            position: position,
+            inTop50: position <= 50
+        };
+    } catch (error) {
+        console.error('Chyba při výpočtu projekce umístění:', error);
+        return null;
+    }
+}
+
+export async function createTestSession(mode, limit, operations) {
+    try {
+        const sessionRef = await addDoc(collection(db, 'test_sessions'), {
+            mode: mode,
+            limit: Number(limit),
+            operations: operations || ['*'],
+            used: false,
+            startedAt: serverTimestamp(),
+            createdAtClient: new Date().toISOString()
+        });
+        return sessionRef.id;
+    } catch (error) {
+        console.error('Chyba při vytvoření test session:', error);
+        return null;
+    }
+}
+
+export async function createPendingResult(mode, time, correctCount, wrongCount, operations, sessionId) {
+    if (!sessionId) return null;
+    try {
+        const pendingRef = await addDoc(collection(db, 'pending_results'), {
+            mode: mode,
+            time: parseFloat(time),
+            correctCount: correctCount,
+            wrongCount: wrongCount,
+            operations: operations || [],
+            sessionId: sessionId,
+            createdAt: serverTimestamp(),
+            createdAtClient: new Date().toISOString()
+        });
+        return { pendingResultId: pendingRef.id };
+    } catch (error) {
+        console.error('Chyba při vytvoření dočasného výsledku:', error);
+        return null;
+    }
+}
+
+export async function saveToLeaderboard(pendingResultId) {
+    if (!pendingResultId) {
+        alert('Chybí dočasný výsledek testu. Spusť test znovu.');
+        return null;
+    }
+
     const username = document.getElementById('username').value.trim();
     if (!username) {
         alert('Zadej své jméno!');
@@ -154,15 +224,39 @@ export async function saveToLeaderboard(mode, time, userName, correctCount, wron
     localStorage.setItem('rychlopocty_username', username);
 
     try {
-        await addDoc(collection(db, 'leaderboard'), {
-            mode: mode,
-            time: parseFloat(time),
+        const pendingRef = doc(db, 'pending_results', pendingResultId);
+        const pendingSnap = await getDoc(pendingRef);
+        if (!pendingSnap.exists()) {
+            alert('Dočasný výsledek neexistuje. Dokonči test znovu.');
+            return null;
+        }
+
+        const pending = pendingSnap.data();
+        if (!pending.sessionId) {
+            alert('Dočasný výsledek je neplatný.');
+            return null;
+        }
+
+        const sessionRef = doc(db, 'test_sessions', pending.sessionId);
+        const batch = writeBatch(db);
+        batch.set(doc(collection(db, 'leaderboard')), {
+            mode: pending.mode,
+            time: parseFloat(pending.time),
             username: username,
             date: new Date().toISOString(),
-            correctCount: correctCount,
-            wrongCount: wrongCount,
-            operations: operations
+            correctCount: pending.correctCount,
+            wrongCount: pending.wrongCount,
+            operations: pending.operations || [],
+            sessionId: pending.sessionId,
+            pendingResultId: pendingResultId
         });
+        batch.update(sessionRef, {
+            used: true,
+            usedBy: username,
+            usedAtClient: new Date().toISOString()
+        });
+        batch.delete(pendingRef);
+        await batch.commit();
 
         alert('✅ Výsledek uložen do žebříčku!');
         return username;

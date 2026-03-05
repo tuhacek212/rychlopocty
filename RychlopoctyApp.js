@@ -1,6 +1,6 @@
 import { TestManager } from './test.js';
 import { loadTotalStats, updateFirebaseStats } from './stats.js';
-import { showLeaderboards, saveToLeaderboard } from './leaderboard.js';
+import { showLeaderboards, saveToLeaderboard, getProjectedRank, createTestSession, createPendingResult } from './leaderboard.js';
 import { getMotivationalMessage } from './messages.js';
 import { MultiplayerManager } from './multiplayer.js';
 import { Router } from './router.js';
@@ -24,6 +24,8 @@ export class RychlopoctyApp {
         this.testEndTime = null;
         this.userName = localStorage.getItem('rychlopocty_username') || '';
         this.wasQuit = false;
+        this.leaderboardSessionId = null;
+        this.pendingResultId = null;
         
         this.savedMultiply = true;
         this.savedAdd = false;
@@ -649,7 +651,7 @@ showCreatedGameInList(gameCode) {
         this.startTest('⏰ Časovač', totalSeconds);
     }
 
-    startTest(mode, limit) {
+    async startTest(mode, limit) {
         const opMultiply = document.getElementById('op-multiply');
         const opAdd = document.getElementById('op-add');
         const opSubtract = document.getElementById('op-subtract');
@@ -671,6 +673,8 @@ showCreatedGameInList(gameCode) {
         this.testStartTime = Date.now();
         this.testEndTime = null;
         this.wasQuit = false;
+        this.leaderboardSessionId = null;
+        this.pendingResultId = null;
 
         this.operations = [];
         if (this.savedMultiply) this.operations.push('*');
@@ -678,6 +682,8 @@ showCreatedGameInList(gameCode) {
         if (this.savedSubtract) this.operations.push('-');
         if (this.savedDivide) this.operations.push('/');
         if (this.operations.length === 0) this.operations = ['*'];
+
+        this.leaderboardSessionId = await createTestSession(mode, limit, this.operations);
 
         this.router.navigate('/test');
         
@@ -687,6 +693,8 @@ showCreatedGameInList(gameCode) {
     endTest() {
         this.running = false;
         this.wasQuit = true;
+        this.leaderboardSessionId = null;
+        this.pendingResultId = null;
         if (this.testManager) {
             this.testManager.clearMotivationTimers();
         }
@@ -715,6 +723,7 @@ showCreatedGameInList(gameCode) {
 
         let timeStatsHTML = '';
         let saveButtonHTML = '';
+        let projectedRankHTML = '';
         let motivationalText = '';
         let wasSuccessful = false;
         
@@ -748,15 +757,42 @@ showCreatedGameInList(gameCode) {
                 const last10End = this.allAnswerTimes[this.allAnswerTimes.length - 1];
                 last10Time = ((last10End - last10Start) / 1000).toFixed(2);
                 last10TimeHTML = '<div class="time-stat-row"><span class="time-stat-label">🎯 Čas posledních 10 příkladů</span><span class="time-stat-value">' + last10Time + 's</span></div>';
+
+                const projectedRank = await getProjectedRank(last10Time);
+                if (projectedRank) {
+                    if (projectedRank.inTop50) {
+                        projectedRankHTML = '<div class="time-stat-row"><span class="time-stat-label">🏅 Projekce umístění</span><span class="time-stat-value">#' + projectedRank.position + ' / TOP 50</span></div>';
+                    } else {
+                        projectedRankHTML = '<div class="time-stat-row"><span class="time-stat-label">🏅 Projekce umístění</span><span class="time-stat-value">Mimo TOP 50</span></div>';
+                    }
+                }
                 
                 wasSuccessful = parseFloat(last10Time) <= this.limit;
                 
                 if (wasSuccessful) {
-                    saveButtonHTML = '<div style="text-align: center; margin: 20px 0;"><input type="text" id="username" class="name-input" placeholder="Zadej své jméno" value="' + this.userName + '"><button class="btn btn-green" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.saveToLeaderboard(' + last10Time + ')">🏆 Uložit do žebříčku</button></div>';
+                    if (!this.pendingResultId) {
+                        const pending = await createPendingResult(
+                            this.mode,
+                            last10Time,
+                            this.correctCount,
+                            this.wrongCount,
+                            this.operations,
+                            this.leaderboardSessionId
+                        );
+                        if (pending) {
+                            this.pendingResultId = pending.pendingResultId;
+                        }
+                    }
+
+                    if (this.pendingResultId) {
+                        saveButtonHTML = '<div style="text-align: center; margin: 20px 0;"><input type="text" id="username" class="name-input" placeholder="Zadej své jméno" value="' + this.userName + '"><button class="btn btn-green" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.saveToLeaderboard(\'' + this.pendingResultId + '\')">🏆 Uložit do žebříčku</button></div>';
+                    } else {
+                        saveButtonHTML = '<div style="text-align: center; margin: 20px 0; color: #fbbf24;">Nepodařilo se připravit výsledek pro uložení.</div>';
+                    }
                 }
             }
             
-            timeStatsHTML = '<div class="time-stats"><div class="time-stat-row"><span class="time-stat-label">⏱️ Celkový čas</span><span class="time-stat-value">' + totalTime + 's</span></div>' + last10TimeHTML + '</div>';
+            timeStatsHTML = '<div class="time-stats"><div class="time-stat-row"><span class="time-stat-label">⏱️ Celkový čas</span><span class="time-stat-value">' + totalTime + 's</span></div>' + last10TimeHTML + projectedRankHTML + '</div>';
             
             motivationalText = getMotivationalMessage(this.mode, wasSuccessful, this.wasQuit);
         }
@@ -766,13 +802,15 @@ showCreatedGameInList(gameCode) {
         const app = document.getElementById('app');
         const errorListHTML = this.wrongAnswers.map(err => '<div class="error-item"><div class="error-problem">' + err.problem + '</div><div class="error-answers"><span class="error-your">Tvoje: <strong>' + err.user + '</strong></span><span class="error-correct">Správně: <strong>' + err.correct + '</strong></span></div></div>').join('');
         
-        app.innerHTML = '<div class="card" style="text-align: center; padding: 40px;"><div class="result-emoji">' + (this.correctCount > this.wrongCount ? '🎉' : '💪') + '</div><div class="result-title">' + (this.wasQuit ? 'Test ukončen!' : 'Test dokončen!') + '</div><div class="result-mode">Režim: ' + this.mode + '</div><div class="result-mode">Operace: ' + opNames.join(', ') + '</div>' + timeStatsHTML + '<div style="font-size: 18px; font-weight: 600; color: #fbbf24; margin: 25px 0; padding: 15px; background: #1e293b; border-radius: 4px;">💬 ' + motivationalText + '</div><div class="result-stats"><div class="result-box correct"><div class="result-icon">✅</div><div class="result-number correct">' + this.correctCount + '</div><div class="result-label">Správně</div></div><div class="result-box wrong" onclick="app.showErrors()"><div class="result-icon">❌</div><div class="result-number wrong">' + this.wrongCount + '</div><div class="result-label">Chybně</div></div></div>' + (total > 0 ? '<div class="success-rate">Úspěšnost: ' + successRate + '%</div>' : '') + saveButtonHTML + '<button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.router.navigate(\'/\')">🔄 Zkusit znovu</button></div>';
+        app.innerHTML = '<div class="card result-card" style="text-align: center; padding: 40px;"><div class="result-emoji">' + (this.correctCount > this.wrongCount ? '🎉' : '💪') + '</div><div class="result-title">' + (this.wasQuit ? 'Test ukončen!' : 'Test dokončen!') + '</div><div class="result-mode">Režim: ' + this.mode + '</div><div class="result-mode">Operace: ' + opNames.join(', ') + '</div>' + timeStatsHTML + '<div style="font-size: 18px; font-weight: 600; color: #fbbf24; margin: 25px 0; padding: 15px; background: #1e293b; border-radius: 4px;">💬 ' + motivationalText + '</div><div class="result-stats"><div class="result-box correct"><div class="result-icon">✅</div><div class="result-number correct">' + this.correctCount + '</div><div class="result-label">Správně</div></div><div class="result-box wrong" onclick="app.showErrors()"><div class="result-icon">❌</div><div class="result-number wrong">' + this.wrongCount + '</div><div class="result-label">Chybně</div></div></div>' + (total > 0 ? '<div class="success-rate">Úspěšnost: ' + successRate + '%</div>' : '') + saveButtonHTML + '<button class="btn btn-blue" style="width: auto; padding: 12px 30px; margin-top: 10px;" onclick="app.router.navigate(\'/\')">🔄 Zkusit znovu</button></div>';
     }
 
-    async saveToLeaderboard(time) {
-        const username = await saveToLeaderboard(this.mode, time, this.userName, this.correctCount, this.wrongCount, this.operations, false);
+    async saveToLeaderboard(pendingResultId) {
+        const username = await saveToLeaderboard(pendingResultId);
         if (username) {
             this.userName = username;
+            this.pendingResultId = null;
+            this.leaderboardSessionId = null;
             this.router.navigate('/leaderboard');
         }
     }
