@@ -1470,6 +1470,10 @@ html {
         border-radius: 4px !important;
     }
 
+    .mp-desktop-quit-wrap {
+        display: none !important;
+    }
+
     .mp-room-row {
         flex-direction: column !important;
         align-items: stretch !important;

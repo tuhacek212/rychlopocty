@@ -596,13 +596,13 @@ export class MultiplayerManager {
         app.innerHTML = `
             <div class="stats-bar" style="justify-content: space-between;">
                 <div class="stat-item" style="color: #3b82f6;">
-                    ?? ${myNameSafe}: <span id="my-score">0</span>
+                    ${myNameSafe}: <span id="my-score">0</span>
                 </div>
                 <div class="stat-item" style="color: #fbbf24; font-size: 20px; font-weight: bold;">
                     <span id="score-diff">0</span>
                 </div>
                 <div class="stat-item" style="color: #ef4444;">
-                    ?? ${opponentNameSafe}: <span id="opponent-score">0</span>
+                    ${opponentNameSafe}: <span id="opponent-score">0</span>
                 </div>
             </div>
 
@@ -646,7 +646,7 @@ export class MultiplayerManager {
                 </div>
             </div>
 
-            <div style="text-align: center; margin-top: 20px;">
+            <div class="mp-desktop-quit-wrap" style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-red" style="width: auto; padding: 12px 30px;" 
                         onclick="app.multiplayerManager.disconnect()">
                     🛑 Ukončit hru
