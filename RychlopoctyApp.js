@@ -1,4 +1,4 @@
-import { TestManager } from './test.js';
+﻿import { TestManager } from './test.js';
 import { loadTotalStats, updateFirebaseStats } from './stats.js';
 import { showLeaderboards, saveToLeaderboard, getProjectedRank, createTestSession, createPendingResult } from './leaderboard.js';
 import { getMotivationalMessage } from './messages.js';
@@ -38,6 +38,48 @@ export class RychlopoctyApp {
         
         this.setupRoutes();
         this.router.start();
+    }
+
+    escapeHTML(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    sanitizePlayerName(name) {
+        const normalized = String(name || '').trim().slice(0, 20);
+        return normalized.replace(/[^a-zA-Z0-9\u00C0-\u024F\s._-]/g, '');
+    }
+
+    showToast(message, type = 'error') {
+        const now = Date.now();
+        if (this._lastToastMessage === message && now - (this._lastToastAt || 0) < 1200) {
+            return;
+        }
+        this._lastToastMessage = message;
+        this._lastToastAt = now;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+
+        const container = document.getElementById('toast-container') || (() => {
+            const el = document.createElement('div');
+            el.id = 'toast-container';
+            document.body.appendChild(el);
+            return el;
+        })();
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('visible'));
+
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 180);
+        }, 2800);
     }
 
     setupRoutes() {
@@ -82,7 +124,7 @@ export class RychlopoctyApp {
 
     async showMainScreen() {
         const app = document.getElementById('app');
-        const header = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 20px;"><div style="text-align: left;"><div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">⚡ Rychlopočty</div><div style="font-size: 14px; color: #94a3b8;">Trénuj a sdílej své matematické dovednosti</div></div><div id="total-stats" style="text-align: right;"><div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">⏳ Načítání statistik...</div></div></div>';
+        const header = '<div class="main-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px; flex-wrap: wrap; gap: 12px;"><div style="text-align: left;"><div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">⚡ Rychlopočty</div><div style="font-size: 14px; color: #94a3b8;">Trénuj a sdílej své matematické dovednosti</div></div></div>';
         
         const tabs = '<div class="tab-menu"><button class="tab-btn active" data-tab="training" onclick="app.switchTab(\'training\')">🏠 Trénink</button><button class="tab-btn" data-tab="leaderboard" onclick="app.switchTab(\'leaderboard\')">🏆 Žebříčky</button><button class="tab-btn" data-tab="multiplayer" onclick="app.switchTab(\'multiplayer\')">🎮 Multiplayer</button></div>';
         
@@ -96,7 +138,7 @@ export class RychlopoctyApp {
     }
 
     getTrainingContent() {
-        return '<div style="background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;"><div style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">📝 <strong style="color: #f1f5f9;">Jak to funguje:</strong> Vyber si obtížnost a operace, které chceš trénovat. Tvým úkolem je správně vyřešit 10 příkladů za daný čas. Čím rychleji odpovídáš, tím lepší je tvůj výsledek!</div></div><div class="two-column"><div class="card"><div class="section-title">🎯 Vyber obtížnost</div><button class="btn btn-green" onclick="app.startTest(\'Lehká\', 30)">Lehká</button><div class="time-desc">30 sekund</div><button class="btn btn-yellow" onclick="app.startTest(\'Střední\', 22)">Střední</button><div class="time-desc">22 sekund</div><button class="btn btn-orange" onclick="app.startTest(\'Obtížná\', 15)">Obtížná</button><div class="time-desc">15 sekund</div><button class="btn btn-red" onclick="app.startTest(\'Expert\', 10)">Expert</button><div class="time-desc">10 sekund</div></div><div class="card" style="display: flex; flex-direction: column;"><div class="section-title">🔢 Vyber operace</div><div class="operations-grid"><button class="operation-btn ' + (this.savedMultiply ? 'active' : '') + '" id="op-multiply" onclick="app.toggleOperation(\'multiply\')">✖️ Násobení</button><br><button class="operation-btn ' + (this.savedAdd ? 'active' : '') + '" id="op-add" onclick="app.toggleOperation(\'add\')">➕ Sčítání</button><br><button class="operation-btn ' + (this.savedSubtract ? 'active' : '') + '" id="op-subtract" onclick="app.toggleOperation(\'subtract\')">➖ Odčítání</button><br><button class="operation-btn ' + (this.savedDivide ? 'active' : '') + '" id="op-divide" onclick="app.toggleOperation(\'divide\')">➗ Dělení</button></div></div></div>';
+        return '<div class="training-top-panel"><div id="total-stats" class="training-stats-line"><span style="font-size: 12px; color: #64748b;">⏳ Načítání statistik...</span></div><div class="training-info-line"><div style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">📝 <strong style="color: #f1f5f9;">Jak to funguje:</strong> Vyber si obtížnost a operace, které chceš trénovat. Tvým úkolem je správně vyřešit 10 příkladů za daný čas. Čím rychleji odpovídáš, tím lepší je tvůj výsledek!</div></div></div><div class="two-column"><div class="card"><div class="section-title">🎯 Vyber obtížnost</div><button class="btn btn-green" onclick="app.startTest(\'Lehká\', 30)">Lehká</button><div class="time-desc">30 sekund</div><button class="btn btn-yellow" onclick="app.startTest(\'Střední\', 22)">Střední</button><div class="time-desc">22 sekund</div><button class="btn btn-orange" onclick="app.startTest(\'Obtížná\', 15)">Obtížná</button><div class="time-desc">15 sekund</div><button class="btn btn-red" onclick="app.startTest(\'Expert\', 10)">Expert</button><div class="time-desc">10 sekund</div></div><div class="card" style="display: flex; flex-direction: column;"><div class="section-title">🔢 Vyber operace</div><div class="operations-grid"><button class="operation-btn ' + (this.savedMultiply ? 'active' : '') + '" id="op-multiply" onclick="app.toggleOperation(\'multiply\')">✖️ Násobení</button><br><button class="operation-btn ' + (this.savedAdd ? 'active' : '') + '" id="op-add" onclick="app.toggleOperation(\'add\')">➕ Sčítání</button><br><button class="operation-btn ' + (this.savedSubtract ? 'active' : '') + '" id="op-subtract" onclick="app.toggleOperation(\'subtract\')">➖ Odčítání</button><br><button class="operation-btn ' + (this.savedDivide ? 'active' : '') + '" id="op-divide" onclick="app.toggleOperation(\'divide\')">➗ Dělení</button></div></div></div>';
     }
 
     switchTab(tabName) {
@@ -198,6 +240,13 @@ export class RychlopoctyApp {
         if (!tabContent) return;
 
         tabContent.innerHTML = `
+            <div class="card" style="margin-top: 0;">
+                <div class="section-title">🌐 Aktivní místnosti</div>
+                <div id="public-games-list" style="min-height: 150px;">
+                    <div style="text-align: center; color: #94a3b8; padding: 40px 20px;">⏳ Načítání místností...</div>
+                </div>
+            </div>
+
             <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
                 <label style="font-size: 16px; color: #cbd5e1; font-weight: 500; white-space: nowrap;">Tvoje jméno:</label>
                 <input type="text" id="mp-name" class="name-input" placeholder="Zadej jméno" value="${this.userName}" maxlength="20"
@@ -209,13 +258,6 @@ export class RychlopoctyApp {
                         <span style="font-size: 16px; margin: 0; vertical-align: middle;">🔒</span>
                     </label>
                 </button>
-            </div>
-
-            <div class="card" style="margin-top: 0;">
-                <div class="section-title">🌐 Aktivní místnosti</div>
-                <div id="public-games-list" style="min-height: 150px;">
-                    <div style="text-align: center; color: #94a3b8; padding: 40px 20px;">⏳ Načítání místností...</div>
-                </div>
             </div>
         `;
 
@@ -246,92 +288,88 @@ export class RychlopoctyApp {
             return;
         }
 
-        const opIcons = { '*': '✖️', '+': '➕', '-': '➖', '/': '➗' };
+        const opIcons = { '*': '×', '+': '+', '-': '−', '/': '÷' };
 
         const gamesListHTML = games.map(game => {
             const opsDisplay = game.operations.map(op => opIcons[op] || op).join(' ');
             const timeAgo = this.getTimeAgo(game.createdAt);
             const isPrivate = game.isPrivate || false;
             const isPlaying = game.status === 'playing';
-            const isFull = game.playerCount >= 2;
-            
-            let statusIcon = '';
+            const isFull = !!game.guestConnected || game.status === 'ready';
+            const hostNameSafe = this.escapeHTML(game.hostName || 'Neznámý');
+            const gameCode = String(game.gameCode || '').replace(/\D/g, '').slice(0, 2);
+            const gameCodeSafe = this.escapeHTML(gameCode);
+
             let statusText = '';
             let statusColor = '';
             let borderColor = '#334155';
             let clickable = false;
             let opacity = '1';
-            
+
             if (isPlaying) {
-                statusIcon = '🎮';
                 statusText = 'Probíhá';
                 statusColor = '#8b5cf6';
                 opacity = '0.7';
             } else if (isPrivate) {
-                statusIcon = '🔒';
                 statusText = 'Soukromá';
                 statusColor = '#f59e0b';
                 clickable = false;
             } else if (isFull) {
-                statusIcon = '⏳';
                 statusText = 'Čeká';
                 statusColor = '#3b82f6';
                 opacity = '0.8';
             } else {
-                statusIcon = '✅';
                 statusText = 'Volná';
                 statusColor = '#10b981';
                 borderColor = '#10b981';
                 clickable = true;
             }
-            
+
             const cursorStyle = clickable ? 'cursor: pointer;' : 'cursor: default;';
-            const hoverEvents = clickable ? 
-                `onmouseover="this.style.background='#334155'; this.style.borderColor='#3b82f6'" onmouseout="this.style.background='#1e293b'; this.style.borderColor='${borderColor}'"` : 
-                '';
-            const clickEvent = clickable ? `onclick="app.joinPublicGame('${game.gameCode}')"` : '';
-            
-            // Pro soukromé hry zobrazíme input pro kód
+            const hoverEvents = clickable
+                ? `onmouseover="this.style.background='#334155'; this.style.borderColor='#3b82f6'" onmouseout="this.style.background='#1e293b'; this.style.borderColor='${borderColor}'"`
+                : '';
+            const clickEvent = clickable ? `onclick="app.joinPublicGame('${gameCode}')"` : '';
+
             let actionSection = '';
             let codeDisplay = '';
-            
+
             if (isPrivate) {
-                // U soukromých her NESKRÝVÁME kód - je to heslo!
-                codeDisplay = '';
                 actionSection = `
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="text" id="code-input-${game.gameCode}" placeholder="Kód" maxlength="2"
-                               style="width: 60px; padding: 10px 8px; font-size: 14px; background: #0f172a; color: #f1f5f9; border: 2px solid #334155; border-radius: 4px; text-align: center; box-sizing: border-box; margin: 0; vertical-align: middle;"
+                    <div class="mp-room-actions" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="text" id="code-input-${gameCode}" placeholder="Kód" maxlength="2"
+                               class="mp-room-code-input"
+                               style="width: 85px; padding: 10px 8px; font-size: 14px; background: #0f172a; color: #f1f5f9; border: 2px solid #334155; border-radius: 4px; text-align: center; box-sizing: border-box; margin: 0; vertical-align: middle;"
                                onclick="event.stopPropagation();">
-                        <button class="btn btn-blue" style="padding: 10px 16px; font-size: 14px; line-height: 1; margin: 0; vertical-align: middle;" onclick="event.stopPropagation(); app.joinPrivateGameWithCode('${game.gameCode}')">
-                            🔑 Připojit
+                        <button class="btn btn-blue mp-room-join-btn" style="padding: 10px 16px; font-size: 14px; line-height: 1; margin: 0; vertical-align: middle;" onclick="event.stopPropagation(); app.joinPrivateGameWithCode('${gameCode}')">
+                            Připojit
                         </button>
                     </div>
                 `;
             } else {
-                codeDisplay = `<div style="font-size: 18px; color: #94a3b8; font-family: monospace; font-weight: bold;">#${game.gameCode}</div>`;
+                codeDisplay = `<div style="font-size: 18px; color: #94a3b8; font-family: monospace; font-weight: bold;">#${gameCodeSafe}</div>`;
                 if (clickable) {
-                    actionSection = '<div style="font-size: 24px; color: #10b981;">▶️</div>';
+                    actionSection = '<div style="font-size: 24px; color: #10b981;">▶</div>';
                 }
             }
-            
+
             return `
-                <div style="background: #1e293b; padding: 12px 20px; border-radius: 4px; margin-bottom: 8px; border: 2px solid ${borderColor}; opacity: ${opacity}; transition: all 0.2s; ${cursorStyle}; display: flex; justify-content: space-between; align-items: center;" ${hoverEvents} ${clickEvent}>
-                    <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                <div class="mp-room-row" style="background: #1e293b; padding: 12px 20px; border-radius: 4px; margin-bottom: 8px; border: 2px solid ${borderColor}; opacity: ${opacity}; transition: all 0.2s; ${cursorStyle}; display: flex; justify-content: space-between; align-items: center;" ${hoverEvents} ${clickEvent}>
+                    <div class="mp-room-main" style="display: flex; align-items: center; gap: 15px; flex: 1;">
                         <div style="font-size: 16px; font-weight: bold; color: #f1f5f9; min-width: 120px;">
-                            👤 ${game.hostName}
+                            ${hostNameSafe}
                         </div>
                         <div style="font-size: 14px; color: #94a3b8;">
                             ${opsDisplay}
                         </div>
                         <div style="font-size: 12px; color: ${statusColor}; font-weight: 600;">
-                            ${statusIcon} ${statusText}
+                            ${statusText}
                         </div>
                         <div style="font-size: 12px; color: #64748b;">
                             ${timeAgo}
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="mp-room-right" style="display: flex; align-items: center; gap: 15px;">
                         ${codeDisplay}
                         ${actionSection}
                     </div>
@@ -350,7 +388,6 @@ export class RychlopoctyApp {
         if (minutes < 5) return 'před ' + minutes + ' minutami';
         return 'před ' + minutes + ' min';
     }
-
     async createMultiplayerGame() {
         const nameInput = document.getElementById('mp-name');
         const playerName = nameInput ? nameInput.value.trim() : '';
@@ -358,13 +395,20 @@ export class RychlopoctyApp {
         const isPrivate = privateCheckbox ? privateCheckbox.checked : false;
 
         if (!playerName) {
-            alert('Zadej své jméno!');
+            this.showToast('Zadej své jméno!');
             if (nameInput) nameInput.focus();
             return;
         }
 
-        this.userName = playerName;
-        localStorage.setItem('rychlopocty_username', playerName);
+        const safePlayerName = this.sanitizePlayerName(playerName);
+        if (!safePlayerName) {
+            this.showToast('Jméno obsahuje nepodporované znaky.');
+            if (nameInput) nameInput.focus();
+            return;
+        }
+
+        this.userName = safePlayerName;
+        localStorage.setItem('rychlopocty_username', safePlayerName);
 
         const operations = [];
         if (this.savedMultiply) operations.push('*');
@@ -374,12 +418,12 @@ export class RychlopoctyApp {
         if (operations.length === 0) operations.push('*');
 
         try {
-            const gameCode = await this.multiplayerManager.createGame(playerName, operations, isPrivate);
+            const gameCode = await this.multiplayerManager.createGame(safePlayerName, operations, isPrivate);
             
             // Zobraz vytvořenou hru v pravém sloupci
             this.showCreatedGameInList(gameCode);
         } catch (error) {
-            alert('Chyba při vytváření hry: ' + error.message);
+            this.showToast('Chyba při vytváření hry: ' + error.message);
         }
     }
 
@@ -439,7 +483,7 @@ showCreatedGameInList(gameCode) {
         const playerName = nameInput ? nameInput.value.trim() : '';
 
         if (!playerName) {
-            alert('Nejdřív zadej své jméno nahoře!');
+            this.showToast('Nejdřív zadej své jméno nahoře!');
             if (nameInput) nameInput.focus();
             // Vyčisti kód
             const codeInput = document.getElementById('game-code');
@@ -447,8 +491,14 @@ showCreatedGameInList(gameCode) {
             return;
         }
 
-        this.userName = playerName;
-        localStorage.setItem('rychlopocty_username', playerName);
+        const safePlayerName = this.sanitizePlayerName(playerName);
+        if (!safePlayerName) {
+            this.showToast('Jméno obsahuje nepodporované znaky.');
+            return;
+        }
+
+        this.userName = safePlayerName;
+        localStorage.setItem('rychlopocty_username', safePlayerName);
 
         const tabContent = document.getElementById('tab-content');
         if (tabContent) {
@@ -456,9 +506,9 @@ showCreatedGameInList(gameCode) {
         }
 
         try {
-            await this.multiplayerManager.joinGame(gameCode, playerName);
+            await this.multiplayerManager.joinGame(gameCode, safePlayerName);
         } catch (error) {
-            alert('Nepodařilo se připojit ke hře. Zkontroluj kód a zkus to znovu.');
+            this.showToast('Nepodařilo se připojit ke hře. Zkontroluj kód a zkus to znovu.');
             this.router.navigate('/multiplayer');
         }
     }
@@ -468,7 +518,7 @@ showCreatedGameInList(gameCode) {
         const playerName = nameInput ? nameInput.value.trim() : '';
 
         if (!playerName) {
-            alert('Nejdřív zadej své jméno nahoře!');
+            this.showToast('Nejdřív zadej své jméno nahoře!');
             if (nameInput) {
                 nameInput.focus();
                 nameInput.style.borderColor = '#ef4444';
@@ -477,8 +527,14 @@ showCreatedGameInList(gameCode) {
             return;
         }
 
-        this.userName = playerName;
-        localStorage.setItem('rychlopocty_username', playerName);
+        const safePlayerName = this.sanitizePlayerName(playerName);
+        if (!safePlayerName) {
+            this.showToast('Jméno obsahuje nepodporované znaky.');
+            return;
+        }
+
+        this.userName = safePlayerName;
+        localStorage.setItem('rychlopocty_username', safePlayerName);
 
         const tabContent = document.getElementById('tab-content');
         if (tabContent) {
@@ -486,9 +542,9 @@ showCreatedGameInList(gameCode) {
         }
 
         try {
-            await this.multiplayerManager.joinGame(gameCode, playerName);
+            await this.multiplayerManager.joinGame(gameCode, safePlayerName);
         } catch (error) {
-            alert('Nepodařilo se připojit ke hře. Zkus to znovu.');
+            this.showToast('Nepodařilo se připojit ke hře. Zkus to znovu.');
             this.router.navigate('/multiplayer');
         }
     }
@@ -500,7 +556,7 @@ showCreatedGameInList(gameCode) {
         const enteredCode = codeInput ? codeInput.value.trim() : '';
 
         if (!playerName) {
-            alert('Nejdřív zadej své jméno nahoře!');
+            this.showToast('Nejdřív zadej své jméno nahoře!');
             if (nameInput) {
                 nameInput.focus();
                 nameInput.style.borderColor = '#ef4444';
@@ -510,7 +566,7 @@ showCreatedGameInList(gameCode) {
         }
 
         if (!enteredCode) {
-            alert('Zadej kód hry!');
+            this.showToast('Zadej kód hry!');
             if (codeInput) {
                 codeInput.focus();
                 codeInput.style.borderColor = '#ef4444';
@@ -520,7 +576,7 @@ showCreatedGameInList(gameCode) {
         }
 
         if (!/^\d{2}$/.test(enteredCode)) {
-            alert('Kód musí být 2místné číslo!');
+            this.showToast('Kód musí být 2místné číslo.');
             if (codeInput) {
                 codeInput.focus();
                 codeInput.style.borderColor = '#ef4444';
@@ -530,7 +586,7 @@ showCreatedGameInList(gameCode) {
         }
 
         if (enteredCode !== gameCode) {
-            alert('Nesprávný kód!');
+            this.showToast('Nesprávný kód!');
             if (codeInput) {
                 codeInput.value = '';
                 codeInput.focus();
@@ -540,8 +596,14 @@ showCreatedGameInList(gameCode) {
             return;
         }
 
-        this.userName = playerName;
-        localStorage.setItem('rychlopocty_username', playerName);
+        const safePlayerName = this.sanitizePlayerName(playerName);
+        if (!safePlayerName) {
+            this.showToast('Jméno obsahuje nepodporované znaky.');
+            return;
+        }
+
+        this.userName = safePlayerName;
+        localStorage.setItem('rychlopocty_username', safePlayerName);
 
         const tabContent = document.getElementById('tab-content');
         if (tabContent) {
@@ -549,9 +611,9 @@ showCreatedGameInList(gameCode) {
         }
 
         try {
-            await this.multiplayerManager.joinGame(gameCode, playerName);
+            await this.multiplayerManager.joinGame(gameCode, safePlayerName);
         } catch (error) {
-            alert('Nepodařilo se připojit ke hře. Zkus to znovu.');
+            this.showToast('Nepodařilo se připojit ke hře. Zkus to znovu.');
             this.router.navigate('/multiplayer');
         }
     }
@@ -825,5 +887,11 @@ showCreatedGameInList(gameCode) {
     }
 
 }
+
+
+
+
+
+
 
 

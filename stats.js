@@ -1,4 +1,4 @@
-import { collection, query, limit, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+﻿import { collection, query, limit, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 import { db } from './firebase.js';
 
 export async function loadTotalStats() {
@@ -6,30 +6,35 @@ export async function loadTotalStats() {
         const statsRef = collection(db, 'stats');
         const q = query(statsRef, limit(1));
         const querySnapshot = await getDocs(q);
-        
+
         let totalCorrect = 0;
         let totalWrong = 0;
-        
+
         if (!querySnapshot.empty) {
-            const doc = querySnapshot.docs[0];
-            const data = doc.data();
+            const firstDoc = querySnapshot.docs[0];
+            const data = firstDoc.data();
             totalCorrect = data.totalCorrect || 0;
             totalWrong = data.totalWrong || 0;
         }
-        
+
         const total = totalCorrect + totalWrong;
-        
         const statsContainer = document.getElementById('total-stats');
+        const isMobile = window.innerWidth <= 768;
+
         if (statsContainer) {
-            statsContainer.innerHTML = `
-                <div style="font-size: 16px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">
-                    📊 Celkem spočítáno ${total.toLocaleString('cs-CZ')} příkladů
-                </div>
-                <div style="font-size: 14px;">
-                    <span style="color: #10b981;">✅ ${totalCorrect.toLocaleString('cs-CZ')} správně</span> · 
-                    <span style="color: #ef4444;">❌ ${totalWrong.toLocaleString('cs-CZ')} špatně</span>
-                </div>
-            `;
+            if (isMobile) {
+                statsContainer.innerHTML = `
+                    <span class="stats-item stats-total" title="Celkem spočítáno ${total.toLocaleString('cs-CZ')} příkladů">📊 ${total.toLocaleString('cs-CZ')}</span>
+                    <span class="stats-item stats-correct" title="${totalCorrect.toLocaleString('cs-CZ')} správně">✅ ${totalCorrect.toLocaleString('cs-CZ')}</span>
+                    <span class="stats-item stats-wrong" title="${totalWrong.toLocaleString('cs-CZ')} špatně">❌ ${totalWrong.toLocaleString('cs-CZ')}</span>
+                `;
+            } else {
+                statsContainer.innerHTML = `
+                    <span class="stats-item stats-total">📊 Celkem spočítáno ${total.toLocaleString('cs-CZ')} příkladů</span>
+                    <span class="stats-item stats-correct">✅ ${totalCorrect.toLocaleString('cs-CZ')} správně</span>
+                    <span class="stats-item stats-wrong">❌ ${totalWrong.toLocaleString('cs-CZ')} špatně</span>
+                `;
+            }
         }
     } catch (error) {
         console.error('Chyba při načítání celkových statistik:', error);
@@ -45,11 +50,11 @@ export async function updateFirebaseStats(correctCount, wrongCount) {
         const statsRef = collection(db, 'stats');
         const q = query(statsRef, limit(1));
         const querySnapshot = await getDocs(q);
-        
+
         let currentCorrect = 0;
         let currentWrong = 0;
         let docId = null;
-        
+
         if (!querySnapshot.empty) {
             const docSnap = querySnapshot.docs[0];
             docId = docSnap.id;
@@ -57,10 +62,10 @@ export async function updateFirebaseStats(correctCount, wrongCount) {
             currentCorrect = data.totalCorrect || 0;
             currentWrong = data.totalWrong || 0;
         }
-        
+
         const newCorrect = currentCorrect + correctCount;
         const newWrong = currentWrong + wrongCount;
-        
+
         if (docId) {
             const statsDocRef = doc(db, 'stats', docId);
             await updateDoc(statsDocRef, {
@@ -78,5 +83,6 @@ export async function updateFirebaseStats(correctCount, wrongCount) {
     } catch (error) {
         console.error('Chyba při aktualizaci stats:', error);
     }
+
     window.testStats = updateFirebaseStats;
 }

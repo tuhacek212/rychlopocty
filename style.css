@@ -927,6 +927,60 @@ html {
     display: none;
 }
 
+.main-header {
+    align-items: flex-end;
+    margin-bottom: 2px;
+    gap: 12px;
+}
+
+.training-top-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 0 0 12px;
+}
+
+.training-stats-line {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 0 0 8px;
+    margin: 0 0 8px;
+    font-size: 15px;
+    line-height: 1.25;
+    border-bottom: 1px solid #334155;
+}
+
+.training-stats-line .stats-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.training-stats-line .stats-total {
+    color: #3b82f6;
+    font-weight: 700;
+}
+
+.training-stats-line .stats-correct {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.training-stats-line .stats-wrong {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.training-info-line {
+    padding: 0;
+    margin: 0;
+}
+
 /* Tab Menu */
 .tab-menu {
     display: flex;
@@ -1011,4 +1065,40 @@ html {
 .tab-btn,
 .result-box {
     border-radius: var(--ui-radius) !important;
+}
+
+#toast-container {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast {
+    min-width: 220px;
+    max-width: 360px;
+    background: #1e293b;
+    border: 1px solid #475569;
+    color: #f1f5f9;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 4px;
+    box-shadow: 0 10px 20px rgba(2, 6, 23, 0.35);
+    transform: translateY(-6px);
+    opacity: 0;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.toast.visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast.toast-error {
+    border-left: 4px solid #ef4444;
 }

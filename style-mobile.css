@@ -1032,6 +1032,34 @@ html {
 }
 
 @media (max-width: 768px) {
+    .training-top-panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+    }
+
+    .training-stats-line {
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap !important;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 0 0 6px;
+        margin-bottom: 6px;
+        font-size: 12px;
+        overflow: visible;
+        white-space: normal;
+    }
+
+    .training-stats-line .stats-item {
+        flex: 1 1 0;
+        min-width: 0;
+        justify-content: center;
+        text-align: center;
+        font-size: 12px;
+    }
+
     .tab-btn {
         font-size: 11px;
         padding: 8px 6px;
@@ -1250,6 +1278,19 @@ html {
     display: none;
 }
 
+@media (max-width: 768px) {
+    #toast-container {
+        top: 8px;
+        right: 8px;
+        left: 8px;
+    }
+
+    .toast {
+        max-width: 100%;
+        font-size: 13px;
+    }
+}
+
 /* ============================================
    MOBILE MAIN UI REFRESH (HOME/TABS/CARDS)
    ============================================ */
@@ -1427,6 +1468,43 @@ html {
     #mp-name {
         width: 100% !important;
         border-radius: 4px !important;
+    }
+
+    .mp-room-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 12px !important;
+    }
+
+    .mp-room-main {
+        flex-wrap: wrap !important;
+        gap: 8px 12px !important;
+    }
+
+    .mp-room-right {
+        width: 100% !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+    }
+
+    .mp-room-actions {
+        width: 100% !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+    }
+
+    .mp-room-code-input {
+        width: 68px !important;
+    }
+
+    .mp-room-join-btn {
+        width: auto !important;
+        min-height: 44px !important;
+        margin: 0 !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        white-space: nowrap !important;
     }
 
     /* Result cards on mobile */

@@ -1,4 +1,4 @@
-import { updateFirebaseStats } from './stats.js';
+﻿import { updateFirebaseStats } from './stats.js';
 import { rtdb } from './firebase.js';
 import { ref, set, onValue, update, remove, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
@@ -26,9 +26,122 @@ export class MultiplayerManager {
         this.myWrongCount = 0;
     }
 
+    isMobileDevice() {
+        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    showMobileNumpad() {
+        const numpad = document.getElementById('mp-mobile-numpad');
+        const input = document.getElementById('mp-answer');
+
+        if (!this.isMobileDevice() || !numpad) {
+            return;
+        }
+
+        numpad.style.display = 'grid';
+        document.body.classList.add('mobile-test-active');
+
+        if (input) {
+            // Prevent iOS from opening system keyboard and losing focus.
+            input.readOnly = true;
+            input.inputMode = 'none';
+        }
+    }
+
+    hideMobileNumpad() {
+        const numpad = document.getElementById('mp-mobile-numpad');
+        const input = document.getElementById('mp-answer');
+
+        if (numpad) {
+            numpad.style.display = 'none';
+        }
+
+        document.body.classList.remove('mobile-test-active');
+
+        if (input) {
+            input.readOnly = false;
+            input.inputMode = 'numeric';
+        }
+    }
+
+    mobileAddNumber(num) {
+        const input = document.getElementById('mp-answer');
+        if (!input || input.disabled || !this.gameActive) {
+            return;
+        }
+
+        input.value += num;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    mobileBackspace() {
+        const input = document.getElementById('mp-answer');
+        if (!input || input.disabled || !this.gameActive) {
+            return;
+        }
+
+        input.value = input.value.slice(0, -1);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    notify(message) {
+        if (this.app && typeof this.app.showToast === 'function') {
+            this.app.showToast(message);
+            return;
+        }
+        window.alert(message);
+    }
+
     generateShortId() {
-    return (Math.floor(Math.random() * 90) + 10).toString();
-}
+        return (Math.floor(Math.random() * 90) + 10).toString();
+    }
+
+    isGameActive(game) {
+        if (!game) return false;
+        const activeStatus = game.status === 'waiting' || game.status === 'ready' || game.status === 'playing';
+        const anyoneConnected = game.hostConnected === true || game.guestConnected === true;
+        return activeStatus && anyoneConnected && game.gameOver !== true;
+    }
+
+    isTwoDigitCode(code) {
+        return /^\d{2}$/.test(String(code || ''));
+    }
+
+    async findExistingGameByHostName(playerName) {
+        const gamesRef = ref(rtdb, 'games');
+        const snapshot = await get(gamesRef);
+        if (!snapshot.exists()) return null;
+
+        let foundCode = null;
+        snapshot.forEach((childSnapshot) => {
+            if (foundCode) return;
+            const game = childSnapshot.val();
+            if (!this.isGameActive(game)) return;
+            if (!this.isTwoDigitCode(game.gameCode || childSnapshot.key)) return;
+            if ((game.hostName || '').trim().toLowerCase() === playerName.trim().toLowerCase()) {
+                foundCode = game.gameCode || childSnapshot.key;
+            }
+        });
+        return foundCode;
+    }
+
+    async generateUniqueGameCode(maxAttempts = 120) {
+        for (let i = 0; i < maxAttempts; i++) {
+            const candidate = this.generateShortId();
+            const candidateRef = ref(rtdb, `games/${candidate}`);
+            const candidateSnap = await get(candidateRef);
+
+            if (!candidateSnap.exists()) {
+                return candidate;
+            }
+
+            const existingGame = candidateSnap.val();
+            if (!this.isGameActive(existingGame)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
 
     async createGame(playerName, operations, isPrivate = false) {
         this.isHost = true;
@@ -36,11 +149,16 @@ export class MultiplayerManager {
         this.operations = operations || ['*'];
         this.myPlayerId = 'host';
         this.opponentPlayerId = 'guest';
-        
-        this.gameCode = this.generateShortId();
-        
+
+        const existingCode = await this.findExistingGameByHostName(playerName);
+        if (existingCode) {
+            throw new Error(`Už máš aktivní místnost (kód ${existingCode}). Nejdřív ji ukonči.`);
+        }
+
+        this.gameCode = await this.generateUniqueGameCode();
+
         if (!this.gameCode) {
-            throw new Error('Failed to generate game code');
+            throw new Error('Nepodařilo se najít volný kód hry');
         }
         
         this.gameRef = ref(rtdb, `games/${this.gameCode}`);
@@ -87,7 +205,8 @@ export class MultiplayerManager {
                 const game = childSnapshot.val();
                 // Zobraz jen hry kde je host připojený a status je waiting
                 if (game.status === 'waiting' && 
-                    game.hostConnected === true) {
+                    game.hostConnected === true &&
+                    this.isTwoDigitCode(game.gameCode || childSnapshot.key)) {
                     games.push(game);
                 }
             });
@@ -156,7 +275,7 @@ export class MultiplayerManager {
         const listener = onValue(this.gameRef, (snapshot) => {
             if (!snapshot.exists()) {
                 if (this.gameActive) {
-                    alert('Hra byla ukončena');
+                    this.notify('Hra byla ukončena');
                     this.app.router.navigate('/');
                 }
                 return;
@@ -173,7 +292,7 @@ export class MultiplayerManager {
                 }
                 
                 if (!data.guestConnected && this.gameActive) {
-                    alert('Soupeř se odpojil!');
+                    this.notify('Soupeř se odpojil!');
                     this.disconnect();
                 }
             } else {
@@ -184,7 +303,7 @@ export class MultiplayerManager {
                 }
                 
                 if (!data.hostConnected && this.gameActive) {
-                    alert('Soupeř se odpojil!');
+                    this.notify('Soupeř se odpojil!');
                     this.disconnect();
                 }
             }
@@ -410,6 +529,7 @@ export class MultiplayerManager {
         console.log('Špatných odpovědí:', this.myWrongCount);
 
         this.gameActive = false;
+        this.hideMobileNumpad();
 
     if (typeof updateFirebaseStats === 'function') {
         console.log('Ukládám statistiky v endGame...', this.myCorrectCount, this.myWrongCount);
@@ -467,20 +587,26 @@ export class MultiplayerManager {
 
     showGameScreen() {
         const app = document.getElementById('app');
+        const myNameSafe = this.app && typeof this.app.escapeHTML === 'function'
+            ? this.app.escapeHTML(this.myName || '')
+            : (this.myName || '');
+        const opponentNameSafe = this.app && typeof this.app.escapeHTML === 'function'
+            ? this.app.escapeHTML(this.opponentName || '')
+            : (this.opponentName || '');
         app.innerHTML = `
             <div class="stats-bar" style="justify-content: space-between;">
                 <div class="stat-item" style="color: #3b82f6;">
-                    👤 ${this.myName}: <span id="my-score">0</span>
+                    ?? ${myNameSafe}: <span id="my-score">0</span>
                 </div>
                 <div class="stat-item" style="color: #fbbf24; font-size: 20px; font-weight: bold;">
                     <span id="score-diff">0</span>
                 </div>
                 <div class="stat-item" style="color: #ef4444;">
-                    👤 ${this.opponentName}: <span id="opponent-score">0</span>
+                    ?? ${opponentNameSafe}: <span id="opponent-score">0</span>
                 </div>
             </div>
 
-            <div class="card example-area">
+            <div class="card example-area mobile-answer-zone">
                 <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px;">
                     První na +10 bodů vyhrává!
                 </div>
@@ -495,6 +621,21 @@ export class MultiplayerManager {
                        autocapitalize="off"
                        spellcheck="false">
                 <div id="mp-motivation-text" style="font-size: 16px; color: #fbbf24; font-weight: 600; margin-top: 20px; min-height: 24px;"></div>
+
+                <div class="mobile-numpad" id="mp-mobile-numpad" style="display: none;">
+                    <button onclick="app.multiplayerManager.mobileAddNumber('1')">1</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('2')">2</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('3')">3</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('4')">4</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('5')">5</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('6')">6</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('7')">7</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('8')">8</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('9')">9</button>
+                    <button onclick="app.multiplayerManager.disconnect()" class="quit-key">✕</button>
+                    <button onclick="app.multiplayerManager.mobileAddNumber('0')" class="num-0">0</button>
+                    <button onclick="app.multiplayerManager.mobileBackspace()" class="backspace">⌫</button>
+                </div>
             </div>
 
             <div class="progress-section" style="margin-top: 20px;">
@@ -514,6 +655,7 @@ export class MultiplayerManager {
         `;
 
         this.setupAnswerListener();
+        this.showMobileNumpad();
         this.startMotivationMessages();
     }
 
@@ -633,6 +775,7 @@ async disconnect() {
     }
     
     this.gameActive = false;
+    this.hideMobileNumpad();
     
     this.stopPublicGamesListener();
     
@@ -798,3 +941,6 @@ async disconnect() {
         this.startGame();
     }
 }
+
+
+
