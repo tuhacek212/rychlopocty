@@ -213,6 +213,8 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(-
   font-variant-numeric:tabular-nums;padding:0;
 }
 .dot.done{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.dot.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.dot.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
 .dot.here{outline:2px solid var(--accent);outline-offset:1px}
 .verdictbox{
   display:flex;flex-direction:column;gap:4px;
@@ -288,7 +290,7 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(-
       <dt>Rozsah</dt><dd><b>30 otázek</b> náhodně ze zvolených okruhů</dd>
       <dt>Čas</dt><dd><b>30 minut</b>, po vypršení se test odevzdá sám</dd>
       <dt>Hranice</dt><dd>úspěch od <b>80 %</b>, tedy nejvýše <b>6 chyb</b> z 30</dd>
-      <dt>Průběh</dt><dd>bez průběžné zpětné vazby, mezi otázkami se lze vracet</dd>
+      <dt>Průběh</dt><dd>odpověď se vyhodnotí hned, celkový verdikt až po odevzdání</dd>
     </dl>
     <p class="note" id="examnote" hidden>Ostrá zkouška se dělí na obecnou část (20 otázek, nejvýše 4 chyby) a oborovou část (10 otázek, nejvýše 2 chyby) a obě se hodnotí zvlášť. Publikace otázek toto rozdělení neuvádí, takže zdejší test hodnotí všech 30 otázek dohromady. Pod 50 % je u ostré zkoušky „nevyhověl“, v pásmu 51–79 % následují ústní doplňující otázky.</p>
 
@@ -465,14 +467,37 @@ function render(){
     <div id="after"></div>`;
 
   $("#answers").querySelectorAll(".ans").forEach(b=>b.onclick=()=>answer(+b.dataset.i));
-  if (S.ex) renderExamNav(); else if (pick!==null) showFeedback(pick);
+  if (S.ex){
+    if (pick!==null) colorAnswers(pick);
+    renderExamNav();
+  } else if (pick!==null) showFeedback(pick);
+}
+
+// ---- lock the question and color right / wrong ----
+function colorAnswers(pick){
+  const q = S.qs[S.i];
+  $("#answers").querySelectorAll(".ans").forEach(b=>{
+    const i = +b.dataset.i;
+    b.disabled = true; b.classList.remove("is-picked");
+    if (q.odpovedi[i].spravna) b.classList.add("is-ok");
+    else if (i===pick) b.classList.add("is-bad");
+    else b.classList.add("is-dim");
+  });
 }
 
 // ---- exam: pick, navigate, submit at will ----
 function renderExamNav(){
   const answered = S.picks.filter(p=>p!==null).length;
   const last = S.i === S.qs.length-1;
+  const q = S.qs[S.i], pick = S.picks[S.i];
+  const verdict = pick===null ? "" : (q.odpovedi[pick].spravna
+    ? `<div class="verdict ok">✓ Správně</div>`
+    : `<div class="verdict bad">✕ Chyba</div>`);
   $("#after").innerHTML = `
+    ${pick!==null?`<div class="stack-s" style="margin-top:16px">
+      ${verdict}
+      <div class="src">${esc(q.zdroj)}</div>
+    </div>`:""}
     <div class="nav">
       <button class="btn-ghost" id="prev"${S.i===0?" disabled":""}>← Zpět</button>
       <button class="btn" id="next"${last?" hidden":""}>Další otázka</button>
@@ -480,7 +505,11 @@ function renderExamNav(){
       <button class="btn-ghost" id="submit" style="margin-left:auto">Odevzdat (${answered}/${S.qs.length})</button>
     </div>
     <div class="dots" id="dots">
-      ${S.qs.map((_,n)=>`<button class="dot${S.picks[n]!==null?" done":""}${n===S.i?" here":""}" data-n="${n}" aria-label="Otázka ${n+1}">${n+1}</button>`).join("")}
+      ${S.qs.map((qq,n)=>{
+        const p = S.picks[n];
+        const cls = p===null ? "" : (qq.odpovedi[p].spravna ? " ok" : " bad");
+        return `<button class="dot${cls}${n===S.i?" here":""}" data-n="${n}" aria-label="Otázka ${n+1}">${n+1}</button>`;
+      }).join("")}
     </div>`;
   const prev = $("#prev"); if (prev) prev.onclick = ()=>{ S.i--; render(); };
   const nx = $("#next"); if (nx) nx.onclick = next;
@@ -503,13 +532,13 @@ function wireFlag(){
 }
 
 function answer(pick){
+  if (S.picks[S.i]!==null) return;
   if (S.ex){
     S.picks[S.i] = pick;
-    $("#answers").querySelectorAll(".ans").forEach(b=>b.classList.toggle("is-picked", +b.dataset.i===pick));
+    colorAnswers(pick);
     renderExamNav();
     return;
   }
-  if (S.picks[S.i]!==null) return;
   S.picks[S.i] = pick;
   S.qs[S.i].odpovedi[pick].spravna ? S.ok++ : S.bad++;
   showFeedback(pick);
@@ -628,7 +657,7 @@ function chyb(n){ return n===1 ? "chyba" : (n>=2&&n<=4 ? "chyby" : "chyb"); }
 document.addEventListener("keydown",e=>{
   if (!S || $("#quiz").hidden) return;
   const answered = S.picks[S.i] !== null;
-  if (["1","2","3"].includes(e.key) && (S.ex || !answered)){
+  if (["1","2","3"].includes(e.key) && !answered){
     const b = $("#answers").querySelectorAll(".ans")[+e.key-1];
     if (b && !b.disabled) { e.preventDefault(); b.click(); }
   } else if ((e.key==="Enter"||e.key===" ") && $("#next") && (S.ex || answered)){
