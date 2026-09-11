@@ -176,6 +176,56 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(-
 .hint{font-size:.78rem;color:var(--ink-3);margin-left:auto;font-family:"IBM Plex Mono",ui-monospace,monospace}
 .flagbtn.on{color:var(--flag);border-color:var(--flag);background:var(--flag-soft)}
 
+/* ---- exam mode ---- */
+.timer{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88rem;font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--ink-2);
+  border:1px solid var(--line-strong);border-radius:3px;padding:3px 8px;
+}
+.timer.warn{color:var(--flag);border-color:var(--flag);background:var(--flag-soft)}
+.timer.crit{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.modes{display:flex;gap:0;border:1px solid var(--line-strong);border-radius:4px;overflow:hidden;width:fit-content}
+.modes label{padding:8px 16px;cursor:pointer;font-size:.9rem;background:var(--surface-2);color:var(--ink-2)}
+.modes label+label{border-left:1px solid var(--line-strong)}
+.modes input{position:absolute;opacity:0;width:0;height:0}
+.modes label:has(input:checked){background:var(--accent);color:var(--surface);font-weight:500}
+:root[data-theme="dark"] .modes label:has(input:checked),
+:root:not([data-theme="light"]) .modes label:has(input:checked){color:#0F151A}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .modes label:has(input:checked){color:#fff}}
+.modes label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.spec{
+  display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.88rem;
+  background:var(--surface-2);border-left:3px solid var(--accent);
+  border-radius:0 4px 4px 0;padding:14px 16px;
+}
+.spec dt{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);align-self:center}
+.spec dd{margin:0;color:var(--ink-2)}
+.spec dd b{color:var(--ink);font-weight:500}
+.note{font-size:.8rem;color:var(--ink-3);max-width:62ch}
+.ans.is-picked{background:var(--accent-soft);border-color:var(--accent);border-left-color:var(--accent)}
+.ans.is-picked .k{color:var(--accent);border-color:var(--accent)}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.dot{
+  width:1.55rem;height:1.55rem;border-radius:3px;cursor:pointer;
+  border:1px solid var(--line-strong);background:var(--surface-2);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;padding:0;
+}
+.dot.done{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.dot.here{outline:2px solid var(--accent);outline-offset:1px}
+.verdictbox{
+  display:flex;flex-direction:column;gap:4px;
+  border-left:3px solid var(--line-strong);padding:12px 16px;border-radius:0 4px 4px 0;
+  background:var(--surface-2);
+}
+.verdictbox.pass{border-left-color:var(--ok);background:var(--ok-soft)}
+.verdictbox.fail{border-left-color:var(--bad);background:var(--bad-soft)}
+.verdictbox .vt{font-size:1.05rem;font-weight:600}
+.verdictbox.pass .vt{color:var(--ok)}
+.verdictbox.fail .vt{color:var(--bad)}
+.verdictbox .vs{font-size:.85rem;color:var(--ink-2)}
+
 /* ---- results ---- */
 .bignum{
   font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:2.6rem;font-weight:500;
@@ -212,6 +262,7 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(-
   <div class="bar-in">
     <div class="brand"><b>Autorizační trenažér</b><span>TZS</span></div>
     <div class="counter" id="counter" hidden></div>
+    <div class="timer" id="timer" hidden>30:00</div>
     <div class="score" id="score" hidden></div>
     <button class="btn-ghost" id="restart" hidden>Znovu</button>
   </div>
@@ -228,6 +279,19 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(-
       <p class="lede">Otázky a správné odpovědi pocházejí z publikace ČKAIT (2. vydání V4, červenec 2025). Chybné odpovědi jsou generované — po každé otázce se zobrazí správné znění i paragraf, ze kterého vychází.</p>
     </div>
 
+    <div class="modes" id="modes">
+      <label><input type="radio" name="mode" value="practice" id="mode-practice" checked>Procvičování</label>
+      <label><input type="radio" name="mode" value="exam" id="mode-exam">Zkouškový režim</label>
+    </div>
+
+    <dl class="spec" id="examspec" hidden>
+      <dt>Rozsah</dt><dd><b>30 otázek</b> náhodně ze zvolených okruhů</dd>
+      <dt>Čas</dt><dd><b>30 minut</b>, po vypršení se test odevzdá sám</dd>
+      <dt>Hranice</dt><dd>úspěch od <b>80 %</b>, tedy nejvýše <b>6 chyb</b> z 30</dd>
+      <dt>Průběh</dt><dd>bez průběžné zpětné vazby, mezi otázkami se lze vracet</dd>
+    </dl>
+    <p class="note" id="examnote" hidden>Ostrá zkouška se dělí na obecnou část (20 otázek, nejvýše 4 chyby) a oborovou část (10 otázek, nejvýše 2 chyby) a obě se hodnotí zvlášť. Publikace otázek toto rozdělení neuvádí, takže zdejší test hodnotí všech 30 otázek dohromady. Pod 50 % je u ostré zkoušky „nevyhověl“, v pásmu 51–79 % následují ústní doplňující otázky.</p>
+
     <hr class="sep">
 
     <div class="stack-s">
@@ -239,7 +303,7 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(-
       <div class="chips" id="okruhy"></div>
     </div>
 
-    <div class="row" style="gap:16px">
+    <div class="row" style="gap:16px" id="practice-opts">
       <label class="fld" for="typ">Typ otázky
         <select id="typ">
           <option value="">všechny typy</option>
@@ -302,8 +366,10 @@ function pool(){
 }
 function refreshAvail(){
   const n = pool().length;
-  $("#avail").textContent = n ? `k dispozici ${n} otázek` : "výběr neobsahuje žádné otázky";
-  $("#start").disabled = n===0;
+  const ex = document.querySelector("input[name=mode]:checked").value==="exam";
+  if (!n) { $("#avail").textContent = "výběr neobsahuje žádné otázky"; $("#start").disabled = true; }
+  else if (ex && n < 30) { $("#avail").textContent = `zvoleno jen ${n} otázek, zkouškový test potřebuje 30 — přidej okruhy`; $("#start").disabled = true; }
+  else { $("#avail").textContent = `k dispozici ${n} otázek`; $("#start").disabled = false; }
   const p = $("#pocet");
   p.max = Math.max(1,n);
   if (+p.value > n) p.value = n || 1;
@@ -314,37 +380,76 @@ $("#all-on").onclick = ()=>{chipBox.querySelectorAll("input").forEach(i=>i.check
 $("#all-off").onclick = ()=>{chipBox.querySelectorAll("input").forEach(i=>i.checked=false);refreshAvail();};
 refreshAvail();
 
+// ---- exam constants (Závazné pokyny k průběhu zkoušky ČKAIT) ----
+const EXAM = {N:30, SEC:30*60, MIN_OK:24};
+
 // ---- state ----
 let S = null;
 const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+const mode = () => document.querySelector("input[name=mode]:checked").value;
+const mmss = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+
+$("#modes").addEventListener("change",()=>{
+  const ex = mode()==="exam";
+  $("#examspec").hidden = !ex;
+  $("#examnote").hidden = !ex;
+  $("#practice-opts").hidden = ex;
+  refreshAvail();
+});
 
 $("#start").onclick = ()=>{
+  const ex = mode()==="exam";
   let qs = pool();
-  qs = $("#poradi").value==="shuffle" ? shuffle(qs) : [...qs].sort((a,b)=>a.kod.localeCompare(b.kod,"cs",{numeric:true}));
-  qs = qs.slice(0, Math.max(1, Math.min(+$("#pocet").value||20, qs.length)));
-  S = {qs, i:0, ok:0, bad:0, log:[], flags:new Set(), answered:false};
+  qs = (ex || $("#poradi").value==="shuffle")
+    ? shuffle(qs)
+    : [...qs].sort((a,b)=>a.kod.localeCompare(b.kod,"cs",{numeric:true}));
+  const want = ex ? EXAM.N : (+$("#pocet").value||20);
+  qs = qs.slice(0, Math.max(1, Math.min(want, qs.length)));
+
+  S = {ex, qs, i:0, picks:Array(qs.length).fill(null), orders:qs.map(()=>shuffle([0,1,2])),
+       flags:new Set(), ok:0, bad:0, started:Date.now(), left:EXAM.SEC, timerId:null};
+
   $("#setup").hidden = true;
   $("#results").hidden = true;
   $("#quiz").hidden = false;
-  ["counter","score","restart"].forEach(id=>$("#"+id).hidden=false);
+  ["counter","restart"].forEach(id=>$("#"+id).hidden=false);
+  $("#score").hidden = ex;
+  $("#timer").hidden = !ex;
+  if (ex) startTimer();
   render();
 };
+
 $("#restart").onclick = ()=>{
+  stopTimer();
   S=null;
   $("#quiz").hidden=true; $("#results").hidden=true; $("#setup").hidden=false;
-  ["counter","score","restart"].forEach(id=>$("#"+id).hidden=true);
+  ["counter","score","restart","timer"].forEach(id=>$("#"+id).hidden=true);
   $("#track").style.width="0";
   window.scrollTo(0,0);
 };
 
+// ---- timer ----
+function startTimer(){
+  const el = $("#timer");
+  const tick = ()=>{
+    S.left = Math.max(0, EXAM.SEC - Math.round((Date.now()-S.started)/1000));
+    el.textContent = mmss(S.left);
+    el.classList.toggle("warn", S.left<=300 && S.left>60);
+    el.classList.toggle("crit", S.left<=60);
+    if (S.left<=0){ stopTimer(); finish(true); }
+  };
+  tick();
+  S.timerId = setInterval(tick,1000);
+}
+function stopTimer(){ if (S&&S.timerId){ clearInterval(S.timerId); S.timerId=null; } }
+
 // ---- render question ----
 function render(){
-  const q = S.qs[S.i];
-  S.answered = false;
-  S.order = shuffle([0,1,2]);
+  const q = S.qs[S.i], order = S.orders[S.i], pick = S.picks[S.i];
   $("#counter").textContent = `${S.i+1} / ${S.qs.length}`;
-  $("#score").innerHTML = `<span class="s-ok">✓ ${S.ok}</span><span class="s-bad">✕ ${S.bad}</span>`;
-  $("#track").style.width = (S.i/S.qs.length*100)+"%";
+  if (!S.ex) $("#score").innerHTML = `<span class="s-ok">✓ ${S.ok}</span><span class="s-bad">✕ ${S.bad}</span>`;
+  const done = S.ex ? S.picks.filter(p=>p!==null).length : S.i;
+  $("#track").style.width = (done/S.qs.length*100)+"%";
 
   $("#quiz").innerHTML = `
     <div class="qhead">
@@ -353,31 +458,74 @@ function render(){
     </div>
     <p class="qtext">${esc(q.otazka)}</p>
     <div class="answers" id="answers">
-      ${S.order.map((oi,n)=>`<button class="ans" data-i="${oi}">
+      ${order.map((oi,n)=>`<button class="ans${pick===oi?" is-picked":""}" data-i="${oi}">
         <span class="k">${n+1}</span><span>${esc(q.odpovedi[oi].text)}</span>
       </button>`).join("")}
     </div>
     <div id="after"></div>`;
 
   $("#answers").querySelectorAll(".ans").forEach(b=>b.onclick=()=>answer(+b.dataset.i));
+  if (S.ex) renderExamNav(); else if (pick!==null) showFeedback(pick);
+}
+
+// ---- exam: pick, navigate, submit at will ----
+function renderExamNav(){
+  const answered = S.picks.filter(p=>p!==null).length;
+  const last = S.i === S.qs.length-1;
+  $("#after").innerHTML = `
+    <div class="nav">
+      <button class="btn-ghost" id="prev"${S.i===0?" disabled":""}>← Zpět</button>
+      <button class="btn" id="next"${last?" hidden":""}>Další otázka</button>
+      <button class="btn-ghost flagbtn" id="flag">Označit jako spornou</button>
+      <button class="btn-ghost" id="submit" style="margin-left:auto">Odevzdat (${answered}/${S.qs.length})</button>
+    </div>
+    <div class="dots" id="dots">
+      ${S.qs.map((_,n)=>`<button class="dot${S.picks[n]!==null?" done":""}${n===S.i?" here":""}" data-n="${n}" aria-label="Otázka ${n+1}">${n+1}</button>`).join("")}
+    </div>`;
+  const prev = $("#prev"); if (prev) prev.onclick = ()=>{ S.i--; render(); };
+  const nx = $("#next"); if (nx) nx.onclick = next;
+  $("#submit").onclick = ()=>{
+    const miss = S.qs.length - answered;
+    if (miss===0 || confirm(`Zbývá ${miss} nezodpovězených otázek. Opravdu odevzdat?`)) finish(false);
+  };
+  $("#dots").querySelectorAll(".dot").forEach(d=>d.onclick=()=>{ S.i=+d.dataset.n; render(); });
+  wireFlag();
+}
+
+function wireFlag(){
+  const q = S.qs[S.i], fb = $("#flag");
+  if (!fb) return;
+  fb.classList.toggle("on", S.flags.has(q.kod));
+  fb.onclick = ()=>{
+    S.flags.has(q.kod) ? S.flags.delete(q.kod) : S.flags.add(q.kod);
+    fb.classList.toggle("on", S.flags.has(q.kod));
+  };
 }
 
 function answer(pick){
-  if (S.answered) return;
-  S.answered = true;
-  const q = S.qs[S.i];
-  const correct = q.odpovedi[pick].spravna;
-  correct ? S.ok++ : S.bad++;
-  S.log.push({q, pick, correct});
+  if (S.ex){
+    S.picks[S.i] = pick;
+    $("#answers").querySelectorAll(".ans").forEach(b=>b.classList.toggle("is-picked", +b.dataset.i===pick));
+    renderExamNav();
+    return;
+  }
+  if (S.picks[S.i]!==null) return;
+  S.picks[S.i] = pick;
+  S.qs[S.i].odpovedi[pick].spravna ? S.ok++ : S.bad++;
+  showFeedback(pick);
+}
 
+// ---- practice: immediate corrective feedback ----
+function showFeedback(pick){
+  const q = S.qs[S.i];
+  const correct = !!q.odpovedi[pick].spravna;
   $("#answers").querySelectorAll(".ans").forEach(b=>{
     const i = +b.dataset.i;
-    b.disabled = true;
+    b.disabled = true; b.classList.remove("is-picked");
     if (q.odpovedi[i].spravna) b.classList.add("is-ok");
     else if (i===pick) b.classList.add("is-bad");
     else b.classList.add("is-dim");
   });
-
   const wrong = correct ? null : q.odpovedi[pick];
   const last = S.i === S.qs.length-1;
   $("#after").innerHTML = `
@@ -391,45 +539,51 @@ function answer(pick){
         <span class="hint">1 2 3 · Enter</span>
       </div>
     </div>`;
-
   $("#score").innerHTML = `<span class="s-ok">✓ ${S.ok}</span><span class="s-bad">✕ ${S.bad}</span>`;
   $("#next").onclick = next;
-  const fb = $("#flag");
-  if (S.flags.has(q.kod)) fb.classList.add("on");
-  fb.onclick = ()=>{
-    S.flags.has(q.kod) ? S.flags.delete(q.kod) : S.flags.add(q.kod);
-    fb.classList.toggle("on", S.flags.has(q.kod));
-  };
+  wireFlag();
   $("#next").focus({preventScroll:true});
 }
 
 function next(){
-  if (S.i === S.qs.length-1) return finish();
+  if (S.i === S.qs.length-1) return S.ex ? null : finish(false);
   S.i++; render(); window.scrollTo({top:0,behavior:"smooth"});
 }
 
 // ---- results ----
-function finish(){
+function finish(timeout){
+  stopTimer();
   $("#track").style.width = "100%";
-  const total = S.log.length, ok = S.ok;
+  const log = S.qs.map((q,n)=>{
+    const pick = S.picks[n];
+    return {q, pick, correct: pick!==null && !!q.odpovedi[pick].spravna};
+  });
+  const total = log.length, ok = log.filter(l=>l.correct).length;
   const pct = Math.round(ok/total*100);
   const byOk = {};
-  S.log.forEach(l=>{
+  log.forEach(l=>{
     const o = l.q.okruh;
     byOk[o] = byOk[o] || {ok:0,n:0};
     byOk[o].n++; if (l.correct) byOk[o].ok++;
   });
-  const missed = S.log.filter(l=>!l.correct);
+  const missed = log.filter(l=>!l.correct);
+  const used = Math.min(EXAM.SEC, Math.round((Date.now()-S.started)/1000));
+  const passed = ok >= EXAM.MIN_OK;
 
   $("#quiz").hidden = true;
   $("#results").hidden = false;
   $("#results").innerHTML = `
     <div class="stack-s">
-      <p class="eyebrow">Výsledek kola</p>
+      <p class="eyebrow">${S.ex?"Výsledek zkouškového testu":"Výsledek kola"}</p>
       <div class="row" style="align-items:baseline;gap:14px">
         <span class="bignum">${pct} %</span>
-        <span class="okruh">${ok} z ${total} správně</span>
+        <span class="okruh">${ok} z ${total} správně${S.ex?` · čas ${mmss(used)}`:""}</span>
       </div>
+      ${S.ex?`<div class="verdictbox ${passed?"pass":"fail"}">
+        <span class="vt">${passed?"Vyhověl":"Nevyhověl"}</span>
+        <span class="vs">${total-ok} ${chyb(total-ok)} z 30 — hranice je nejvýše 6 chyb (80 %).${timeout?" Test byl odevzdán po vypršení času.":""}</span>
+        <span class="vs">Ostrá zkouška hodnotí obecnou část (max. 4 chyby z 20) a oborovou část (max. 2 chyby z 10) zvlášť.</span>
+      </div>`:""}
     </div>
     <hr class="sep">
     <div class="stack-s">
@@ -457,7 +611,7 @@ function finish(){
           ${missed.map(l=>`<div class="ritem">
             <div class="rq"><span class="code">${l.q.kod}</span> ${esc(l.q.otazka)}</div>
             <div class="ra">Správně: <b>${esc(l.q.odpovedi.find(a=>a.spravna).text)}</b></div>
-            <div class="rw">Zvolil jsi: <b>${esc(l.q.odpovedi[l.pick].text)}</b></div>
+            <div class="rw">${l.pick===null?"<b>Nezodpovězeno</b>":`Zvolil jsi: <b>${esc(l.q.odpovedi[l.pick].text)}</b>`}</div>
             <div class="src">${esc(l.q.zdroj)}</div>
           </div>`).join("")}
         </div>
@@ -468,15 +622,21 @@ function finish(){
 }
 
 function esc(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function chyb(n){ return n===1 ? "chyba" : (n>=2&&n<=4 ? "chyby" : "chyb"); }
 
 // ---- keyboard ----
 document.addEventListener("keydown",e=>{
   if (!S || $("#quiz").hidden) return;
-  if (["1","2","3"].includes(e.key) && !S.answered){
+  const answered = S.picks[S.i] !== null;
+  if (["1","2","3"].includes(e.key) && (S.ex || !answered)){
     const b = $("#answers").querySelectorAll(".ans")[+e.key-1];
-    if (b) { e.preventDefault(); b.click(); }
-  } else if ((e.key==="Enter"||e.key===" ") && S.answered && $("#next")){
+    if (b && !b.disabled) { e.preventDefault(); b.click(); }
+  } else if ((e.key==="Enter"||e.key===" ") && $("#next") && (S.ex || answered)){
     e.preventDefault(); next();
+  } else if (S.ex && e.key==="ArrowRight" && S.i<S.qs.length-1){
+    e.preventDefault(); next();
+  } else if (S.ex && e.key==="ArrowLeft" && S.i>0){
+    e.preventDefault(); S.i--; render();
   }
 });
 </script>
