@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Shrnutí a vysvětlivky k písemné části zkoušky odborné způsobilosti ČKAIT, obor technologická zařízení staveb.">
+<title>Tahák ČKAIT TZS</title>
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#FFFFFF; --ink:#0A0A0B; --ink-2:#43464B; --ink-3:#83868C;
+  --line:#DEDFE3; --line-2:#B9BCC2;
+  --ok:#066E4A; --bad:#C62A1E; --accent:#1433FF;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#08090A; --ink:#F5F6F7; --ink-2:#A8ACB2; --ink-3:#6B6F75;
+    --line:#202327; --line-2:#383C42;
+    --ok:#4FC38D; --bad:#FF7A6B; --accent:#8CA0FF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08090A; --ink:#F5F6F7; --ink-2:#A8ACB2; --ink-3:#6B6F75;
+  --line:#202327; --line-2:#383C42;
+  --ok:#4FC38D; --bad:#FF7A6B; --accent:#8CA0FF;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:Archivo,system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;
+}
+.sheet{max-width:58rem;margin:0 auto;padding:28px 20px 80px}
+
+.head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:10px}
+h1{font-weight:700;font-size:clamp(1.5rem,4.5vw,2rem);letter-spacing:-.035em;line-height:1;margin:0}
+.sub{font-family:"DM Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 0 auto}
+.intro{font-size:.86rem;color:var(--ink-2);margin:12px 0 0;max-width:72ch}
+
+.cols{columns:2;column-gap:30px;margin-top:22px}
+@media (max-width:760px){.cols{columns:1}}
+section{break-inside:avoid;margin:0 0 16px}
+h2{
+  font-family:"DM Mono",monospace;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink);margin:0 0 6px;padding-bottom:3px;border-bottom:1px solid var(--line-2);
+  display:flex;justify-content:space-between;gap:8px;
+}
+h2 b{color:var(--ink-3);font-weight:400}
+ul{list-style:none;margin:0;padding:0}
+li{font-size:.84rem;line-height:1.45;padding:4px 0;border-bottom:1px solid var(--line)}
+li:last-child{border-bottom:0}
+li>b{font-weight:600}
+li>span{color:var(--ink-2)}
+.n{font-family:"DM Mono",monospace;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.why{display:block;color:var(--ink-3);font-size:.79rem;margin-top:1px}
+.why::before{content:"Proč: ";font-family:"DM Mono",monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}
+.warnbox li>b{color:var(--bad)}
+.warnbox li>span b{color:var(--ok);font-weight:600}
+.wide{columns:1;break-inside:auto}
+
+.foot{margin-top:16px;border-top:1px solid var(--line);padding-top:8px;font-size:.74rem;color:var(--ink-3);max-width:72ch}
+
+@media print{
+  @page{size:A4;margin:11mm}
+  html,body{background:#fff;color:#000}
+  :root{--bg:#fff;--ink:#000;--ink-2:#222;--ink-3:#555;--line:#CCC;--line-2:#888;--ok:#046046;--bad:#A81E14}
+  .sheet{max-width:none;padding:0}
+  body{font-size:7.6pt;line-height:1.3}
+  h1{font-size:14pt}
+  .sub{font-size:6pt}
+  .intro{font-size:7pt;margin-top:2mm}
+  .cols{columns:2;column-gap:7mm;margin-top:3mm}
+  section{margin-bottom:3mm}
+  h2{font-size:6pt;margin-bottom:1mm;padding-bottom:.6mm}
+  li{font-size:7.4pt;line-height:1.28;padding:.8mm 0}
+  .why{font-size:7pt}
+  .foot{font-size:6pt;margin-top:2mm;padding-top:1mm}
+  .noprint{display:none}
+}
+.noprint{margin-top:26px;display:flex;gap:18px;flex-wrap:wrap}
+.pbtn{
+  font-family:"DM Mono",monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+  background:none;border:0;border-bottom:1px solid var(--line-2);color:var(--ink);
+  padding:8px 0;cursor:pointer;
+}
+.pbtn:hover{border-bottom-color:var(--ink)}
+</style>
+
+<div class="sheet">
+
+  <div class="head">
+    <h1>Tahák na autorizační zkoušku</h1>
+    <p class="sub">ČKAIT · obor technologická zařízení staveb · písemná část</p>
+  </div>
+  <p class="intro">Vytaženo z oficiální publikace otázek (2. vydání V4, červenec 2025) podle toho, co se v testu objevuje nejčastěji. Zkratky jsou rozepsané, u nesamozřejmých pojmů je vysvětleno i to, proč vůbec existují. Vytiskne se na dvě až tři stránky A4.</p>
+
+  <div class="cols">
+
+    <section>
+      <h2>Kdo je kdo na stavbě</h2>
+      <ul>
+        <li><b>Stavebník</b> <span>ten, kdo pro sebe žádá o povolení nebo stavbu odstraňuje. Musí zajistit, aby na stavbě byla ověřená dokumentace, a na výzvu stavebního úřadu se účastní kontrolních prohlídek.</span></li>
+        <li><b>Projektant</b> <span>fyzická osoba s autorizací. Zpracovává územně plánovací dokumentaci, územní studii a projektovou dokumentaci. Při návrhu odpovídá za splnění požadavků na výstavbu. Za odchylky, ke kterým došlo při stavbě a on je neschválil, neodpovídá.</span></li>
+        <li><b>Stavbyvedoucí</b> <span>fyzická osoba s autorizací, která odborně vede provádění nebo odstraňování stavby. Zajišťuje uspořádání staveniště a vytyčení tras sítí. Závady, které se nepodařilo odstranit, hlásí stavebnímu úřadu.</span></li>
+        <li><b>Stavební dozor</b> <span>odborný dozor nad stavbou prováděnou <b>svépomocí</b>. Nemusí být autorizovaná osoba — stačí vysokoškolské vzdělání stavebního nebo architektonického směru, nebo středoškolské stavební s maturitou a 3 roky praxe.</span></li>
+        <li><b>Zhotovitel</b> <span>stavební podnikatel, který stavbu provádí. U svépomocné stavby je zhotovitelem sám stavebník. Vede stavební deník.</span></li>
+        <li><b>Dozor projektanta</b> <span>průběžná kontrola projektanta, jestli se staví podle dokumentace. Stavebník ho musí zajistit u vyhrazených staveb.</span></li>
+        <li><b>Technický dozor stavebníka</b> <span>hlídá stavbu za investora, ale pozor — <b>není to vybraná činnost ve výstavbě</b> a stavební zákon ho mezi ně nezařazuje.</span></li>
+        <li><b>Stavby pro bydlení</b> <span>u všech, včetně jejich změn, musí být vždy stavbyvedoucí. Pouhý stavební dozor nestačí.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Pojmy stavebního zákona</h2>
+      <ul>
+        <li><b>Stavba</b> <span>vzniká stavební nebo montážní činností. <b>Nemusí</b> být pevně spojena se zemí. Za stavbu se považuje i výrobek, který plní její funkci (například mobilní buňka).</span></li>
+        <li><b>Dělení staveb</b> <span>drobné · jednoduché · vyhrazené · ostatní. První dvě skupiny vyjmenovávají přílohy č. 1 a 2 stavebního zákona, vyhrazené stavby příloha č. 3.</span></li>
+        <li><b>Soubor staveb</b> <span>několik souvisejících staveb v rámci jednoho záměru. Vždy obsahuje stavbu hlavní — tu, která určuje účel celé výstavby.</span></li>
+        <li><b>Uliční čára</b> <span>hranice mezi pozemky a veřejným prostranstvím. Odděluje soukromé od veřejného.</span></li>
+        <li><b>Stavební čára</b> <span>rozhraní mezi stavbou a nezastavěnou částí pozemku. Určuje, kam až smí stavba.</span></li>
+        <li><b>Stavební proluka</b> <span>nezastavěná mezera v souvislé zástavbě určená k zastavění, <b>včetně</b> nezastavěného nároží.</span></li>
+        <li><b>Rodinný dům</b> <span>nejvýše <span class="n">3</span> samostatné byty. Třetí nadzemní podlaží smí mít, jen když je ustoupené nejméně <span class="n">2 m</span> od líce stěny obrácené k uliční čáře.</span></li>
+        <li><b>Obytná místnost</b> <span>nejméně <span class="n">8 m²</span>, pokud má byt více místností; <span class="n">16 m²</span>, pokud je v bytě jediná.</span></li>
+        <li><b>Vybrané činnosti ve výstavbě</b> <span>činnosti, které smí dělat jen autorizovaná osoba: projektová činnost, odborné vedení provádění a odstraňování stavby, ověřování výsledků zeměměřických činností a dozor projektanta.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Územní plánování — čtyři dokumenty</h2>
+      <ul>
+        <li><b>Územně plánovací dokumentace</b> <span>souhrnný název pro čtyři dokumenty níže. Jdou od celostátní úrovně po jednotlivé bloky v obci a každý nižší musí respektovat ten vyšší.</span></li>
+        <li><b>1. Územní rozvojový plán</b> <span>celostátní, pořizuje ho stát.</span></li>
+        <li><b>2. Zásady územního rozvoje</b> <span>krajská úroveň — něco jako územní plán kraje. Nadřazený dokument pro územní plán obce.</span></li>
+        <li><b>3. Územní plán</b> <span>úroveň obce. Nadřazený dokument pro regulační plán.</span></li>
+        <li><b>4. Regulační plán</b> <span>nejpodrobnější, řeší část obce až po umístění jednotlivých staveb.</span></li>
+        <li><b>Územní studie</b> <span>podrobný podklad pro rozhodování, není to dokumentace v tom výčtu výše. Zpracovat ji musí vždy projektant.</span></li>
+        <li><b>Územní opatření o stavební uzávěře</b> <span>dočasně omezí nebo zakáže stavební činnost ve vymezeném území.<span class="why">aby se stavbami nezablokovalo budoucí využití území podle plánu, který se právě připravuje.</span></span></li>
+        <li><b>Plánovací smlouva</b> <span>smlouva mezi obcí a stavebníkem o vzájemné součinnosti při uskutečnění záměru.<span class="why">typicky když záměr vyvolá potřebu nové infrastruktury a obec se se stavebníkem domluví, kdo co udělá.</span></span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Povolování a kolaudace</h2>
+      <ul>
+        <li><b>Platnost povolení</b> <span><span class="n">2 roky</span>, nejdéle <span class="n">5 let</span> ode dne právní moci. Když se stavba v té době zahájí, platnost se prodlouží na <span class="n">10 let</span>.</span></li>
+        <li><b>Žádost</b> <span>jen na stanoveném formuláři. Projektová dokumentace se vkládá elektronicky do evidence, listinně ji předložit nelze.</span></li>
+        <li><b>Výjimka z požadavků na výstavbu</b> <span>žádá se jako součást žádosti o povolení záměru, ne samostatně. Povolit ji lze jen tam, kde to prováděcí předpis výslovně dovoluje.</span></li>
+        <li><b>Změna záměru před dokončením</b> <span>vyžaduje povolení. Nepodstatné odchylky, které nemění půdorysný ani výškový rozsah stavby, se projednají až při kolaudaci.</span></li>
+        <li><b>Kolaudace</b> <span>z jednoduchých staveb ji potřebují jen stavby pro bydlení a rodinnou rekreaci. Stavba se posuzuje podle technických norem platných v době, kdy úřad ověřil dokumentaci — ne podle těch pozdějších.</span></li>
+        <li><b>Odstranění stavby</b> <span>povolení je nutné u staveb, které podléhaly povolení, a u všech staveb obsahujících azbest — tedy i u drobných.</span></li>
+        <li><b>Uchování dokumentace</b> <span>vlastník stavby ji uchovává po celou dobu trvání stavby.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Autorizace</h2>
+      <ul>
+        <li><b>Vznik autorizace</b> <span>ke dni složení předepsaného slibu, ne ke dni zkoušky.</span></li>
+        <li><b>Praxe autorizovaný inženýr</b> <span><span class="n">3 roky</span> po magisterském studiu, <span class="n">5 let</span> po bakalářském nebo příbuzném vzdělání.</span></li>
+        <li><b>Praxe autorizovaný technik</b> <span><span class="n">3 roky</span> při vysokoškolském, <span class="n">5 let</span> při středoškolském vzdělání.</span></li>
+        <li><b>Označování dokumentů</b> <span>vlastnoruční podpis a otisk razítka, nebo elektronické autorizační razítko s kvalifikovaným podpisem. Takto označené dokumenty jsou pro úřední účely <b>veřejnými listinami</b>. Vede se o nich chronologický seznam.</span></li>
+        <li><b>Disciplinární opatření</b> <span>písemná důtka · pokuta do <span class="n">300 000 Kč</span> · pozastavení autorizace až na <span class="n">3 roky</span> · odejmutí autorizace.</span></li>
+        <li><b>Pojištění odpovědnosti</b> <span>nejpozději při zahájení činnosti. Neplatí pro toho, kdo činnost vykonává v pracovním nebo obdobném poměru — tam je pojištěný zaměstnavatel.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Čísla, která se vyplatí umět — bezpečnost práce</h2>
+      <ul>
+        <li><b>Zábradlí</b> <span>u pracovišť s rozdílem úrovní větším než <span class="n">0,5 m</span>; horní tyč (madlo) ve výšce <span class="n">1,1 m</span>.</span></li>
+        <li><b>Ochrana proti pádu</b> <span>povinná od volné hloubky <span class="n">1,5 m</span>. Přednost mají <b>prostředky kolektivní ochrany</b> (zábradlí, sítě) před osobními (postroj).</span></li>
+        <li><b>Zábrana od okraje</b> <span>na ploše se sklonem do 10° nejméně <span class="n">1,5 m</span> od hrany.</span></li>
+        <li><b>Otvory ve stěnách</b> <span>zajistit, hrozí-li pád hlubší než <span class="n">1,5 m</span>; netýká se otvorů s dolním okrajem výš než 1,1 m nad podlahou.</span></li>
+        <li><b>Oplocení staveniště</b> <span>v zastavěném území souvisle do výšky nejméně <span class="n">1,8 m</span>.</span></li>
+        <li><b>Podchodná výška</b> <span>pod zavěšeným vedením, kabelovými lávkami a svítidly nejméně <span class="n">2,1 m</span>.</span></li>
+        <li><b>Pažení ručních výkopů</b> <span>od hloubky <span class="n">1,3 m</span> v zastavěném a <span class="n">1,5 m</span> v nezastavěném území.</span></li>
+        <li><b>Práce o samotě</b> <span>ve výkopu na odlehlém pracovišti nesmí pracovník sám od hloubky <span class="n">1,3 m</span>.</span></li>
+        <li><b>Kolečko se zeminou</b> <span>komunikace ve sklonu nejvýše <span class="n">1:5</span>.</span></li>
+        <li><b>Odbedňování</b> <span>žebřík lze použít jen do výšky odbedňované konstrukce <span class="n">3 m</span> nad pracovní podlahou.</span></li>
+        <li><b>Ochranný nápoj proti chladu</b> <span>při teplotě pod <span class="n">4 °C</span>.</span></li>
+        <li><b>Záznam o úrazu</b> <span>když pracovní neschopnost trvá déle než <span class="n">3 dny</span>.</span></li>
+        <li><b>Havárie</b> <span>škoda nad <span class="n">5 mil. Kč</span> u vyhrazeného technického zařízení se hlásí oblastnímu inspektorátu práce.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Čísla — sítě, voda, energie</h2>
+      <ul>
+        <li><b>Ochranné pásmo vodovodu a kanalizace</b> <span><span class="n">1,5 m</span> na každou stranu od vnějšího líce potrubí do průměru 500 mm, <span class="n">2,5 m</span> u potrubí nad 500 mm.</span></li>
+        <li><b>Vodovod pro veřejnou potřebu</b> <span>i vodovod s denní produkcí nad <span class="n">10 m³</span> vody.</span></li>
+        <li><b>Vodovodní a kanalizační přípojka</b> <span>pořizuje ji odběratel na své náklady, není-li dohodnuto jinak. V ochranném pásmu vodovodu se smí kopat jen s písemným souhlasem vlastníka.</span></li>
+        <li><b>Přenosová soustava elektřiny</b> <span>vedení <span class="n">400</span> a <span class="n">220 kV</span> a vybraná vedení <span class="n">110 kV</span>. Páteřní síť pro celý stát.</span></li>
+        <li><b>Distribuční soustava elektřiny</b> <span>vedení <span class="n">110 kV</span> (mimo těch přenosových) a dále <span class="n">0,4/0,23</span> až <span class="n">35 kV</span>. To je ta síť, ze které odebírá zákazník.</span></li>
+        <li><b>Ochranné pásmo podzemního vedení sítí elektronických komunikací</b> <span>tedy telefonních a datových kabelů — činí <span class="n">0,5 m</span> po stranách krajního vedení.</span></li>
+        <li><b>Přípojka sítí elektronických komunikací</b> <span>do délky <span class="n">100 m</span> nepotřebuje povolení záměru.</span></li>
+        <li><b>Vysokorychlostní síť</b> <span>umožňuje připojení rychlostí nejméně <span class="n">30 Mb/s</span>.</span></li>
+        <li><b>Kontrola systému vytápění</b> <span>povinná u systémů se jmenovitým výkonem nad <span class="n">70 kW</span>.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Smlouvy, lhůty a odpovědnost</h2>
+      <ul>
+        <li><b>Promlčecí lhůta</b> <span>obecně <span class="n">3 roky</span>.</span></li>
+        <li><b>Splatnost ceny díla</b> <span>nejpozději do <span class="n">30 dnů</span> od doručení faktury nebo od převzetí díla.</span></li>
+        <li><b>Skryté vady</b> <span>oznámit zhotoviteli nejpozději do <span class="n">5 let</span> od převzetí stavby.</span></li>
+        <li><b>Vydržení pozemku</b> <span><span class="n">10 let</span> řádné, <span class="n">20 let</span> mimořádné.</span></li>
+        <li><b>Záruka za jakost</b> <span>občanský zákoník ji u díla <b>nestanoví</b>. Buď se sjedná ve smlouvě, nebo ji zhotovitel prohlásí sám.</span></li>
+        <li><b>Nebezpečí škody</b> <span>na rozestavěné stavbě nese zhotovitel až do předání objednateli.</span></li>
+        <li><b>Nevhodný pokyn nebo vadná dokumentace</b> <span>zhotovitel musí objednatele upozornit. Trvá-li objednatel na svém, může zhotovitel od smlouvy odstoupit.</span></li>
+        <li><b>Odpovědnost projektanta</b> <span>za škodu z nesprávné dokumentace odpovídá <b>objektivně</b> — tedy bez ohledu na to, jestli něco zavinil.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Kdo rozhoduje a co vydává</h2>
+      <ul>
+        <li><b>Dopravní a energetický stavební úřad</b> <span>povoluje vyhrazené stavby; spolu s krajskými stavebními úřady vydává rámcové povolení.</span></li>
+        <li><b>Jiné stavební úřady</b> <span>Ministerstvo obrany, Ministerstvo vnitra a Ministerstvo spravedlnosti — pro své vlastní stavby.</span></li>
+        <li><b>Praha, Brno, Ostrava</b> <span>jen tato tři města mohou nařízením stanovit vlastní požadavky na výstavbu odlišné od celostátní vyhlášky.</span></li>
+        <li><b>Krajský úřad</b> <span>rozhoduje v pochybnostech, jestli je určitá věc odpadem. Vydává také závazné stanovisko k umístění a povolení provozu vyjmenovaných zdrojů znečišťování ovzduší.</span></li>
+        <li><b>Úřad pro technickou normalizaci, metrologii a státní zkušebnictví</b> <span>národní normalizační orgán — schvaluje české technické normy.</span></li>
+        <li><b>Česká agentura pro standardizaci</b> <span>podřízená organizace, která normy fakticky tvoří, vydává a distribuuje.</span></li>
+        <li><b>Česká obchodní inspekce</b> <span>dozor nad tím, jestli se stavební výrobky uvádějí na trh podle předpisů.</span></li>
+        <li><b>Státní úřad inspekce práce a oblastní inspektoráty práce</b> <span>státní správa v bezpečnosti provozu vyhrazených technických zařízení, spolu s Ministerstvem práce a sociálních věcí.</span></li>
+        <li><b>Technická inspekce České republiky</b> <span>pověřená organizace pro úkoly u vyhrazených technických zařízení.</span></li>
+        <li><b>Ministerstvo průmyslu a obchodu</b> <span>uděluje oprávnění energetického specialisty a vede jejich seznam.</span></li>
+        <li><b>Český telekomunikační úřad</b> <span>zabezpečuje činnost Jednotného informačního místa pro sítě elektronických komunikací.</span></li>
+        <li><b>Hasičský záchranný sbor kraje</b> <span>vydává závazná stanoviska k požární bezpečnosti. U staveb kategorie II je nadřízeným orgánem ředitel sboru, u kategorie III generální ředitelství sboru pod Ministerstvem vnitra.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Stavební výrobky a normy</h2>
+      <ul>
+        <li><b>Česká technická norma</b> <span><b>není obecně závazná</b>, ale musí být v souladu s právními předpisy. Závaznou se stává, až když na ni odkáže předpis nebo smlouva.</span></li>
+        <li><b>Harmonizovaná norma</b> <span>česká norma, která plně přejímá harmonizovanou evropskou normu. Podle ní je posouzení výrobku pro výrobce <b>povinné</b>.</span></li>
+        <li><b>Evropský dokument pro posuzování</b> <span>používá se, když pro výrobek harmonizovaná norma neexistuje. Posouzení podle něj je <b>dobrovolné</b>.</span></li>
+        <li><b>Prohlášení o vlastnostech</b> <span>dokument výrobce o vlastnostech výrobku. Bez něj se na výrobek <b>nesmí</b> připojit označení CE. Uchovává se <span class="n">10 let</span>.</span></li>
+        <li><b>Označení CE</b> <span>na výrobek nebo jeho štítek; jen když to nejde, tak na obal nebo do průvodní dokumentace.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Požární bezpečnost</h2>
+      <ul>
+        <li><b>Kategorie staveb</b> <span>0 (bez zvláštního nebezpečí) · I (mírné) · II (vyšší) · III (vysoké nebezpečí).</span></li>
+        <li><b>Požárně bezpečnostní řešení</b> <span>zpracovává se pro kategorie I, II a III.</span></li>
+        <li><b>Státní požární dozor</b> <span>u staveb kategorie 0 a I se nevykonává.</span></li>
+        <li><b>Nouzové osvětlení</b> <span>chráněné únikové cesty a požární úseky s vnitřním shromažďovacím prostorem.</span></li>
+      </ul>
+    </section>
+
+    <section class="warnbox">
+      <h2>Časté záměny <b>pozor</b></h2>
+      <ul>
+        <li><b>1,3 × 1,5 m</b> <span>pažení výkopu: <b>1,3 m v zastavěném</b> území, 1,5 m v nezastavěném.</span></li>
+        <li><b>8 × 16 m²</b> <span>obytná místnost: <b>8 m² když jich je v bytě víc</b>, 16 m² když je jediná.</span></li>
+        <li><b>Ochranné × bezpečnostní pásmo</b> <span>ochranné je kvůli <b>spolehlivému provozu</b> zařízení, bezpečnostní kvůli <b>zmírnění následků havárie</b>.</span></li>
+        <li><b>Emisní × imisní limit</b> <span>přípustnou míru znečišťování určují <b>emisní</b> limity — tedy to, co jde z komína ven. Imise je už naředěný stav ovzduší kolem nás.</span></li>
+        <li><b>Normalizační úřad × agentura</b> <span>normy schvaluje <b>Úřad pro technickou normalizaci</b>, tvoří a vydává je Česká agentura pro standardizaci.</span></li>
+        <li><b>Autorizovaná osoba × oznámený subjekt</b> <span>obojí posuzuje výrobky. <b>Autorizovaná</b> podle českého zákona pro český trh, <b>oznámený subjekt</b> podle evropského nařízení a je ohlášený Evropské komisi.</span></li>
+        <li><b>Vklad × záznam</b> <span>vkladem se zapisují věcná práva ze smluv, <b>záznamem práva odvozená od vlastnického</b> (například právo hospodaření).</span></li>
+        <li><b>Stavební dozor × technický dozor stavebníka</b> <span><b>stavební dozor</b> hlídá svépomocnou stavbu a je vybranou činností, technický dozor stavebníka vybranou činností <b>není</b>.</span></li>
+      </ul>
+    </section>
+
+  </div>
+
+  <div class="wide">
+    <section>
+      <h2>Slovníček — co ten pojem vlastně znamená <b>a proč existuje</b></h2>
+      <ul>
+        <li><b>Vyjmenované (stacionární) zdroje</b> <span>provozy uvedené na seznamu v příloze č. 2 zákona o ochraně ovzduší — třeba větší kotelny, lakovny, betonárny, spalovny, skládky nebo čistírny odpadních vod. „Vyjmenovaný" znamená prostě „uvedený na tom seznamu". Stacionární = stojí na místě, opakem jsou mobilní zdroje, tedy auta a stroje.<span class="why">jde o ochranu ovzduší. Kdo takový zdroj provozuje, potřebuje povolení provozu a k jeho umístění i stavbě závazné stanovisko krajského úřadu. U některých (skládky, kompostárny, čistírny) je navíc stanovena minimální vzdálenost od obytné zástavby, aby lidé neměli zápach a prach pod okny.</span></span></li>
+        <li><b>Vyhrazená technická zařízení</b> <span>tlaková, zdvihací, elektrická a plynová zařízení, která svým tlakem nebo nahromaděnou energií představují velké riziko — tlakové nádoby a kotle nad 0,5 bar, jeřáby a výtahy, elektroinstalace, plynovody a plynové spotřebiče.<span class="why">stát si u nich „vyhradil" přísnější režim než u běžných strojů: povinné revize, odborná způsobilost obsluhy a určená osoba odpovědná za provoz. Dozor má Státní úřad inspekce práce s oblastními inspektoráty, odborné úkoly plní Technická inspekce České republiky.</span></span></li>
+        <li><b>Vyhrazené stavby</b> <span>kategorie staveb vyjmenovaná v příloze č. 3 stavebního zákona — velké dopravní a energetické stavby, jaderná zařízení a podobně. Nezaměňovat s vyhrazenými technickými zařízeními, to je úplně jiná věc.<span class="why">jsou to stavby celostátního významu, proto je nepovoluje místní úřad, ale Dopravní a energetický stavební úřad, a stavebník u nich musí zajistit dozor projektanta.</span></span></li>
+        <li><b>Stanovený výrobek</b> <span>výrobek, který nařízení vlády „stanoví" jako rizikový — u stavebních výrobků jsou v příloze nařízení vlády č. 163/2002 Sb.<span class="why">u výrobků, které rozhodují o kvalitě a bezpečnosti stavby, nestačí slovo výrobce. Musí projít posouzením shody a získat prohlášení o shodě nebo označení CE.</span></span></li>
+        <li><b>Integrované povolení</b> <span>jedno povolení pro velký průmyslový provoz, které nahrazuje řadu dílčích povolení podle zvláštních předpisů — na vypouštění do vod, na ovzduší, na odpady. Které činnosti ho potřebují, vyjmenovává příloha č. 1 zákona č. 76/2002 Sb.<span class="why">aby provozovatel neběhal po pěti úřadech a aby se dopady provozu posoudily společně, ne každý zvlášť.</span></span></li>
+        <li><b>Integrovaný registr znečišťování životního prostředí</b> <span>veřejně přístupná databáze o únicích a přenosech znečišťujících látek. Správcem je Ministerstvo životního prostředí.<span class="why">veřejná kontrola — kdokoli si může dohledat, co která továrna vypouští.</span></span></li>
+        <li><b>Posuzování vlivů na životní prostředí</b> <span>známé jako EIA. Posuzují se vybrané záměry staveb, činností a technologií a také koncepce schvalované úřady. Posudek zpracovává nezávislá oprávněná osoba na základě smlouvy s orgánem ochrany životního prostředí, ne s investorem. Příslušné úřady: Ministerstvo životního prostředí a krajské úřady.<span class="why">aby se dopady záměru vyhodnotily dřív, než se povolí, a aby posudek nepsal ten, kdo je na výsledku zainteresovaný.</span></span></li>
+        <li><b>Souběh zařízení</b> <span>stav, kdy jedno zařízení zasahuje svým ochranným pásmem do ochranného nebo bezpečnostního pásma druhého — typicky když vedle sebe vede plynovod a kabel.<span class="why">v souběhu platí přísnější pravidla pro vzdálenosti a pro práce v pásmu, protože poškození jednoho vedení může zasáhnout druhé.</span></span></li>
+        <li><b>Přípolož</b> <span>podzemní stavba sítí elektronických komunikací přiložená k jiné stavbě — k silnici, dráze, kanalizaci, energetickému vedení nebo veřejnému osvětlení.<span class="why">když se stejně kope, je levnější a rychlejší položit kabel rovnou při té příležitosti. Za splnění podmínek nepotřebuje ani povolení stavebního úřadu.</span></span></li>
+        <li><b>Kritická infrastruktura</b> <span>prvek nebo systém prvků, jehož výpadek by vážně dopadl na bezpečnost státu, zásobování obyvatel, zdraví lidí nebo ekonomiku. Patří sem třeba elektrárny nad 500 MW, dispečinky, velké plynovody a napájecí vedení.<span class="why">tyto prvky se zvlášť chrání a jejich provozovatelé mají zvláštní povinnosti, protože jejich výpadek ochromí celou zemi.</span></span></li>
+        <li><b>Činnost prováděná hornickým způsobem</b> <span>není to jen těžba. Zákon sem výslovně řadí i vrty hlubší než 30 m, ražení štol a tunelů, hloubení studní, zajišťování stability podzemních prostor nebo těžbu písku z koryt řek. Provádět je smí jen ten, kdo má osvědčení od obvodního báňského úřadu.<span class="why">jde o práce se stejnými riziky jako v dole — závaly, plyny, statika — proto podléhají báňskému dozoru, i když se nekope kvůli uhlí.</span></span></li>
+        <li><b>Podzemní objekt</b> <span>podle báňského zákona třeba tunely a štoly metra, tunely a štoly delší než 50 m, nebo kanalizační stoky s průřezem nad 2 m² a delší než 50 m.<span class="why">u takto velkých podzemních děl hrozí zavalení a narušení statiky, proto se u nich sleduje „bezpečný stav" a projektovat je smí jen báňský projektant.</span></span></li>
+        <li><b>Energetický specialista</b> <span>osoba s oprávněním od Ministerstva průmyslu a obchodu. Jen ona smí zpracovat průkaz energetické náročnosti budovy nebo energetický audit.<span class="why">bez jednotné kvalifikace by byly průkazy nesrovnatelné a nedaly by se použít pro dotace ani pro porovnání budov.</span></span></li>
+        <li><b>Průkaz energetické náročnosti budovy</b> <span>dokument o tom, kolik energie budova potřebuje na vytápění, chlazení, větrání, vlhkost, teplou vodu a osvětlení. U nové stavby se dokládá při žádosti o kolaudaci, a to podle skutečného provedení. Opatřit ho musí stavebník, vlastník nebo společenství vlastníků.</span></li>
+        <li><b>Energetický audit</b> <span>podrobná kontrola a analýza spotřeby energie, která najde a vyčíslí možné úspory. Kdo má certifikovaný systém hospodaření s energií, je od auditu osvobozen.</span></li>
+        <li><b>Technický systém budovy</b> <span>souhrnný pojem pro zařízení na vytápění, chlazení, větrání, úpravu vlhkosti, osvětlení vnitřních prostor, přípravu teplé vody, automatizaci a řízení i místní výrobu elektřiny.<span class="why">právě tohle jsou v oboru technologická zařízení staveb „ta technologie", na kterou míří požadavky na energetickou náročnost.</span></span></li>
+        <li><b>Odběrné plynové zařízení</b> <span>všechno od hlavního uzávěru plynu dál až po spotřebiče. Měřicí zařízení (plynoměr) do něj <b>nepatří</b>. Plynovodní přípojka naopak začíná odbočením z distribučního plynovodu a končí <b>před</b> hlavním uzávěrem.<span class="why">hlavní uzávěr je dělicí čára odpovědnosti mezi distributorem a zákazníkem.</span></span></li>
+        <li><b>Zápisy do katastru nemovitostí</b> <span><b>Vklad</b> — zápis věcných práv na základě smlouvy, povoluje se nejdříve 20 dnů po vyznačení plomby. <b>Záznam</b> — práva odvozená od vlastnického práva. <b>Poznámka</b> — důležitá informace o nemovitosti nebo vlastníkovi, třeba probíhající exekuce. <b>Plomba</b> — značka, že s nemovitostí právě něco běží. <b>Geometrický plán</b> — technický podklad k listině, když se mění tvar pozemku nebo se něco zakresluje do mapy.</span></li>
+        <li><b>Veřejná listina</b> <span>listina, u které se předpokládá, že je pravá a její obsah je správný — kdo tvrdí opak, musí to prokázat. Dokumenty opatřené autorizačním razítkem a podpisem jsou pro úřední účely právě takovými listinami.<span class="why">proto má autorizace váhu a proto se s razítkem nezachází ledabyle.</span></span></li>
+        <li><b>Ložiska nerostů</b> <span>dělí se na výhradní, ložiska strategického významu a ložiska nevyhrazených nerostů. To poslední — typicky obyčejný písek nebo kámen — náleží vlastníkovi pozemku, kdežto výhradní ložisko patří státu.</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="foot">Zdroj: Otázky k písemné části zkoušky odborné způsobilosti ČKAIT, 2. vydání V4 (červenec 2025), obor technologická zařízení staveb. Shrnutí nepokrývá celý rozsah zkoušky a vysvětlivky jsou zjednodušené — hodnoty, lhůty a definice si před zkouškou ověř v platném znění předpisů.</p>
+
+  <div class="noprint">
+    <button class="pbtn" onclick="window.print()">Vytisknout / uložit PDF</button>
+    <button class="pbtn" id="theme">Přepnout režim</button>
+  </div>
+</div>
+
+<script>
+const root=document.documentElement;
+function apply(t){ if(t) root.setAttribute("data-theme",t); else root.removeAttribute("data-theme"); }
+let s=null; try{ s=localStorage.getItem("tzs-theme"); }catch(e){}
+apply(s);
+document.getElementById("theme").onclick=()=>{
+  const dark=root.getAttribute("data-theme")==="dark"
+    || (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+  const n=dark?"light":"dark";
+  apply(n);
+  try{ localStorage.setItem("tzs-theme",n); }catch(e){}
+};
+</script>
+
+</body>
+</html>
