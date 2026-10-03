@@ -9,6 +9,7 @@ import {
   hodinyText, iso, jeHotovo, najdiDatumy, nastavRozsah, nazevProjektu, novyTermin, popisRozsahu,
   pridejDny, rozsah, svatkyDne, upravZdroj, zIso, zaznamTerminu,
 } from "./data.js";
+import { zmrazNavazane } from "./finance.js";
 import { h, ikona, menu, okno, oznam, pole, popup, vymen, zavriPopup } from "./ui.js";
 
 const DRUHY_ZDROJU = { [SOUKROME]: "soukrome", [DOVOLENE]: "dovolene", [BEZ_PROJEKTU]: "bez" };
@@ -150,7 +151,11 @@ const popisKam = (tym, kam) => {
 // --- komponenta --------------------------------------------------------------------------------
 
 export class Kalendar {
-  constructor({ tym, osobni, projektId = null, naProjekt = () => {}, naExport = () => {}, posledniProjekt = () => "" }) {
+  // faktury = () => pruhy faktur (finance.pruhyFaktur) do harmonogramu R a O; naFakturu(id, akce, x, y | termín)
+  constructor({ tym, osobni, projektId = null, naProjekt = () => {}, naExport = () => {}, posledniProjekt = () => "",
+    faktury = null, naFakturu = () => {} }) {
+    this.faktury = faktury;
+    this.naFakturu = naFakturu;
     this.tym = tym;
     this.osobni = osobni;
     this.projektId = projektId;
@@ -213,6 +218,7 @@ export class Kalendar {
       if (d && !ev.target.closest(".kal-pruh")) this.novyTermin(zIso(d.dataset.d), zIso(d.dataset.d));
     });
     this.mesice.addEventListener("contextmenu", (ev) => this._kontext(ev));
+    this.mesice.addEventListener("touchmove", (ev) => { if (this._tahDotykem) ev.preventDefault(); }, { passive: false });
     this.mesice.addEventListener("click", (ev) => {
       const vic = ev.target.closest(".kal-vic");
       if (vic) { this.vyberDen(zIso(vic.dataset.d)); return; }
@@ -237,13 +243,21 @@ export class Kalendar {
 
   obnov() {
     this.polozky = sestavPolozky(this.tym, this.osobni, this.projektId);
+    const projekt = this.projektId ? this.tym.projekt(this.projektId) : null;
+    for (const pol of this.faktury?.() || []) {
+      const rz = rozsah(pol);
+      if (rz) this.polozky.push({ id: pol.id, pol, zdroj: this.projektId, projekt, druh: "faktura", rz, barva: pol.barva,
+        text: pol.nazev, nazev: pol.nazev, pevny: true });
+    }
     this._mapa = new Map(this.polozky.map((p) => [p.id, p]));
     const terminu = this.polozky.filter((p) => !p.pevny).length;
-    const zPoznamek = this.polozky.length - terminu;
+    const faktur = this.polozky.filter((p) => p.druh === "faktura").length;
+    const zPoznamek = this.polozky.length - terminu - faktur;
     const nast = this.osobni.kalendar();
     const aktivni = this.projektId ? 0 : filtrJeAktivni(nast);
     let text = `${terminu} ${terminu === 1 ? "termín" : terminu >= 2 && terminu <= 4 ? "termíny" : "termínů"}`;
     if (zPoznamek) text += ` · ${zPoznamek} ${zPoznamek === 1 ? "datum" : zPoznamek <= 4 ? "data" : "dat"} z poznámek`;
+    if (faktur) text += ` · ${faktur} ${faktur === 1 ? "faktura" : faktur <= 4 ? "faktury" : "faktur"}`;
     if (aktivni) text += " · filtrováno";
     this.souhrn.textContent = text;
     this.bFiltr.classList.toggle("aktivni", !!aktivni);
@@ -416,26 +430,67 @@ export class Kalendar {
   }
 
   _dolu(ev) {
-    this._dotyk = ev.pointerType === "touch";
+    const dotyk = this._dotyk = ev.pointerType === "touch";
     if (ev.button !== 0 || ev.target.closest(".kal-vic")) return;
     const pruh = ev.target.closest(".kal-pruh");
-    const dotyk = this._dotyk = ev.pointerType === "touch";
     const start = this._denPodBodem(ev.clientX, ev.clientY);
     if (!start) return;
     this._potlacKlik = false;
     let rezim = null, polozka = null;
     if (pruh) {
-      polozka = this._mapa.get(pruh.dataset.id);
-      if (!polozka || polozka.pevny || polozka.cizi || dotyk) return;
-      const r = pruh.getBoundingClientRect();
-      rezim = pruh.classList.contains("konec") && ev.clientX > r.right - 7 ? "konec"
-        : pruh.classList.contains("zacatek") && ev.clientX < r.left + 7 ? "zacatek" : "presun";
-    } else if (dotyk) {
-      return; // na dotyk se roluje; klepnutí vybere den (click)
+      polozka = this._mapa.get(pruh.dataset.id) || null;
+      if (polozka && !polozka.pevny && !polozka.cizi) {
+        const r = pruh.getBoundingClientRect();
+        rezim = !dotyk && pruh.classList.contains("konec") && ev.clientX > r.right - 7 ? "konec"
+          : !dotyk && pruh.classList.contains("zacatek") && ev.clientX < r.left + 7 ? "zacatek" : "presun";
+      } else if (!dotyk) {
+        return;   // jen pro čtení – klik ukáže detail
+      }
     }
-    const x0 = ev.clientX, y0 = ev.clientY;
+    if (dotyk) {
+      this._dlouhyStisk(ev, pruh, polozka, rezim, start);
+      return;
+    }
+    this._tazeni(polozka, rezim, start, ev.clientX, ev.clientY, false);
+    ev.preventDefault();
+  }
+
+  // Dotyk: podržení prstu (~0,45 s) zvedne termín k přesunu / začne výběr dnů; pohyb předtím = rolování.
+  _dlouhyStisk(ev, pruh, polozka, rezim, start) {
+    const x0 = ev.clientX, y0 = ev.clientY, id = ev.pointerId;
+    let casovac = 0;
+    const konec = () => {
+      clearTimeout(casovac);
+      document.removeEventListener("pointermove", pohyb);
+      document.removeEventListener("pointerup", konec);
+      document.removeEventListener("pointercancel", konec);
+    };
+    const pohyb = (e) => { if (e.pointerId === id && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) konec(); };
+    casovac = setTimeout(() => {
+      konec();
+      this._potlacKontext = Date.now();
+      navigator.vibrate?.(12);
+      if (pruh && !rezim) {   // jen pro čtení: podržení = nabídka
+        this._menuTerminu(x0, y0, polozka || this._mapa.get(pruh.dataset.id));
+        return;
+      }
+      this._tazeni(polozka, rezim, start, x0, y0, true, id);
+    }, 450);
+    document.addEventListener("pointermove", pohyb);
+    document.addEventListener("pointerup", konec);
+    document.addEventListener("pointercancel", konec);
+  }
+
+  // Tažení myší i prstem: pruh = posun / délka (náhled označenými dny), den = výběr dnů → nabídka.
+  _tazeni(polozka, rezim, start, x0, y0, dotykem, idUkazatele = null) {
     let tazeno = false, cil = start;
+    this._tahDotykem = dotykem;
+    if (dotykem) {
+      this.oznacene = polozka ? [...polozka.rz] : [start, start];
+      this._zvyrazni();
+    }
     const pohyb = (e) => {
+      if (idUkazatele != null && e.pointerId !== idUkazatele) return;
       if (!tazeno && Math.hypot(e.clientX - x0, e.clientY - y0) < 5) return;
       tazeno = true;
       const d = this._denPodBodem(e.clientX, e.clientY);
@@ -454,26 +509,37 @@ export class Kalendar {
       this._zvyrazni();
     };
     const nahoru = (e) => {
+      if (idUkazatele != null && e.pointerId !== idUkazatele) return;
       document.removeEventListener("pointermove", pohyb);
       document.removeEventListener("pointerup", nahoru);
       document.removeEventListener("pointercancel", nahoru);
       document.body.classList.remove("taznuti");
+      this._tahDotykem = false;
       const oznacene = this.oznacene;
       if (polozka) {
         this.oznacene = null;
         this._zvyrazni();
-        if (tazeno) {
+        if (tazeno || dotykem) {
           this._potlacKlik = true;
           setTimeout(() => { this._potlacKlik = false; }, 0);
-          if (oznacene && (iso(oznacene[0]) !== iso(polozka.rz[0]) || iso(oznacene[1]) !== iso(polozka.rz[1]))) {
-            this._posun(polozka, oznacene[0], oznacene[1], rezim === "presun" ? "presun" : "delka");
-          }
         }
+        if (tazeno && e.type === "pointerup" && oznacene && (iso(oznacene[0]) !== iso(polozka.rz[0]) || iso(oznacene[1]) !== iso(polozka.rz[1]))) {
+          this._posun(polozka, oznacene[0], oznacene[1], rezim === "presun" ? "presun" : "delka");
+        } else if (dotykem && !tazeno) {
+          this._menuTerminu(e.clientX, e.clientY, polozka);   // podržení bez pohybu = nabídka
+        }
+        return;
+      }
+      if (dotykem && !tazeno) {
+        this.oznacene = null;
+        this._zvyrazni();
+        this._kontextDne(e.clientX, e.clientY, start);
         return;
       }
       if (!tazeno || !oznacene || iso(oznacene[0]) === iso(oznacene[1])) {
         this.oznacene = null;
-        if (e.type === "pointerup") this.vyberDen(start);
+        this._zvyrazni();
+        if (e.type === "pointerup" && !dotykem) this.vyberDen(start);
         return;
       }
       this._menuVyberu(e.clientX, e.clientY, oznacene[0], oznacene[1]);
@@ -482,7 +548,6 @@ export class Kalendar {
     document.addEventListener("pointerup", nahoru);
     document.addEventListener("pointercancel", nahoru);
     if (polozka) document.body.classList.add("taznuti");
-    ev.preventDefault();
   }
 
   _zvyrazni() {
@@ -513,8 +578,13 @@ export class Kalendar {
     const den = ev.target.closest(".kal-den[data-d]") || (pruh && null);
     if (!pruh && !den) return;
     ev.preventDefault();
+    if (this._dotyk) return;   // dotyk: nabídky řeší podržení prstu (_dlouhyStisk)
     if (pruh) { this._menuTerminu(ev.clientX, ev.clientY, this._mapa.get(pruh.dataset.id)); return; }
-    const d = zIso(den.dataset.d);
+    this._kontextDne(ev.clientX, ev.clientY, zIso(den.dataset.d));
+  }
+
+  _kontextDne(x, y, d) {
+    const ev = { clientX: x, clientY: y };
     const m = new Date(d.getFullYear(), d.getMonth(), 1);
     menu(ev.clientX, ev.clientY, [
       { nadpis: `${DNY[(d.getDay() + 6) % 7]} ${datumKratce(d, true)}` },
@@ -530,6 +600,7 @@ export class Kalendar {
 
   _menuTerminu(x, y, p) {
     if (!p) return;
+    if (p.druh === "faktura") { this.naFakturu(p.pol._faktura, "menu", x, y); return; }
     const projekt = p.projekt;
     const polozky = [{ nadpis: p.nazev }];
     if (p.druh === "poznamka") {
@@ -540,6 +611,7 @@ export class Kalendar {
       polozky.push({ text: "Upravit…", ikona: "upravit", akce: () => { this.vyberTermin(p.id); this._uprava(p); } },
         { text: jeHotovo(p.pol) ? "Znovu otevřít" : "Označit jako hotové", ikona: "hotovo", akce: () => this._prepniHotovo(p) });
       if (projekt && !this.projektId) polozky.push({ text: "Otevřít projekt", ikona: "otevrit", akce: () => this.naProjekt(projekt.id) });
+      if (this.faktury && p.druh === "projekt") polozky.push({ text: "Fakturovat…", akce: () => this.naFakturu("", "nova", p.id) });
     }
     if (!this.projektId && p.druh !== "poznamka") {
       const kdo = p.druh === "projekt" ? projekt.id : p.zdroj;
@@ -599,6 +671,15 @@ export class Kalendar {
 
   _ukazTermin(p) {
     const pol = p.pol;
+    if (p.druh === "faktura") {
+      this._panel(p.nazev, h("p", { class: "text-poznamky", text: pol.poznamka || "" }),
+        h("div", { class: "kal-bok-akce" },
+          h("button", { type: "button", class: "tlacitko male hlavni", onclick: () => this.naFakturu(pol._faktura, "upravit") }, ikona("upravit"), "Upravit"),
+          h("button", { type: "button", class: "tlacitko male", onclick: (ev) => { const r = ev.currentTarget.getBoundingClientRect(); this.naFakturu(pol._faktura, "menu", r.left, r.bottom); } }, "Další…"),
+          h("button", { type: "button", class: "tlacitko male", onclick: () => this.naFakturu(pol._faktura, "cashflow") }, "Cashflow zakázky")),
+        h("button", { type: "button", class: "odkaz", text: "← Přehled dne", onclick: () => this.vyberDen(this.den) }));
+      return;
+    }
     const radky = [];
     const pridej = (nazev, hodnota) => { if (hodnota) radky.push(h("dt", { text: nazev }), h("dd", {}, hodnota)); };
     if (p.projekt) pridej("Projekt", this.projektId ? nazevProjektu(p.projekt)
@@ -620,6 +701,9 @@ export class Kalendar {
     if (p.druh === "poznamka") {
       tlacitka.push(h("button", { type: "button", class: "tlacitko male", onclick: () => this.naProjekt(p.projekt.id) }, ikona("otevrit"), "Otevřít projekt"));
     } else if (!p.cizi) {
+      if (this.faktury && p.druh === "projekt") {
+        tlacitka.push(h("button", { type: "button", class: "tlacitko male", title: "Vydaná faktura navázaná na tento termín", onclick: () => this.naFakturu("", "nova", p.id) }, "Fakturovat…"));
+      }
       tlacitka.push(h("button", { type: "button", class: "tlacitko male hlavni", onclick: () => this._uprava(p) }, ikona("upravit"), "Upravit"),
         h("button", { type: "button", class: "tlacitko male", onclick: () => this._prepniHotovo(p) }, ikona("hotovo"), jeHotovo(pol) ? "Znovu otevřít" : "Hotovo"),
         h("button", { type: "button", class: "ikonove", title: "Smazat", "aria-label": "Smazat", onclick: () => this._smaz(p) }, ikona("smazat")));
@@ -751,10 +835,11 @@ export class Kalendar {
       : cil === BEZ_PROJEKTU ? "Bez projektu" : `Přesunut do projektu ${popisKam(tym, cil)}`, tym.ja.jmeno);
     await upravZdroj(tym, this.osobni, cil, (s) => { if (!s.some((x) => x.id === pol.id)) s.push(pol); },
       DRUHY_ZDROJU[cil] ? "" : `Přidán termín (z ${odkud}): ${pol.nazev || ""}`);
-    await upravZdroj(tym, this.osobni, p.zdroj, (s) => {
+    await upravZdroj(tym, this.osobni, p.zdroj, (s, projekt) => {
       const i = s.findIndex((x) => x.id === p.id);
       if (i < 0) return false;
-      s.splice(i, 1);
+      const [puvodni] = s.splice(i, 1);
+      if (projekt) zmrazNavazane(projekt, puvodni);
     }, p.druh === "projekt" ? `Termín přesunut do ${popisKam(tym, cil)}: ${pol.nazev || ""}` : "");
     oznam(`Termín přesunut: ${popisKam(tym, kam)}`);
   }
@@ -794,11 +879,12 @@ export class Kalendar {
     if (p.pevny || p.cizi) return;
     let index = -1, smazany = null;
     try {
-      await upravZdroj(this.tym, this.osobni, p.zdroj, (s) => {
+      await upravZdroj(this.tym, this.osobni, p.zdroj, (s, projekt) => {
         index = s.findIndex((x) => x.id === p.id);
         if (index < 0) return false;
         if (p.druh === "dovolene" && !this.tym.jeSpravce && (s[index].uzivatel || "") !== this.tym.ja.id) throw new Error("Cizí dovolenou mazat nemůžeš.");
         smazany = s.splice(index, 1)[0];
+        if (projekt) zmrazNavazane(projekt, smazany);   // plánovaná fakturace po termínu si nechá jeho datum
       }, this._historieUpravy(p, `Smazán termín (v kalendáři): ${p.pol.nazev || ""}`, p.pol.nazev || "Termín"));
     } catch (e) {
       oznam(e?.message || "Smazání se nepovedlo.", true);

@@ -518,3 +518,87 @@ body:not(.tiskne) #tisk-obsah { display: none; }
   #tisk-obsah .strana { page-break-after: always; break-after: page; box-shadow: none; }
   #tisk-obsah .strana:last-child { page-break-after: auto; break-after: auto; }
 }
+
+/* --- seznam projektů: tabulka, akce --- */
+.projekty-pohled { max-width: none; }
+.projekty-pohled .hlavicka-vpravo { flex-wrap: wrap; }
+.tabulka-projektu { padding: 0; overflow: auto; }
+.tabulka.projekty th { cursor: pointer; user-select: none; text-align: left; position: sticky; top: 0; background: var(--karta); }
+.tabulka.projekty td { text-align: left; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.tabulka.projekty tbody tr { cursor: pointer; }
+.tabulka.projekty tbody tr:hover { background: var(--vikend); }
+.tabulka.projekty tr.neaktivni td { color: var(--tiche); }
+.tabulka .vpravo, .tabulka th.vpravo { text-align: right; }
+.stitek-stavu.maly { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 12px; color: var(--barva); border: 1px solid var(--barva); }
+.karta.projekt { position: relative; }
+.karta-akce { position: absolute; right: 6px; top: 6px; }
+.karta.projekt .projekt-text { padding-right: 28px; }
+.ukol { justify-content: space-between; }
+.ukol-text { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+.ukol-text span { overflow-wrap: anywhere; }
+.poznamka { display: flex; gap: 6px; align-items: flex-start; }
+.poznamka-obsah { flex: 1; min-width: 0; }
+
+/* --- cashflow --- */
+.cf-prepinac { margin: 0 0 10px; }
+.cashflow { display: grid; gap: 12px; }
+.cf-lista { display: flex; align-items: center; gap: 8px; }
+.cf-dlazdice { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.cf-tile { display: grid; gap: 2px; align-content: start; text-align: left; padding: 12px 14px; background: var(--karta); border: 1px solid var(--cara); border-radius: 8px; color: inherit; font: inherit; }
+.cf-tile.klikaci { cursor: pointer; }
+.cf-tile.klikaci:hover { border-color: var(--ild); }
+.cf-tile small { color: var(--tiche); font-size: 12px; }
+.cf-tile strong { font-size: 19px; font-weight: 650; }
+.cf-pod { font-size: 12px; color: var(--tiche); }
+.cf-pod.varovani { color: #B54708; }
+.cf-pod.chyba-text, .chyba-text { color: var(--nebezpeci); }
+.cf-pod.odkaz-text { color: var(--ild); font-weight: 600; }
+.cf-podil { display: block; height: 4px; background: var(--cara); border-radius: 2px; overflow: hidden; margin: 3px 0; }
+.cf-podil i { display: block; height: 100%; background: #15803D; }
+.cf-graf { padding: 10px 12px; }
+.graf-cashflow { width: 100%; height: auto; display: block; font-family: inherit; }
+.cf-hlavicka { flex-wrap: wrap; }
+.tabulka.faktury th { cursor: pointer; user-select: none; text-align: left; }
+.tabulka.faktury td { text-align: left; }
+.tabulka.faktury td.vpravo, .tabulka.faktury th.vpravo { text-align: right; }
+.tabulka.faktury tbody tr { cursor: pointer; }
+.tabulka.faktury tbody tr:hover { background: var(--vikend); }
+.tabulka.faktury tr.plan td:not(:nth-child(6)):not(:nth-child(8)) { color: var(--tiche); }
+.tabulka td.tucne { font-weight: 650; }
+.cf-nazev { white-space: normal !important; min-width: 160px; }
+.cf-rychle { display: flex; gap: 4px; margin-top: 4px; }
+dialog.okno.siroke-okno { width: min(680px, calc(100vw - 24px)); }
+.report-obsah { display: grid; gap: 3mm; align-content: start; }
+.r-dlazdice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; }
+.r-tile { border: 0.2mm solid #d0d5dd; border-radius: 1.5mm; padding: 1.5mm 2.5mm; display: grid; }
+.r-tile small { color: #667085; font-size: 7.5pt; }
+.r-tile strong { font-size: 11pt; }
+.r-tile span { color: #667085; font-size: 7pt; }
+.r-graf svg { width: 100%; height: auto; }
+.report-obsah h3 { margin: 1mm 0 0; color: #195c00; font-size: 10.5pt; }
+.r-text { font-size: 8pt; color: #475467; margin: 0; }
+
+/* --- dotyk (tablet, telefon): větší cíle, žádná systémová nabídka při podržení --- */
+.kal-mesice, .kal-pruh { -webkit-touch-callout: none; touch-action: manipulation; }
+@media (pointer: coarse) {
+  .tlacitko { min-height: 44px; }
+  .tlacitko.male { min-height: 40px; padding: 0 12px; }
+  .ikonove { width: 44px; height: 44px; }
+  .ikonove.male { width: 38px; height: 38px; }
+  input, select, textarea { min-height: 44px; font-size: 16px; }
+  input[type="checkbox"] { width: 22px; height: 22px; }
+  .radek { padding: 11px 8px; }
+  .segment button { padding: 9px 14px; font-size: 14px; }
+  .menu button { padding: 12px 14px; font-size: 15px; }
+  .zalozky a { padding: 12px 16px; }
+  .tabulka td, .tabulka th { padding: 10px 10px; }
+  .kal-mesice { --pruh-navic: 4px; }
+  .kal-pruh { height: calc(var(--pruh) + 3px); line-height: calc(var(--pruh) + 3px); }
+  .kal-vic { padding: 2px 6px; font-size: 12px; }
+  .kal-zoom { width: 140px; }
+  .nav-odkaz { padding: 10px 0; }
+}
+@media (max-width: 760px) {
+  .skryt-uzke { display: none; }
+  .r-dlazdice { grid-template-columns: repeat(2, 1fr); }
+}

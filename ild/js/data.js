@@ -164,7 +164,7 @@ export function podtitulProjektu(p) {
   if (p?.lokalita && p?.nazev) casti.push(p.nazev);
   if (p?.cislo) casti.push(`Zakázka ${p.cislo}`);
   if (p?.investor) casti.push(p.investor);
-  if (p?.provozni) casti.push(p.provozni);
+  if (p?.provozni_soubor || p?.provozni_cel) casti.push(p.provozni_soubor || p.provozni_cel);
   return casti.map((c) => String(c).trim()).filter(Boolean).join(" · ");
 }
 
@@ -311,8 +311,36 @@ export class Tym {
   upravProjekt(id, zmen, textHistorie) {
     return this.uprav(`p:${id}`, (p) => {
       if (zmen(p) === false) return false;
-      if (textHistorie) zaznamZmeny(p, textHistorie, this.ja?.jmeno);
+      const text = typeof textHistorie === "function" ? textHistorie(p) : textHistorie;
+      if (text) zaznamZmeny(p, text, this.ja?.jmeno);
     });
+  }
+
+  // nový projekt = nová jednotka p:<id> (pravidla: n = 1, když ještě neexistuje)
+  async zalozProjekt(projekt) {
+    const k = klicDoDb(`p:${projekt.id}`);
+    const zaznam = { j: JSON.stringify(projekt), n: 1, kdo: this.ja?.jmeno || "", id: this.ja?.id || "", cas: ted(), smazano: false };
+    await this.oblak.zapis("tym", { [`jednotky/${k}`]: zaznam, [`index/${k}`]: 1 });
+    this._prijmi(`p:${projekt.id}`, zaznam);
+    this._oznam();
+  }
+
+  // smazání projektu = náhrobek s posledním obsahem (uzel smazat nejde – jako Spojeni._odesli v programu)
+  async smazProjekt(id) {
+    const k = klicDoDb(`p:${id}`);
+    for (let pokus = 0; pokus < 4; pokus++) {
+      const h = await this.oblak.cti(`tym/jednotky/${k}`);
+      if (!h || h.smazano) return;
+      const zaznam = { j: h.j, n: h.n + 1, kdo: this.ja?.jmeno || "", id: this.ja?.id || "", cas: ted(), smazano: true };
+      try {
+        await this.oblak.zapis("tym", { [`jednotky/${k}`]: zaznam, [`index/${k}`]: zaznam.n });
+        this._prijmi(`p:${id}`, zaznam);
+        this._oznam();
+        return;
+      } catch (e) {
+        if (e.druh !== "pristup" || pokus === 3) throw e;
+      }
+    }
   }
 }
 

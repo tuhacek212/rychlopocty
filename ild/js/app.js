@@ -7,9 +7,12 @@ import {
   datumKratce, dnes, hodinyText, iso, jeHotovo, nazevProjektu, novyTermin, noveId, podtitulProjektu, popisRozsahu,
   rozsah, ted, zIso, zaznamTerminu, zaznamZmeny,
 } from "./data.js";
+import { Cashflow, dialogFaktury, menuFaktury, otevriReport } from "./cashflow.js";
 import { otevriExport } from "./export.js";
+import * as FIN from "./finance.js";
 import { Kalendar } from "./kalendar.js";
-import { h, ikona, okno, oznam, pole, vymen, zavriMenu, zavriPopup, zkopiruj } from "./ui.js";
+import { SLOUPCE, dialogProjektu, menuProjektu, prepniSloupec, tabulkaProjektu, viditelneSloupce } from "./projekty.js";
+import { h, ikona, menu, okno, oznam, pole, vymen, zavriMenu, zavriPopup, zkopiruj } from "./ui.js";
 import { Posta, TYM, konverzaceS, protejsek } from "./zpravy.js";
 
 // Jen přes https (hesla, tokeny; šifrování v prohlížeči jinde ani nejde) – web ho sám nevynucuje.
@@ -139,6 +142,11 @@ function postavKostru() {
     onclick: () => okno(tym.ja.jmeno || "Uživatel", [
       h("p", { text: tym.jeSpravce ? "Správce" : "Uživatel" }),
       h("p", { class: "tiche", text: "Soubory projektů se otevírají v programu na počítači. Na webu jsou data týmu: projekty, úkoly, termíny, dovolená a zprávy." }),
+      pozvankaInstalace ? h("button", { type: "button", class: "tlacitko siroke", onclick: async () => {
+        pozvankaInstalace.prompt();
+        await pozvankaInstalace.userChoice.catch(() => null);
+        pozvankaInstalace = null;
+      } }, ikona("plus"), "Nainstalovat jako aplikaci") : null,
     ], [{ text: "Odhlásit se", nebezpecne: true, akce: odhlas }, { text: "Zavřít" }]),
   }, h("span", { class: "kolecko", text: inicialy(tym.ja.jmeno) }), tecka);
   vymen(koren, h("nav", { class: "lista" }, h("a", { href: "#/projekty", class: "nav-logo", "aria-label": "Projekty" }, logo("logo-lista")),
@@ -218,41 +226,75 @@ function nejblizsiTermin(p) {
 
 const otevreneUkoly = (p) => (Array.isArray(p.ukoly) ? p.ukoly : []).filter((u) => u && !u.hotovo);
 
-let filtrProjektu = { text: "", vse: false };
+let filtrProjektu = { text: "", vse: false, pohled: "", razeni: ["nazev", 1] };
+
+function pohledSeznamu() {
+  if (!filtrProjektu.pohled) {
+    try { filtrProjektu.pohled = window.localStorage.getItem("ild-pohled-projektu") || ""; } catch { /* nic */ }
+    if (!["karty", "tabulka"].includes(filtrProjektu.pohled)) filtrProjektu.pohled = window.innerWidth >= 900 ? "tabulka" : "karty";
+  }
+  return filtrProjektu.pohled;
+}
+
+const otevritProjekt = (id) => { window.location.hash = `#/projekt/${encodeURIComponent(id)}`; };
 
 function pohledProjekty() {
   const hledani = h("input", { type: "search", placeholder: "Hledat projekt…", value: filtrProjektu.text,
     "aria-label": "Hledat projekt", oninput: () => { filtrProjektu.text = hledani.value; obnov(); } });
   const prepinac = segment([["aktivni", "Aktivní"], ["vse", "Všechny"]], filtrProjektu.vse ? "vse" : "aktivni",
     (v) => { filtrProjektu.vse = v === "vse"; obnov(); });
-  const seznam = h("div", { class: "seznam-projektu" });
+  const pohledSeg = segment([["karty", "Karty"], ["tabulka", "Tabulka"]], pohledSeznamu(), (v) => {
+    filtrProjektu.pohled = v;
+    try { window.localStorage.setItem("ild-pohled-projektu", v); } catch { /* nic */ }
+    obnov();
+  });
+  const novy = h("button", { type: "button", class: "tlacitko male hlavni", onclick: () => dialogProjektu(tym, null, otevritProjekt) },
+    ikona("plus"), h("span", { class: "skryt-uzke", text: "Nový projekt" }));
+  const vice = h("button", { type: "button", class: "ikonove", "aria-label": "Další volby", title: "Další volby",
+    onclick: () => {
+      const r = vice.getBoundingClientRect();
+      const videt = viditelneSloupce().map(([k]) => k);
+      menu(r.left, r.bottom, [
+        { text: "Cashflow – report pro vedení…", ikona: "export", akce: () => otevriReport({ tym }) },
+        ...(pohledSeznamu() === "tabulka" ? ["-", { nadpis: "Sloupce" },
+          ...SLOUPCE.map(([k, nazev]) => ({ text: `${videt.includes(k) ? "✓ " : "    "}${nazev}`, akce: () => { prepniSloupec(k); obnov(); } }))] : []),
+      ]);
+    } }, "⋯");
+  const seznam = h("div");
   const pocet = h("p", { class: "tiche" });
 
   function obnov() {
     const slova = sDiakritikou(filtrProjektu.text).split(/\s+/).filter(Boolean);
     const projekty = tym.projekty.filter((p) => filtrProjektu.vse || !NEAKTIVNI.has(p.status)).filter((p) => {
-      const text = sDiakritikou([p.nazev, p.lokalita, p.cislo, p.investor, p.provozni].join(" "));
+      const text = sDiakritikou([p.nazev, p.lokalita, p.cislo, p.investor, p.provozni_soubor].join(" "));
       return slova.every((s) => text.includes(s));
     }).sort((a, b) => kolator.compare(nazevProjektu(a), nazevProjektu(b)));
     pocet.textContent = projekty.length ? "" : "Žádný projekt neodpovídá.";
-    vymen(seznam, projekty.map((p) => {
+    if (pohledSeznamu() === "tabulka") {
+      vymen(seznam, projekty.length ? tabulkaProjektu(tym, projekty, filtrProjektu, otevritProjekt, obnov) : null);
+      return;
+    }
+    vymen(seznam, h("div", { class: "seznam-projektu" }, projekty.map((p) => {
       const ukoly = otevreneUkoly(p).length;
       const termin = nejblizsiTermin(p);
-      return h("a", { class: "karta projekt", href: `#/projekt/${encodeURIComponent(p.id)}` },
-        h("span", { class: "pruh-stavu", style: { background: STATUS_BARVY[p.status] || "var(--tiche)" } }),
-        h("div", { class: "projekt-text" },
-          h("strong", { text: nazevProjektu(p) }),
-          h("span", { class: "tiche", text: podtitulProjektu(p) }),
-          h("div", { class: "projekt-udaje" },
-            h("span", { class: "stitek-stavu", text: p.status || "" }),
-            ukoly ? h("span", { text: `☐ ${ukoly} ${ukoly === 1 ? "úkol" : ukoly < 5 ? "úkoly" : "úkolů"}` }) : null,
-            termin ? h("span", {}, h("i", { class: "tecka", style: { background: barvaTerminu(termin[1]) } }),
-              `${datumKratce(termin[0])} ${termin[1].nazev || tym.nazevDruhu(termin[1])}`) : null)));
-    }));
+      return h("a", { class: "karta projekt", href: `#/projekt/${encodeURIComponent(p.id)}`,
+        oncontextmenu: (ev) => { ev.preventDefault(); menuProjektu(ev.clientX, ev.clientY, tym, p, otevritProjekt); } },
+      h("span", { class: "pruh-stavu", style: { background: STATUS_BARVY[p.status] || "var(--tiche)" } }),
+      h("div", { class: "projekt-text" },
+        h("strong", { text: nazevProjektu(p) }),
+        h("span", { class: "tiche", text: podtitulProjektu(p) }),
+        h("div", { class: "projekt-udaje" },
+          h("span", { class: "stitek-stavu", text: p.status || "" }),
+          ukoly ? h("span", { text: `☐ ${ukoly} ${ukoly === 1 ? "úkol" : ukoly < 5 ? "úkoly" : "úkolů"}` }) : null,
+          termin ? h("span", {}, h("i", { class: "tecka", style: { background: barvaTerminu(termin[1]) } }),
+            `${datumKratce(termin[0])} ${termin[1].nazev || tym.nazevDruhu(termin[1])}`) : null)),
+      h("button", { type: "button", class: "ikonove male karta-akce", "aria-label": "Akce s projektem",
+        onclick: (ev) => { ev.preventDefault(); ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(); menuProjektu(r.left, r.bottom, tym, p, otevritProjekt); } }, "⋯"));
+    })));
   }
 
   obnov();
-  return { el: h("section", { class: "pohled" }, hlavicka("Projekty", prepinac),
+  return { el: h("section", { class: `pohled projekty-pohled` }, hlavicka("Projekty", prepinac, pohledSeg, novy, vice),
     h("div", { class: "hledani" }, ikona("hledat"), hledani), seznam, pocet), obnov };
 }
 
@@ -275,11 +317,12 @@ function segment(volby, vybrana, zmena) {
 const ZALOZKY = [["prehled", "Přehled"], ["soubory", "Soubory"], ["harmonogram", "Harmonogram"]];
 
 function pohledProjekt(id, zalozka = "prehled") {
-  if (!ZALOZKY.some(([k]) => k === zalozka)) zalozka = "prehled";
+  if (!ZALOZKY.some(([k]) => k === zalozka) && zalozka !== "cashflow") zalozka = "prehled";
+  const vybrana = zalozka === "cashflow" ? "harmonogram" : zalozka;
   posledniProjekt = id;
   const zahlavi = h("div");
   const zalozky = h("nav", { class: "zalozky", "aria-label": "Záložky projektu" }, ZALOZKY.map(([k, t]) => h("a", {
-    href: `#/projekt/${encodeURIComponent(id)}/${k}`, class: k === zalozka ? "vybrana" : "", "aria-current": k === zalozka ? "page" : null, text: t })));
+    href: `#/projekt/${encodeURIComponent(id)}/${k}`, class: k === vybrana ? "vybrana" : "", "aria-current": k === vybrana ? "page" : null, text: t })));
   const obnovZahlavi = () => {
     const p = tym.projekt(id);
     if (!p) { vymen(zahlavi, h("p", { text: "Projekt nebyl nalezen (možná byl smazán)." })); return false; }
@@ -292,10 +335,27 @@ function pohledProjekt(id, zalozka = "prehled") {
   };
   obnovZahlavi();
   let telo;
-  if (zalozka === "harmonogram") {
+  if (vybrana === "harmonogram") {
+    // u zakázek R a O přepínač Termíny | Cashflow (jako v programu; osobně jde vypnout – nastavení „cashflow“)
+    const sCashflow = () => FIN.maCashflow(tym.projekt(id)) && osobni.hodnota.cashflow !== false;
+    const rezim = zalozka === "cashflow" && sCashflow() ? "cashflow" : "harmonogram";
+    const prepinac = sCashflow() ? h("div", { class: "cf-prepinac" }, segment([["harmonogram", "Termíny"], ["cashflow", "Cashflow"]], rezim,
+      (v) => { window.location.hash = `#/projekt/${encodeURIComponent(id)}/${v}`; })) : null;
+    if (rezim === "cashflow") {
+      const cf = new Cashflow({ tym, projektId: id, naKalendar: () => { window.location.hash = `#/projekt/${encodeURIComponent(id)}/harmonogram`; } });
+      return { el: h("section", { class: "pohled projekt-detail" }, zahlavi, zalozky, prepinac, cf.el),
+        obnov: () => { if (obnovZahlavi()) cf.obnov(); } };
+    }
     const kal = new Kalendar({ tym, osobni, projektId: id, naProjekt: () => {},
-      naExport: ({ obdobi }) => otevriExport({ tym, osobni, projektId: id, obdobi }) });
-    return { el: h("section", { class: "pohled projekt-detail kal-pohled" }, zahlavi, zalozky, kal.el),
+      naExport: ({ obdobi }) => otevriExport({ tym, osobni, projektId: id, obdobi }),
+      faktury: () => (sCashflow() && osobni.hodnota.faktury_v_kalendari !== false ? FIN.pruhyFaktur(tym.projekt(id)) : []),
+      naFakturu: (fid, akce, x, y) => {
+        if (akce === "upravit") dialogFaktury(tym, id, fid);
+        else if (akce === "menu") menuFaktury(x, y, tym, id, fid);
+        else if (akce === "cashflow") window.location.hash = `#/projekt/${encodeURIComponent(id)}/cashflow`;
+        else if (akce === "nova") dialogFaktury(tym, id, null, { typ: FIN.VYDANA, termin: x });
+      } });
+    return { el: h("section", { class: "pohled projekt-detail kal-pohled" }, zahlavi, zalozky, prepinac, kal.el),
       obnov: () => { if (obnovZahlavi()) kal.obnov(); }, zrus: () => kal.zrus() };
   }
   telo = zalozka === "soubory" ? zalozkaSoubory(id) : zalozkaPrehled(id);
@@ -360,8 +420,13 @@ function zalozkaPrehled(id) {
     const pozn = (Array.isArray(p.poznamky) ? p.poznamky : []).filter((x) => x && x.text)
       .sort((a, b) => String(b.cas || "").localeCompare(String(a.cas || "")));
     vymen(poznamky, pozn.slice(0, poznamekVidet).map((x) => h("article", { class: "poznamka" },
-      h("p", { class: "text-poznamky", text: x.text }),
-      h("small", { class: "tiche", text: [casText(x.cas), x.autor].filter(Boolean).join(" · ") }))),
+      h("div", { class: "poznamka-obsah", ondblclick: () => upravPoznamku(id, x) },
+        h("p", { class: "text-poznamky", text: x.text }),
+        h("small", { class: "tiche", text: [casText(x.cas), x.autor].filter(Boolean).join(" · ") })),
+      h("button", { type: "button", class: "ikonove male", "aria-label": "Akce s poznámkou",
+        onclick: (ev) => { const r = ev.currentTarget.getBoundingClientRect(); menu(r.left, r.bottom, [
+          { text: "Upravit…", ikona: "upravit", akce: () => upravPoznamku(id, x) },
+          { text: "Smazat", ikona: "smazat", nebezpecne: true, akce: () => smazPoznamku(id, x) }]); } }, "⋯"))),
     !pozn.length ? h("p", { class: "tiche", text: "Žádné poznámky." }) : null,
     pozn.length > poznamekVidet ? h("button", { type: "button", class: "odkaz", text: `Zobrazit další (${pozn.length - poznamekVidet})`,
       onclick: () => { poznamekVidet += 20; obnov(); } }) : null);
@@ -397,6 +462,42 @@ function otevriVPocitaci(cesta, projekt = "") {
 
 const jeTelefon = () => window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches;
 
+function dialogOdkazu(pid, odkaz = null, cestu = false) {
+  const popis = h("input", { value: odkaz?.popis || "", maxlength: 200, placeholder: "např. Výkresy" });
+  const cesta = h("input", { value: odkaz?.cesta || "", maxlength: 1000, placeholder: "např. P:\\Projekty\\Brno\\Výkresy" });
+  okno(odkaz ? (cestu ? "Změnit cestu" : "Přejmenovat odkaz") : "Přidat složku nebo soubor", [
+    odkaz && cestu ? null : pole("Název", popis), odkaz && !cestu ? null : pole("Cesta", cesta, "Cesta, jak ji vidí počítače v síti firmy (web na disky nevidí – nekontroluje, že existuje)."),
+  ], [{ text: "Zrušit" }, { text: odkaz ? "Uložit" : "Přidat", hlavni: true, akce: async () => {
+    const c = cesta.value.trim(), t = popis.value.trim() || c.split(/[\\/]/).filter(Boolean).pop() || c;
+    if (!c) throw new Error("Doplň cestu.");
+    if (!odkaz) {
+      await tym.upravProjekt(pid, (p) => {
+        if (!Array.isArray(p.odkazy)) p.odkazy = [];
+        if (p.odkazy.some((o) => o.cesta === c)) throw new Error("Tahle cesta už v projektu je.");
+        p.odkazy.push({ popis: t, cesta: c });
+      }, `Přidán odkaz: ${t}`);
+      return;
+    }
+    await tym.upravProjekt(pid, (p) => {
+      const o = (p.odkazy || []).find((x) => x.cesta === odkaz.cesta);
+      if (!o) throw new Error("Odkaz už v projektu není.");
+      if (cestu) { if (o.cesta === c) return false; o.cesta = c; } else { if (o.popis === t) return false; o.popis = t; }
+    }, `Změněn odkaz: ${cestu ? odkaz.popis || t : t}`);
+  } }]);
+  (odkaz && cestu ? cesta : popis).focus();
+}
+
+function odeberOdkaz(pid, odkaz) {
+  okno("Odebrat z projektu?", [h("p", { text: `${odkaz.popis || odkaz.cesta}` }), h("p", { class: "tiche", text: "Odebere se jen odkaz v projektu – složka ani soubory na disku se nemažou." })], [
+    { text: "Zrušit" },
+    { text: "Odebrat", nebezpecne: true, akce: () => tym.upravProjekt(pid, (p) => {
+      const i = (p.odkazy || []).findIndex((x) => x.cesta === odkaz.cesta);
+      if (i < 0) return false;
+      p.odkazy.splice(i, 1);
+    }, `Odebrán odkaz: ${odkaz.popis || ""}`) },
+  ]);
+}
+
 function zalozkaSoubory(id) {
   const seznam = h("div", { class: "seznam soubory" });
   function obnov() {
@@ -413,11 +514,19 @@ function zalozkaSoubory(id) {
         h("button", { type: "button", class: "ikonove", title: "Otevřít v počítači", "aria-label": `Otevřít ${nazev} v počítači`,
           onclick: () => otevriVPocitaci(o.cesta, id) }, ikona("otevrit")),
         h("button", { type: "button", class: "ikonove", title: "Kopírovat cestu", "aria-label": "Kopírovat cestu",
-          onclick: () => zkopiruj(o.cesta) }, ikona("kopirovat")));
+          onclick: () => zkopiruj(o.cesta) }, ikona("kopirovat")),
+        h("button", { type: "button", class: "ikonove", "aria-label": "Další akce", title: "Další akce",
+          onclick: (ev) => { const r = ev.currentTarget.getBoundingClientRect(); menu(r.left, r.bottom, [
+            { nadpis: nazev },
+            { text: "Přejmenovat…", ikona: "upravit", akce: () => dialogOdkazu(id, o) },
+            { text: "Změnit cestu…", akce: () => dialogOdkazu(id, o, true) },
+            "-",
+            { text: "Odebrat z projektu", ikona: "smazat", nebezpecne: true, akce: () => odeberOdkaz(id, o) }]); } }, "⋯"));
     }), !ods.length ? h("p", { class: "tiche", text: "Projekt nemá žádné složky ani soubory." }) : null);
   }
   obnov();
-  return { el: h("div", {}, karta("Složky a soubory projektu", null,
+  return { el: h("div", {}, karta("Složky a soubory projektu",
+    h("button", { type: "button", class: "tlacitko male", onclick: () => dialogOdkazu(id, null) }, ikona("plus"), "Přidat"),
     h("p", { class: "tiche male napoveda-souboru", text: jeTelefon()
       ? "Na telefonu jde jen zkopírovat cestu – otevřít se dají na počítači s programem Správce projektů."
       : "Klik otevře složku nebo soubor na tomto počítači – přes program Správce projektů, v síti firmy nebo přes VPN. Prohlížeč se poprvé zeptá, jestli program smí otevřít." }),
@@ -442,7 +551,72 @@ function radekUkolu(pid, u) {
       x.hotovo = box.checked;
       x.splneno = box.checked ? ted() : "";
     }, `${box.checked ? "Splněn úkol: " : "Znovu otevřen úkol: "}${u.text}`)) });
-  return h("label", { class: `radek ukol${u.hotovo ? " hotovo" : ""}` }, box, h("span", { text: u.text }));
+  return h("div", { class: `radek ukol${u.hotovo ? " hotovo" : ""}` },
+    h("label", { class: "ukol-text" }, box, h("span", { text: u.text })),
+    h("button", { type: "button", class: "ikonove male", "aria-label": "Akce s úkolem",
+      onclick: (ev) => { const r = ev.currentTarget.getBoundingClientRect(); menu(r.left, r.bottom, [
+        { text: "Upravit…", ikona: "upravit", akce: () => upravUkol(pid, u) },
+        { text: "Smazat", ikona: "smazat", nebezpecne: true, akce: () => smazUkol(pid, u) }]); } }, "⋯"));
+}
+
+function upravUkol(pid, u) {
+  const pole2 = h("input", { value: u.text, maxlength: 500 });
+  okno("Upravit úkol", [pole2], [{ text: "Zrušit" }, { text: "Uložit", hlavni: true, akce: async () => {
+    const text = pole2.value.trim();
+    if (!text) throw new Error("Úkol nesmí být prázdný.");
+    await tym.upravProjekt(pid, (p) => {
+      const x = (p.ukoly || []).find((y) => y.id === u.id);
+      if (!x || x.text === text) return false;
+      x.text = text;
+    }, `Upraven úkol: ${text}`);
+  } }]);
+  pole2.focus();
+}
+
+async function smazUkol(pid, u) {
+  let index = -1, smazany = null;
+  const ok = await proved(() => tym.upravProjekt(pid, (p) => {
+    index = (p.ukoly || []).findIndex((y) => y.id === u.id);
+    if (index < 0) return false;
+    smazany = p.ukoly.splice(index, 1)[0];
+  }, `Smazán úkol: ${u.text}`));
+  if (!ok || !smazany) return;
+  oznam(`Úkol „${u.text.slice(0, 40)}“ smazán`, false, { text: "Vrátit", fn: () => proved(() => tym.upravProjekt(pid, (p) => {
+    if (!Array.isArray(p.ukoly)) p.ukoly = [];
+    if (p.ukoly.some((y) => y.id === smazany.id)) return false;
+    p.ukoly.splice(Math.min(index, p.ukoly.length), 0, smazany);
+  }, `Obnoven úkol: ${smazany.text}`)) });
+}
+
+function upravPoznamku(pid, x) {
+  const pole2 = h("textarea", { rows: 6, maxlength: 10000 });
+  pole2.value = x.text;
+  okno("Upravit poznámku", [pole2], [{ text: "Zrušit" }, { text: "Uložit", hlavni: true, akce: async () => {
+    const text = pole2.value.trim();
+    if (!text) throw new Error("Poznámka nesmí být prázdná.");
+    await tym.upravProjekt(pid, (p) => {
+      const y = (p.poznamky || []).find((z) => z.id === x.id);
+      if (!y || y.text === text) return false;
+      y.text = text;
+      y.cas = y.cas || ted();
+    }, "Upravena poznámka");
+  } }]);
+  pole2.focus();
+}
+
+async function smazPoznamku(pid, x) {
+  let index = -1, smazana = null;
+  const ok = await proved(() => tym.upravProjekt(pid, (p) => {
+    index = (p.poznamky || []).findIndex((z) => z.id === x.id);
+    if (index < 0) return false;
+    smazana = p.poznamky.splice(index, 1)[0];
+  }, "Smazána poznámka"));
+  if (!ok || !smazana) return;
+  oznam("Poznámka smazána", false, { text: "Vrátit", fn: () => proved(() => tym.upravProjekt(pid, (p) => {
+    if (!Array.isArray(p.poznamky)) p.poznamky = [];
+    if (p.poznamky.some((z) => z.id === smazana.id)) return false;
+    p.poznamky.splice(Math.min(index, p.poznamky.length), 0, smazana);
+  }, "Obnovena poznámka")) });
 }
 
 function radekTerminu(t, klik, projekt = "") {
@@ -738,6 +912,14 @@ document.addEventListener("visibilitychange", () => {
 // --- start ------------------------------------------------------------------------------------
 
 oblak.priOdhlaseni = (text) => ukazPrihlaseni(text);
+
+// Instalovatelná aplikace (tablet, telefon, počítač): service worker drží stránku pro rychlý start;
+// data týmu jdou vždy živě z Firebase (sw.js je necachuje).
+let pozvankaInstalace = null;
+window.addEventListener("beforeinstallprompt", (ev) => { ev.preventDefault(); pozvankaInstalace = ev; });
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 
 (async () => {
   try {

@@ -26,7 +26,7 @@ function ulozProfil(p) {
   try { window.localStorage.setItem(KLIC_PROFILU, JSON.stringify(p)); } catch { /* nic */ }
 }
 
-function segment(volby, hodnota, zmena) {
+export function segment(volby, hodnota, zmena) {
   const el = h("div", { class: "segment", role: "group" });
   const prekresli = (v) => vymen(el, volby.map(([k, t]) => h("button", { type: "button", text: t, "aria-pressed": String(k === v),
     onclick: () => { prekresli(k); zmena(k); } })));
@@ -195,25 +195,25 @@ export function otevriExport({ tym, osobni, projektId = null, kalendar = null, o
   obnov();
 }
 
-function zaskrt(text, hodnota, zmena) {
+export function zaskrt(text, hodnota, zmena) {
   const box = h("input", { type: "checkbox", checked: hodnota, onchange: () => zmena(box.checked) });
   return h("label", { class: "zaskrtavatko" }, box, h("span", { text }));
 }
 
-const rozmery = (p) => {
+export const rozmery = (p) => {
   const [a, b] = PAPIRY[p.papir] || PAPIRY.A4;
   return p.naSirku ? [b, a] : [a, b];
 };
 
 // --- stránky (HTML v milimetrech – stejné pro náhled i tisk) ------------------------------------
 
-function strana(n, obsah, cislo2, celkem) {
+export function strana(n, obsah, cislo2, celkem) {
   const [w, v] = rozmery(n);
   return h("div", { class: `strana${n.barvy === "sede" ? " sede" : ""}`, style: { width: `${w}mm`, height: `${v}mm` } },
     h("header", { class: "strana-hlavicka" },
       h("img", { src: "logo.png", alt: "", class: "strana-logo" }),
       h("div", { class: "strana-nadpis" }, h("strong", { text: n.nadpis }), n.podnadpis ? h("small", { text: n.podnadpis }) : null),
-      h("div", { class: "strana-obdobi" }, h("strong", { text: `Období: ${datumKratce(n.od, true)} – ${datumKratce(n.do, true)}` }),
+      h("div", { class: "strana-obdobi" }, h("strong", { text: n.od ? `Období: ${datumKratce(n.od, true)} – ${datumKratce(n.do, true)}` : n.obdobiText || "" }),
         h("small", { text: `Stav k ${datumKratce(zIso(dnes()), true)}` }))),
     h("div", { class: "strana-obsah" }, obsah),
     h("footer", { class: "strana-pata" }, h("span", { text: `Vytištěno ${new Date().toLocaleString("cs-CZ")} · Správce projektů ILD` }),
@@ -544,7 +544,7 @@ function sedaBarva(b) {
 
 let _stranka = null;
 
-function tiskni(strany, p, titulek) {
+export function tiskni(strany, p, titulek) {
   document.getElementById("tisk-obsah")?.remove();
   const obal = h("div", { id: "tisk-obsah" }, strany.map((s) => s.cloneNode(true)));
   document.body.append(obal);
