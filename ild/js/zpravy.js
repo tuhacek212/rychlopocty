@@ -27,7 +27,7 @@ function zprava(id, h) {
   const z = { id, od: String(h.od || ""), text: h.text, cas: h.cas };
   if (Array.isArray(h.odkazy)) {
     z.odkazy = h.odkazy.filter((o) => o && typeof o.cesta === "string" && o.cesta)
-      .slice(0, 20).map((o) => ({ cesta: o.cesta, nazev: String(o.nazev || o.cesta), slozka: !!o.slozka }));
+      .slice(0, 20).map((o) => ({ cesta: o.cesta, nazev: String(o.nazev || o.cesta), slozka: !!o.slozka, projekt: String(o.projekt || "") }));
   }
   return z;
 }

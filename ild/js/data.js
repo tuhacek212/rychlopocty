@@ -316,10 +316,11 @@ export class Tym {
   }
 }
 
-export function zaznamZmeny(projekt, text, kdo) {
+export function zaznamZmeny(projekt, text, kdo, termin = "") {
   if (!Array.isArray(projekt.historie)) projekt.historie = [];
   const zaznam = { cas: ted(), text };
   if (kdo) zaznam.kdo = kdo;
+  if (termin) zaznam.termin = termin;
   projekt.historie.push(zaznam);
   if (projekt.historie.length > 200) projekt.historie = projekt.historie.slice(-200);
 }
@@ -432,4 +433,194 @@ export class Dovolene {
     const rz = rozsah(pol);
     return rz ? pracovniDny(rz[0], rz[1], this.staty).length * hodinDovoleneDenne(pol, this.den) : 0;
   }
+}
+
+// --- osobní nastavení (osobni/<id> = {j, n}) – soukromé termíny, filtr a vzhled kalendáře ------------
+// Stejný obsah jako v programu (Uloziste._osobni_nastaveni); program změny z webu sloučí tříbodově.
+
+export class Osobni {
+  constructor(oblak, id) {
+    this.oblak = oblak;
+    this.id = id;
+    this.hodnota = {};
+    this.n = 0;
+    this._fronta = [];
+    this._casovac = 0;
+    this.posluchaci = new Set();
+  }
+
+  pri(f) { this.posluchaci.add(f); return () => this.posluchaci.delete(f); }
+
+  async nacti() {
+    try {
+      const h = await this.oblak.cti(`osobni/${this.id}`);
+      if (h && typeof h.j === "string") {
+        this.hodnota = JSON.parse(h.j) || {};
+        this.n = Number(h.n) || 0;
+      }
+    } catch { /* bez osobního nastavení */ }
+    return this.hodnota;
+  }
+
+  // změna hned v paměti, zápis na server s krátkým odkladem (posuvník zoomu, filtr…)
+  uprav(zmen, hned = false) {
+    zmen(this.hodnota);
+    this.posluchaci.forEach((f) => f());
+    this._fronta.push(zmen);
+    clearTimeout(this._casovac);
+    if (hned) return this._zapis();
+    this._casovac = setTimeout(() => this._zapis().catch(() => {}), 1200);
+    return Promise.resolve();
+  }
+
+  async _zapis() {
+    const fronta = this._fronta;
+    this._fronta = [];
+    if (!fronta.length) return;
+    try {
+      const h = await this.oblak.cti(`osobni/${this.id}`);
+      let zaklad = this.hodnota;
+      if (h && typeof h.j === "string" && Number(h.n) > this.n) {
+        zaklad = JSON.parse(h.j) || {};       // mezitím změna z jiného počítače – naše změny navrch
+        for (const z of fronta) z(zaklad);
+        this.hodnota = zaklad;
+      }
+      const n = Math.max(this.n, Number(h?.n) || 0) + 1;
+      await this.oblak.zapis(`osobni/${this.id}`, { j: JSON.stringify(zaklad), n }, "PUT");
+      this.n = n;
+    } catch (e) {
+      this._fronta = [...fronta, ...this._fronta];
+      throw e;
+    }
+  }
+
+  kalendar() {
+    const k = this.hodnota.kalendar && typeof this.hodnota.kalendar === "object" ? this.hodnota.kalendar : {};
+    return {
+      zoom: typeof k.zoom === "number" ? k.zoom : 2,
+      projekty: k.projekty === "vybrane" ? "vybrane" : "vse",
+      vybrane_projekty: Array.isArray(k.vybrane_projekty) ? k.vybrane_projekty : [],
+      vcetne_neaktivnich: !!k.vcetne_neaktivnich,
+      skryte_ostatni: Array.isArray(k.skryte_ostatni) ? k.skryte_ostatni : [],
+      skryte_barvy: Array.isArray(k.skryte_barvy) ? k.skryte_barvy : [],
+      skryt_hotove: !!k.skryt_hotove,
+    };
+  }
+
+  upravKalendar(zmena) {
+    return this.uprav((h) => { h.kalendar = { ...(h.kalendar && typeof h.kalendar === "object" ? h.kalendar : {}), ...zmena }; });
+  }
+
+  vzhled() {
+    const v = this.hodnota.vzhled_kalendare && typeof this.hodnota.vzhled_kalendare === "object" ? this.hodnota.vzhled_kalendare : {};
+    const vysledek = { pruhy: "plne", tydny: true, vikendy: true, svatky: true, svatky_sk: true, probehle: false };
+    if (["plne", "svetle", "obrys"].includes(v.pruhy)) vysledek.pruhy = v.pruhy;
+    for (const k of ["tydny", "vikendy", "svatky", "svatky_sk", "probehle"]) if (k in v) vysledek[k] = !!v[k];
+    return vysledek;
+  }
+
+  get soukrome() {
+    return (Array.isArray(this.hodnota.soukrome_terminy) ? this.hodnota.soukrome_terminy : []).filter((p) => p && p.id);
+  }
+}
+
+// --- kam termín patří (stejná id jako v programu) ------------------------------------------------
+
+export const BEZ_PROJEKTU = "__bez_projektu__";
+export const SOUKROME = "__soukrome__";
+export const DOVOLENE = "__dovolene__";
+export const POZNAMKY = "__poznamky__";
+export const OSTATNI_V_KALENDARI = {
+  [SOUKROME]: "Soukromé termíny", [DOVOLENE]: "Dovolené", [BEZ_PROJEKTU]: "Termíny bez projektu",
+  [POZNAMKY]: "Data z poznámek",
+};
+export const C_POZNAMKA = "#667085";
+
+// Seznam termínů zdroje a změna (zdroj = id projektu, BEZ_PROJEKTU, SOUKROME, DOVOLENE)
+export function upravZdroj(tym, osobni, zdroj, zmen, textHistorie = "") {
+  if (zdroj === SOUKROME) {
+    let vysledek;
+    return osobni.uprav((h) => {
+      if (!Array.isArray(h.soukrome_terminy)) h.soukrome_terminy = [];
+      vysledek = zmen(h.soukrome_terminy, null);
+    }, true).then(() => vysledek);
+  }
+  if (zdroj === BEZ_PROJEKTU) return tym.uprav("terminy_bez_projektu", (s) => zmen(s, null));
+  if (zdroj === DOVOLENE) return tym.uprav("dovolene", (s) => zmen(s, null));
+  return tym.uprav(`p:${zdroj}`, (p) => {
+    if (!Array.isArray(p.harmonogram)) p.harmonogram = [];
+    const v = zmen(p.harmonogram, p);
+    if (v === false) return false;
+    const text = typeof textHistorie === "function" ? textHistorie(p) : textHistorie;
+    if (Array.isArray(text)) zaznamZmeny(p, text[0], tym.ja?.jmeno, text[1]);
+    else if (text) zaznamZmeny(p, text, tym.ja?.jmeno);
+  });
+}
+
+export function nastavRozsah(pol, z, k) {
+  if (k < z) [z, k] = [k, z];
+  pol.datum = iso(z);
+  if (iso(k) !== iso(z)) pol.datum_do = iso(k); else delete pol.datum_do;
+}
+
+// --- data napsaná v poznámkách (terminy.najdi_datumy_v_textu) -------------------------------------
+
+const MESICE_NAZVY = {};
+["leden|ledna", "únor|února", "březen|března", "duben|dubna", "květen|května", "červen|června",
+  "červenec|července", "srpen|srpna", "září|září", "říjen|října", "listopad|listopadu", "prosinec|prosince"]
+  .forEach((jmena, i) => jmena.split("|").forEach((j) => {
+    MESICE_NAZVY[j] = i + 1;
+    MESICE_NAZVY[j.normalize("NFD").replace(/\p{M}/gu, "")] = i + 1;
+  }));
+const NAZVY = Object.keys(MESICE_NAZVY).sort((a, b) => b.length - a.length).join("|");
+const VZORY_DATA = [
+  /(?<!\d)(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})(?!\d)/g,
+  /(?<!\d)(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?!\d)/g,
+  new RegExp(String.raw`(?<!\d)(\d{1,2})\.\s*(${NAZVY})\s+(\d{4})(?!\d)`, "giu"),
+  /(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?!\d)/g,
+  /(?<![\d.])(\d{1,2})\.\s*(\d{1,2})\.(\d{2})(?![\d.:])/g,
+  /(?<![\d.])(\d{1,2})\.\s*(\d{1,2})\.(?!\s*\d)/g,
+  new RegExp(String.raw`(?<!\d)(\d{1,2})\.\s*(${NAZVY})(?!\p{L})`, "giu"),
+];
+
+function datumZCasti(a, b, c, dnesD) {
+  let den, mesic, rok;
+  if (!/^\d+$/.test(b)) {
+    mesic = MESICE_NAZVY[b.toLowerCase()] || MESICE_NAZVY[b.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")];
+    if (!mesic) return null;
+    den = a; rok = c;
+  } else if (a.length === 4) {
+    [rok, mesic, den] = [a, b, c];
+  } else {
+    [den, mesic, rok] = [a, b, c];
+  }
+  const platne = (r, m, d) => {
+    const x = new Date(r, m - 1, d);
+    return x.getFullYear() === r && x.getMonth() === m - 1 && x.getDate() === d ? x : null;
+  };
+  let d;
+  if (rok == null) {
+    d = platne(dnesD.getFullYear(), +mesic, +den);
+    if (d && d < pridejDny(dnesD, -183)) d = platne(dnesD.getFullYear() + 1, +mesic, +den);
+  } else {
+    d = platne(+rok + (rok.length === 2 ? 2000 : 0), +mesic, +den);
+  }
+  return d && d.getFullYear() >= 1990 && d.getFullYear() <= 2100 ? d : null;
+}
+
+export function najdiDatumy(text, dnesD = zIso(dnes())) {
+  const shody = [];
+  VZORY_DATA.forEach((vzor, poradi) => {
+    for (const s of String(text || "").matchAll(vzor)) shody.push({ start: s.index, konec: s.index + s[0].length, poradi, s });
+  });
+  shody.sort((x, y) => x.start - y.start || x.poradi - y.poradi);
+  const vysledek = new Set();
+  let konec = -1;
+  for (const x of shody) {
+    if (x.start < konec) continue;
+    konec = x.konec;
+    const d = datumZCasti(x.s[1], x.s[2], x.s[3], dnesD);
+    if (d) vysledek.add(iso(d));
+  }
+  return [...vysledek].sort();
 }

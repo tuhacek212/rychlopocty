@@ -49,6 +49,14 @@ const IKONY = {
   zavrit: "M6 6l12 12M18 6 6 18",
   smazat: "M5 7h14M10 11v6M14 11v6M7 7l1 13h8l1-13M9 7V4h6v3",
   historie: "M12 7v5l3 2M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4",
+  filtr: "M4 5h16l-6 7v6l-4 2v-8z",
+  export: "M12 4v11M7 10l5 5 5-5M5 20h14",
+  upravit: "M4 20h4L19 9l-4-4L4 16zM14 6l4 4",
+  hotovo: "M5 12l5 5 9-10",
+  zamek: "M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z",
+  otevrit: "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6",
+  tisk: "M7 9V4h10v5M7 17H5v-7h14v7h-2M8 14h8v6H8z",
+  lupa_plus: "M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14zM20 20l-4-4M11 8v6M8 11h6",
 };
 
 export function ikona(jmeno, trida = "ikona") {
@@ -63,19 +71,82 @@ export function ikona(jmeno, trida = "ikona") {
   return svg;
 }
 
-// Krátké oznámení dole
+// Krátké oznámení dole (akce = {text, fn} – např. „Vrátit“)
 let _casovac = 0;
-export function oznam(text, chyba = false) {
+export function oznam(text, chyba = false, akce = null) {
   let el = document.getElementById("oznameni");
   if (!el) {
     el = h("div", { id: "oznameni", role: "status", "aria-live": "polite" });
     document.body.append(el);
   }
-  el.textContent = text;
+  vymen(el, h("span", { text }), akce ? h("button", { type: "button", class: "oznameni-akce", text: akce.text,
+    onclick: () => { el.className = ""; akce.fn(); } }) : null);
   el.className = chyba ? "videt chyba" : "videt";
   clearTimeout(_casovac);
-  _casovac = setTimeout(() => { el.className = ""; }, chyba ? 6000 : 3000);
+  _casovac = setTimeout(() => { el.className = ""; }, chyba || akce ? 7000 : 3000);
 }
+
+// Nabídka na místě (pravé tlačítko): polozky = [{text, akce, nebezpecne, zakazano} | "-" | {nadpis}]
+let _menu = null;
+export function zavriMenu() {
+  _menu?.remove();
+  _menu = null;
+}
+
+export function menu(x, y, polozky) {
+  zavriMenu();
+  const el = h("div", { class: "menu", role: "menu" }, polozky.filter(Boolean).map((p) => {
+    if (p === "-") return h("div", { class: "menu-cara", role: "separator" });
+    if (p.nadpis) return h("div", { class: "menu-nadpis", text: p.nadpis });
+    return h("button", { type: "button", role: "menuitem", class: p.nebezpecne ? "nebezpecne" : "", disabled: !!p.zakazano,
+      onclick: () => { zavriMenu(); p.akce?.(); } }, p.ikona ? ikona(p.ikona) : null, h("span", { text: p.text }));
+  }));
+  document.body.append(el);
+  const r = el.getBoundingClientRect();
+  el.style.left = `${Math.max(4, Math.min(x, window.innerWidth - r.width - 4))}px`;
+  el.style.top = `${Math.max(4, Math.min(y, window.innerHeight - r.height - 4))}px`;
+  _menu = el;
+  el.querySelector("button:not([disabled])")?.focus({ preventScroll: true });
+}
+
+// Rozbalovací panel u tlačítka (filtr…); vrátí funkci, která ho zavře
+let _popup = null;
+export function zavriPopup() {
+  _popup?.zavri();
+}
+
+export function popup(kotva, obsah, priZavreni = () => {}) {
+  zavriPopup();
+  const el = h("div", { class: "popup", role: "dialog" }, obsah);
+  document.body.append(el);
+  const umisti = () => {
+    const k = kotva.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    el.style.left = `${Math.max(8, Math.min(k.right - r.width, window.innerWidth - r.width - 8))}px`;
+    const dole = k.bottom + 6;
+    el.style.top = `${Math.max(8, dole + r.height > window.innerHeight - 8 ? window.innerHeight - r.height - 8 : dole)}px`;
+  };
+  umisti();
+  const venku = (ev) => { if (!el.contains(ev.target) && !kotva.contains(ev.target) && !ev.target.closest?.(".menu")) zavri(); };
+  const klavesa = (ev) => { if (ev.key === "Escape") zavri(); };
+  function zavri() {
+    el.remove();
+    document.removeEventListener("pointerdown", venku, true);
+    document.removeEventListener("keydown", klavesa);
+    window.removeEventListener("resize", umisti);
+    if (_popup?.el === el) _popup = null;
+    priZavreni();
+  }
+  setTimeout(() => document.addEventListener("pointerdown", venku, true), 0);
+  document.addEventListener("keydown", klavesa);
+  window.addEventListener("resize", umisti);
+  _popup = { el, zavri, umisti };
+  return _popup;
+}
+
+document.addEventListener("pointerdown", (ev) => { if (_menu && !_menu.contains(ev.target)) zavriMenu(); }, true);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") zavriMenu(); });
+window.addEventListener("blur", zavriMenu);
 
 // Okénko (dialog) – obsah = prvky, tlačítka = [{text, hlavni, akce}] (akce vrátí false = nezavírat)
 export function okno(nadpis, obsah, tlacitka = []) {
@@ -111,7 +182,9 @@ export function okno(nadpis, obsah, tlacitka = []) {
 }
 
 export function pole(popis, vstup, napoveda = "") {
-  return h("label", { class: "pole" }, h("span", { text: popis }), vstup, napoveda && h("small", { text: napoveda }));
+  // <label> jen kolem jednoho pole – kolem skupiny tlačítek by prohlížeč klik přeposlal na první z nich
+  const jednoPole = vstup instanceof HTMLInputElement || vstup instanceof HTMLSelectElement || vstup instanceof HTMLTextAreaElement;
+  return h(jednoPole ? "label" : "div", { class: "pole" }, h("span", { text: popis }), vstup, napoveda && h("small", { text: napoveda }));
 }
 
 export async function zkopiruj(text) {

@@ -3,10 +3,13 @@
 
 import { ChybaOblaku, Oblak } from "./oblak.js";
 import {
-  BARVA_REALIZACE, BARVY_TERMINU, C_DOVOLENA, DNY, Dovolene, MESICE, NEAKTIVNI, STATUS_BARVY, Tym, barvaTerminu, cislo, datumKratce, dnes, hodinyText, iso, jeHotovo, nazevProjektu, novyTermin,
-  noveId, podtitulProjektu, popisRozsahu, pridejDny, rozsah, svatkyDne, ted, zIso, zaznamTerminu, zaznamZmeny,
+  BARVA_REALIZACE, BARVY_TERMINU, C_DOVOLENA, Dovolene, NEAKTIVNI, Osobni, STATUS_BARVY, Tym, barvaTerminu, cislo,
+  datumKratce, dnes, hodinyText, iso, jeHotovo, nazevProjektu, novyTermin, noveId, podtitulProjektu, popisRozsahu,
+  rozsah, ted, zIso, zaznamTerminu, zaznamZmeny,
 } from "./data.js";
-import { h, ikona, okno, oznam, pole, vymen, zkopiruj } from "./ui.js";
+import { otevriExport } from "./export.js";
+import { Kalendar } from "./kalendar.js";
+import { h, ikona, okno, oznam, pole, vymen, zavriMenu, zavriPopup, zkopiruj } from "./ui.js";
 import { Posta, TYM, konverzaceS, protejsek } from "./zpravy.js";
 
 // Jen přes https (hesla, tokeny; šifrování v prohlížeči jinde ani nejde) – web ho sám nevynucuje.
@@ -24,6 +27,8 @@ if (window.top !== window.self) {
 const oblak = new Oblak();
 const tym = new Tym(oblak);
 let posta = null;
+let osobni = null;            // osobní nastavení (soukromé termíny, filtr a vzhled kalendáře) – jako v programu
+let posledniProjekt = "";
 let pohled = null;            // {klic, obnov}
 const koren = document.getElementById("aplikace");
 const kolator = new Intl.Collator("cs");
@@ -99,13 +104,16 @@ function ukazPrihlaseni(hlaska = "") {
 async function spust(clen) {
   vymen(koren, h("div", { class: "nacitani" }, logo("logo-nacitani"), h("p", { text: "Načítám data týmu…" })));
   tym.ja = { id: clen.id, role: clen.role, jmeno: "" };
-  await tym.nacti();
+  osobni = new Osobni(oblak, clen.id);
+  await Promise.all([tym.nacti(), osobni.nacti()]);
   tym.ja.jmeno = tym.jmeno(clen.id, "");
   posta = new Posta(oblak, clen.id);
   postavKostru();
   tym.sleduj((stav) => ukazSpojeni(stav));
   tym.pri(() => { tym.ja.jmeno = tym.jmeno(clen.id, tym.ja.jmeno); pohled?.obnov?.(); obnovOdznak(); });
   posta.pri(() => { obnovOdznak(); if (pohled?.klic === "zpravy") pohled.obnov?.(); });
+  let odklad = 0;
+  osobni.pri(() => { clearTimeout(odklad); odklad = setTimeout(() => pohled?.obnov?.(), 40); });
   posta.spust();
   window.addEventListener("hashchange", trasa);
   trasa();
@@ -168,13 +176,18 @@ function trasa() {
   const casti = window.location.hash.replace(/^#\/?/, "").split("/").map((c) => {
     try { return decodeURIComponent(c); } catch { return ""; }
   });
-  const [klic, parametr] = casti;
+  const [klic, parametr, dalsi] = casti;
   const obsah = document.getElementById("obsah");
   if (!obsah) return;
   const pohledy = { projekty: pohledProjekty, projekt: pohledProjekt, kalendar: pohledKalendar,
     dovolena: pohledDovolena, zpravy: pohledZpravy };
   const tvorba = pohledy[klic] || pohledProjekty;
-  pohled = tvorba(parametr || "") || null;
+  pohled?.zrus?.();
+  // okénka, nabídky a panely patří ke stránce, ze které se odchází
+  for (const d of document.querySelectorAll("dialog.okno")) { d.close(); d.remove(); }
+  zavriMenu();
+  zavriPopup();
+  pohled = tvorba(parametr || "", dalsi || "") || null;
   if (pohled) pohled.klic = pohledy[klic] ? klic : "projekty";
   for (const a of document.querySelectorAll(".nav-odkaz")) {
     const vybrany = a.dataset.klic === (pohled?.klic === "projekt" ? "projekty" : pohled?.klic);
@@ -258,14 +271,44 @@ function segment(volby, vybrana, zmena) {
 
 // --- detail projektu ---------------------------------------------------------------------------
 
-function pohledProjekt(id) {
+// Projekt má stejné tři záložky jako v programu: Přehled | Soubory | Harmonogram
+const ZALOZKY = [["prehled", "Přehled"], ["soubory", "Soubory"], ["harmonogram", "Harmonogram"]];
+
+function pohledProjekt(id, zalozka = "prehled") {
+  if (!ZALOZKY.some(([k]) => k === zalozka)) zalozka = "prehled";
+  posledniProjekt = id;
   const zahlavi = h("div");
+  const zalozky = h("nav", { class: "zalozky", "aria-label": "Záložky projektu" }, ZALOZKY.map(([k, t]) => h("a", {
+    href: `#/projekt/${encodeURIComponent(id)}/${k}`, class: k === zalozka ? "vybrana" : "", "aria-current": k === zalozka ? "page" : null, text: t })));
+  const obnovZahlavi = () => {
+    const p = tym.projekt(id);
+    if (!p) { vymen(zahlavi, h("p", { text: "Projekt nebyl nalezen (možná byl smazán)." })); return false; }
+    vymen(zahlavi, h("div", { class: "zahlavi-projektu" },
+      h("a", { href: "#/projekty", class: "zpet" }, ikona("zpet"), "Projekty"),
+      h("div", { class: "nadpis-projektu" }, h("h1", { text: nazevProjektu(p) }),
+        p.status ? h("span", { class: "stitek-stavu", style: { "--barva": STATUS_BARVY[p.status] || "#667085" }, text: p.status }) : null),
+      h("p", { class: "tiche", text: podtitulProjektu(p) })));
+    return true;
+  };
+  obnovZahlavi();
+  let telo;
+  if (zalozka === "harmonogram") {
+    const kal = new Kalendar({ tym, osobni, projektId: id, naProjekt: () => {},
+      naExport: ({ obdobi }) => otevriExport({ tym, osobni, projektId: id, obdobi }) });
+    return { el: h("section", { class: "pohled projekt-detail kal-pohled" }, zahlavi, zalozky, kal.el),
+      obnov: () => { if (obnovZahlavi()) kal.obnov(); }, zrus: () => kal.zrus() };
+  }
+  telo = zalozka === "soubory" ? zalozkaSoubory(id) : zalozkaPrehled(id);
+  return { el: h("section", { class: "pohled projekt-detail" }, zahlavi, zalozky, telo.el),
+    obnov: () => { if (obnovZahlavi()) telo.obnov(); } };
+}
+
+function zalozkaPrehled(id) {
   const ukoly = h("div", { class: "seznam" });
   const terminy = h("div", { class: "seznam" });
   const poznamky = h("div", { class: "seznam" });
-  const odkazy = h("div", { class: "seznam" });
   const historie = h("div", { class: "seznam" });
-  let ukazHotove = false, ukazProbehle = false, poznamekVidet = 5;
+  let ukazHotove = false, poznamekVidet = 5;
 
   const novyUkol = h("input", { placeholder: "Nový úkol…", "aria-label": "Nový úkol", maxlength: 500 });
   const formUkolu = h("form", { class: "radek-formulare", onsubmit: async (ev) => {
@@ -297,18 +340,7 @@ function pohledProjekt(id) {
 
   function obnov() {
     const p = tym.projekt(id);
-    if (!p) {
-      vymen(zahlavi, h("p", { text: "Projekt nebyl nalezen (možná byl smazán)." }));
-      for (const el of [ukoly, terminy, poznamky, odkazy, historie]) el.replaceChildren();
-      return;
-    }
-    vymen(zahlavi, h("div", { class: "zahlavi-projektu" },
-      h("a", { href: "#/projekty", class: "zpet" }, ikona("zpet"), "Projekty"),
-      h("h1", { text: nazevProjektu(p) }),
-      h("p", { class: "tiche", text: podtitulProjektu(p) }),
-      p.status ? h("span", { class: "stitek-stavu", style: { "--barva": STATUS_BARVY[p.status] || "#667085" }, text: p.status }) : null));
-
-    // úkoly
+    if (!p) return;
     const vsechny = (Array.isArray(p.ukoly) ? p.ukoly : []).filter((u) => u && u.id);
     const hotove = vsechny.filter((u) => u.hotovo);
     vymen(ukoly, vsechny.filter((u) => !u.hotovo).map((u) => radekUkolu(id, u)),
@@ -317,19 +349,14 @@ function pohledProjekt(id) {
         onclick: () => { ukazHotove = !ukazHotove; obnov(); } }) : null,
       ukazHotove ? hotove.map((u) => radekUkolu(id, u)) : null);
 
-    // termíny
+    // nejbližší termíny (celý harmonogram je na záložce Harmonogram)
     const dnesek = zIso(dnes());
-    const vse = (Array.isArray(p.harmonogram) ? p.harmonogram : []).filter((t) => t && rozsah(t))
+    const budouci = (Array.isArray(p.harmonogram) ? p.harmonogram : []).filter((t) => t && rozsah(t) && rozsah(t)[1] >= dnesek)
       .sort((a, b) => rozsah(a)[0] - rozsah(b)[0]);
-    const budouci = vse.filter((t) => rozsah(t)[1] >= dnesek);
-    const probehle = vse.filter((t) => rozsah(t)[1] < dnesek).reverse();
-    vymen(terminy, budouci.map((t) => radekTerminu(t, () => detailTerminu(id, t.id))),
+    vymen(terminy, budouci.slice(0, 8).map((t) => radekTerminu(t, () => detailTerminu(id, t.id))),
       !budouci.length ? h("p", { class: "tiche", text: "Žádné nadcházející termíny." }) : null,
-      probehle.length ? h("button", { type: "button", class: "odkaz", text: `${ukazProbehle ? "Skrýt" : "Zobrazit"} proběhlé (${probehle.length})`,
-        onclick: () => { ukazProbehle = !ukazProbehle; obnov(); } }) : null,
-      ukazProbehle ? probehle.map((t) => radekTerminu(t, () => detailTerminu(id, t.id))) : null);
+      h("a", { class: "odkaz", href: `#/projekt/${encodeURIComponent(id)}/harmonogram`, text: "Celý harmonogram ›" }));
 
-    // poznámky (nejnovější nahoře)
     const pozn = (Array.isArray(p.poznamky) ? p.poznamky : []).filter((x) => x && x.text)
       .sort((a, b) => String(b.cas || "").localeCompare(String(a.cas || "")));
     vymen(poznamky, pozn.slice(0, poznamekVidet).map((x) => h("article", { class: "poznamka" },
@@ -339,33 +366,62 @@ function pohledProjekt(id) {
     pozn.length > poznamekVidet ? h("button", { type: "button", class: "odkaz", text: `Zobrazit další (${pozn.length - poznamekVidet})`,
       onclick: () => { poznamekVidet += 20; obnov(); } }) : null);
 
-    // složky a soubory projektu (jen cesty – soubory jsou v počítačích)
-    const ods = (Array.isArray(p.odkazy) ? p.odkazy : []).filter((o) => o && o.cesta);
-    vymen(odkazy, ods.map((o) => h("div", { class: "radek odkaz-slozky" },
-      ikona(/\.[a-z0-9]{1,5}$/i.test(o.cesta) ? "soubor" : "slozka"),
-      h("div", { class: "radek-text" }, h("strong", { text: o.popis || o.cesta.split(/[\\/]/).filter(Boolean).pop() || o.cesta }),
-        h("small", { class: "tiche cesta", text: o.cesta })),
-      h("button", { type: "button", class: "ikonove", title: "Kopírovat cestu", "aria-label": "Kopírovat cestu",
-        onclick: () => zkopiruj(o.cesta) }, ikona("kopirovat")))),
-    !ods.length ? h("p", { class: "tiche", text: "Projekt nemá žádné složky." }) : null);
-
-    const hist = (Array.isArray(p.historie) ? p.historie : []).filter((x) => x && x.text).slice(-30).reverse();
+    const hist = (Array.isArray(p.historie) ? p.historie : []).filter((x) => x && x.text).slice(-40).reverse();
     vymen(historie, hist.map((x) => h("div", { class: "radek-historie" },
       h("small", { class: "tiche", text: [casText(x.cas), x.kdo].filter(Boolean).join(" · ") }), h("span", { text: x.text }))),
     !hist.length ? h("p", { class: "tiche", text: "Zatím nic." }) : null);
   }
 
   obnov();
-  const el = h("section", { class: "pohled projekt-detail" }, zahlavi,
-    h("div", { class: "mrizka-projektu" },
-      h("div", { class: "sloupec" },
-        karta("Úkoly", null, formUkolu, ukoly),
-        karta("Poznámky", null, formPoznamky, poznamky)),
-      h("div", { class: "sloupec" },
-        karta("Termíny", h("button", { type: "button", class: "tlacitko male", onclick: () => dialogTerminu(id) }, ikona("plus"), "Termín"), terminy),
-        karta("Složky a soubory", null, odkazy, h("p", { class: "tiche male", text: "Soubory otevřeš v programu na počítači – tady můžeš zkopírovat cestu." })),
-        h("details", { class: "karta" }, h("summary", { text: "Historie projektu" }), historie))));
-  return { el, obnov };
+  return { el: h("div", { class: "mrizka-projektu" },
+    h("div", { class: "sloupec" },
+      karta("Úkoly", null, formUkolu, ukoly),
+      karta("Poznámky", null, formPoznamky, poznamky)),
+    h("div", { class: "sloupec" },
+      karta("Nejbližší termíny", h("button", { type: "button", class: "tlacitko male", onclick: () => dialogTerminu(id) }, ikona("plus"), "Termín"), terminy),
+      h("details", { class: "karta" }, h("summary", { text: "Historie projektu" }), historie))), obnov };
+}
+
+// --- soubory: odkazy, které otevře program na počítači (v práci nebo přes VPN) -----------------------
+
+const PROTOKOL = "ild-soubor";
+
+function otevriVPocitaci(cesta, projekt = "") {
+  const url = `${PROTOKOL}:otevrit?cesta=${encodeURIComponent(cesta)}${projekt ? `&projekt=${encodeURIComponent(projekt)}` : ""}`;
+  const a = h("a", { href: url, hidden: true });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  oznam("Otevírám v počítači – přes program Správce projektů (v síti firmy nebo přes VPN)");
+}
+
+const jeTelefon = () => window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches;
+
+function zalozkaSoubory(id) {
+  const seznam = h("div", { class: "seznam soubory" });
+  function obnov() {
+    const p = tym.projekt(id);
+    if (!p) return;
+    const ods = (Array.isArray(p.odkazy) ? p.odkazy : []).filter((o) => o && o.cesta);
+    vymen(seznam, ods.map((o) => {
+      const soubor = /\.[a-z0-9]{1,5}$/i.test(o.cesta);
+      const nazev = o.popis || o.cesta.split(/[\\/]/).filter(Boolean).pop() || o.cesta;
+      return h("div", { class: "radek odkaz-slozky" },
+        h("button", { type: "button", class: "radek-hlavni", title: `${o.cesta}\nOtevřít v počítači`, onclick: () => otevriVPocitaci(o.cesta, id) },
+          ikona(soubor ? "soubor" : "slozka"),
+          h("div", { class: "radek-text" }, h("strong", { text: nazev }), h("small", { class: "tiche cesta", text: o.cesta }))),
+        h("button", { type: "button", class: "ikonove", title: "Otevřít v počítači", "aria-label": `Otevřít ${nazev} v počítači`,
+          onclick: () => otevriVPocitaci(o.cesta, id) }, ikona("otevrit")),
+        h("button", { type: "button", class: "ikonove", title: "Kopírovat cestu", "aria-label": "Kopírovat cestu",
+          onclick: () => zkopiruj(o.cesta) }, ikona("kopirovat")));
+    }), !ods.length ? h("p", { class: "tiche", text: "Projekt nemá žádné složky ani soubory." }) : null);
+  }
+  obnov();
+  return { el: h("div", {}, karta("Složky a soubory projektu", null,
+    h("p", { class: "tiche male napoveda-souboru", text: jeTelefon()
+      ? "Na telefonu jde jen zkopírovat cestu – otevřít se dají na počítači s programem Správce projektů."
+      : "Klik otevře složku nebo soubor na tomto počítači – přes program Správce projektů, v síti firmy nebo přes VPN. Prohlížeč se poprvé zeptá, jestli program smí otevřít." }),
+    seznam)), obnov };
 }
 
 function karta(nadpis, akce, ...obsah) {
@@ -470,85 +526,12 @@ function dialogTerminu(pid) {
 
 // --- kalendář ----------------------------------------------------------------------------------
 
-let nastaveniKalendare = { neaktivni: false, dovolene: true };
-
-function polozkyKalendare() {
-  const vysledek = [];
-  for (const p of tym.projekty) {
-    if (!nastaveniKalendare.neaktivni && NEAKTIVNI.has(p.status)) continue;
-    for (const t of Array.isArray(p.harmonogram) ? p.harmonogram : []) {
-      const rz = rozsah(t);
-      if (rz) vysledek.push({ rz, nazev: t.nazev || tym.nazevDruhu(t), barva: barvaTerminu(t), kde: nazevProjektu(p),
-        hotovo: jeHotovo(t), klik: () => detailTerminu(p.id, t.id) });
-    }
-  }
-  for (const t of tym.hodnota("terminy_bez_projektu") || []) {
-    const rz = rozsah(t);
-    if (rz) vysledek.push({ rz, nazev: t.nazev || tym.nazevDruhu(t), barva: barvaTerminu(t), kde: "Bez projektu", hotovo: jeHotovo(t) });
-  }
-  if (nastaveniKalendare.dovolene) {
-    for (const t of tym.hodnota("dovolene") || []) {
-      const rz = rozsah(t);
-      if (rz) vysledek.push({ rz, nazev: `Dovolená – ${tym.jmeno(t.uzivatel, "nevím kdo")}`, barva: C_DOVOLENA, kde: "Dovolené",
-        hotovo: false, dovolena: true });
-    }
-  }
-  return vysledek;
-}
-
-function pohledKalendar(parametr) {
-  const m = /^(\d{4})-(\d{2})$/.exec(parametr);
-  const dnesek = zIso(dnes());
-  const mesic = m ? new Date(+m[1], +m[2] - 1, 1) : new Date(dnesek.getFullYear(), dnesek.getMonth(), 1);
-  let vybrany = m ? (dnesek.getMonth() === mesic.getMonth() && dnesek.getFullYear() === mesic.getFullYear() ? dnesek : mesic) : dnesek;
-  const klicMesice = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  const predchozi = new Date(mesic.getFullYear(), mesic.getMonth() - 1, 1);
-  const dalsi = new Date(mesic.getFullYear(), mesic.getMonth() + 1, 1);
-  const mrizka = h("div", { class: "mesic", role: "grid" });
-  const den = h("div", { class: "den-detail" });
-  const volby = h("div", { class: "volby-kalendare" },
-    zaskrtavatko("I realizované a mrtvé projekty", nastaveniKalendare.neaktivni, (v) => { nastaveniKalendare.neaktivni = v; obnov(); }),
-    zaskrtavatko("Dovolené", nastaveniKalendare.dovolene, (v) => { nastaveniKalendare.dovolene = v; obnov(); }));
-
-  function obnov() {
-    const polozky = polozkyKalendare();
-    const prvni = pridejDny(mesic, -((mesic.getDay() + 6) % 7));
-    const bunky = [...DNY.map((d) => h("div", { class: "nazev-dne", text: d }))];
-    for (let i = 0; i < 42; i++) {
-      const d = pridejDny(prvni, i);
-      if (i >= 35 && d.getMonth() !== mesic.getMonth()) break;
-      const dne = polozky.filter((x) => x.rz[0] <= d && x.rz[1] >= d);
-      const svatky = svatkyDne(d, ["cz", "sk"]);
-      const tyden = (d.getDay() + 6) % 7;
-      const tridy = ["bunka", d.getMonth() !== mesic.getMonth() ? "mimo" : "", tyden >= 5 ? "vikend" : "",
-        svatky.length ? "svatek" : "", iso(d) === iso(dnesek) ? "dnes" : "", iso(d) === iso(vybrany) ? "vybrany" : ""].filter(Boolean).join(" ");
-      bunky.push(h("button", { type: "button", class: tridy, title: svatky.map(([s, n]) => `${n}${s === "sk" ? " (SK)" : ""}`).join(" · ") || null,
-        onclick: () => { vybrany = d; obnov(); } },
-      h("span", { class: "cislo-dne", text: d.getDate() }),
-      h("span", { class: "pruhy" }, dne.slice(0, 3).map((x) => h("span", { class: `pruh${x.hotovo ? " hotovo" : ""}`,
-        style: { "--barva": x.barva }, text: x.nazev })), dne.length > 3 ? h("span", { class: "vic", text: `+${dne.length - 3}` }) : null),
-      h("span", { class: "tecky" }, dne.slice(0, 4).map((x) => h("i", { class: "tecka", style: { background: x.barva } })))));
-    }
-    vymen(mrizka, bunky);
-    const dne = polozky.filter((x) => x.rz[0] <= vybrany && x.rz[1] >= vybrany).sort((a, b) => kolator.compare(a.kde, b.kde));
-    const svatky = svatkyDne(vybrany, ["cz", "sk"]);
-    vymen(den, h("h2", { text: `${DNY[(vybrany.getDay() + 6) % 7]} ${datumKratce(vybrany, true)}` }),
-      svatky.map(([s, n]) => h("p", { class: "svatek-text", text: `${n}${s === "sk" ? " (SK)" : ""}` })),
-      dne.map((x) => h("button", { type: "button", class: `radek termin${x.hotovo ? " hotovo" : ""}`, onclick: x.klik || null, disabled: !x.klik },
-        h("i", { class: "tecka", style: { background: x.barva } }),
-        h("div", { class: "radek-text" }, h("strong", { text: x.nazev }),
-          h("small", { class: "tiche", text: [popisRozsahu(x.rz[0], x.rz[1]), x.kde].join(" · ") })))),
-      !dne.length && !svatky.length ? h("p", { class: "tiche", text: "Nic naplánováno." }) : null);
-  }
-
-  obnov();
-  const navigace = h("div", { class: "navigace-mesice" },
-    h("a", { class: "ikonove", href: `#/kalendar/${klicMesice(predchozi)}`, "aria-label": "Předchozí měsíc" }, ikona("zpet")),
-    h("a", { class: "tlacitko male", href: `#/kalendar/${klicMesice(dnesek)}`, text: "Dnes" }),
-    h("a", { class: "ikonove", href: `#/kalendar/${klicMesice(dalsi)}`, "aria-label": "Další měsíc" }, ikona("vpred")));
-  return { el: h("section", { class: "pohled" },
-    hlavicka(`${MESICE[mesic.getMonth()][0].toUpperCase()}${MESICE[mesic.getMonth()].slice(1)} ${mesic.getFullYear()}`, navigace),
-    volby, h("div", { class: "kalendar-rozlozeni" }, h("div", { class: "karta mesic-karta" }, mrizka), h("div", { class: "karta" }, den))), obnov };
+function pohledKalendar() {
+  const kal = new Kalendar({ tym, osobni,
+    naProjekt: (pid) => { window.location.hash = `#/projekt/${encodeURIComponent(pid)}/prehled`; },
+    naExport: ({ obdobi, kalendar }) => otevriExport({ tym, osobni, kalendar, obdobi }),
+    posledniProjekt: () => posledniProjekt });
+  return { el: h("section", { class: "pohled kal-pohled" }, kal.el), obnov: () => kal.obnov(), zrus: () => kal.zrus() };
 }
 
 function zaskrtavatko(text, hodnota, zmena) {
@@ -721,8 +704,10 @@ function pohledZpravy(parametr) {
       prvky.push(h("div", { class: `bublina${moje ? " moje" : ""}${z.chyba ? " chyba" : ""}` },
         !moje && vybrana === TYM ? h("small", { class: "odesilatel", text: tym.jmeno(z.od, "Kolega") }) : null,
         h("p", { text: z.text }),
-        (z.odkazy || []).map((o) => h("button", { type: "button", class: "odkaz-zpravy", title: `${o.cesta}\n(klik = kopírovat cestu)`,
-          onclick: () => zkopiruj(o.cesta) }, ikona(o.slozka ? "slozka" : "soubor"), h("span", { text: o.nazev }))),
+        (z.odkazy || []).map((o) => h("div", { class: "odkaz-zpravy" },
+          h("button", { type: "button", class: "odkaz-otevrit", title: `${o.cesta}\nOtevřít v počítači`, onclick: () => otevriVPocitaci(o.cesta, o.projekt) },
+            ikona(o.slozka ? "slozka" : "soubor"), h("span", { text: o.nazev })),
+          h("button", { type: "button", class: "ikonove male", title: "Kopírovat cestu", "aria-label": "Kopírovat cestu", onclick: () => zkopiruj(o.cesta) }, ikona("kopirovat")))),
         h("small", { class: "cas-zpravy", text: z.chyba ? "neodesláno" : z.ceka ? "odesílá se…" :
           `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` })));
     }
@@ -744,7 +729,10 @@ function pohledZpravy(parametr) {
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && pohled?.klic === "zpravy") pohled.obnov?.();
+  if (document.visibilityState !== "visible") return;
+  if (pohled?.klic === "zpravy") pohled.obnov?.();
+  // osobní nastavení mohlo změnit jiné zařízení (program na počítači)
+  osobni?.nacti().then(() => pohled?.obnov?.()).catch(() => {});
 });
 
 // --- start ------------------------------------------------------------------------------------
