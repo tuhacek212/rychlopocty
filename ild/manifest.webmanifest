@@ -1,0 +1,13 @@
+{
+  "name": "Správce projektů ILD",
+  "short_name": "ILD",
+  "lang": "cs",
+  "start_url": "./#/projekty",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#195C00",
+  "icons": [
+    { "src": "ikona.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}
