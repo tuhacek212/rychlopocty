@@ -26,8 +26,10 @@ function zprava(id, h) {
   if (!h || typeof h.text !== "string" || typeof h.cas !== "number") return null;
   const z = { id, od: String(h.od || ""), text: h.text, cas: h.cas };
   if (Array.isArray(h.odkazy)) {
-    z.odkazy = h.odkazy.filter((o) => o && typeof o.cesta === "string" && o.cesta)
-      .slice(0, 20).map((o) => ({ cesta: o.cesta, nazev: String(o.nazev || o.cesta), slozka: !!o.slozka, projekt: String(o.projekt || "") }));
+    // typ "projekt" = odkaz na celý projekt (cesta = jeho hlavní složka, může chybět)
+    z.odkazy = h.odkazy.filter((o) => o && ((o.typ === "projekt" && o.projekt) || (typeof o.cesta === "string" && o.cesta)))
+      .slice(0, 20).map((o) => ({ cesta: typeof o.cesta === "string" ? o.cesta : "", nazev: String(o.nazev || o.cesta || "Projekt"),
+        slozka: !!o.slozka, projekt: String(o.projekt || ""), typ: o.typ === "projekt" ? "projekt" : "" }));
   }
   return z;
 }
@@ -112,13 +114,19 @@ export class Posta {
     try { await this.oblak.zapis(`prectene/${this.ja}`, { [k]: cas }); } catch { /* příště */ }
   }
 
-  async posli(k, text) {
-    text = String(text || "").trim().slice(0, MAX_DELKA);
+  // odkazy = soubory / složky / celý projekt ({cesta, nazev, slozka, projekt, typ}) – zpráva je i bez vzkazu
+  async posli(k, text, odkazy = null) {
+    odkazy = (zprava("x", { text: "x", cas: 0, odkazy: odkazy || [] })?.odkazy || []).map((o) => {
+      const c = { cesta: o.cesta, nazev: o.nazev, slozka: o.slozka, projekt: o.projekt };
+      if (o.typ) c.typ = o.typ;
+      return c;
+    });
+    text = String(text || "").trim().slice(0, MAX_DELKA) || (odkazy.length ? `📎 ${odkazy.map((o) => o.nazev).join(", ")}` : "");
     if (!text) return;
     const id = noveId();
     const zz = this.zpravy.get(k) || new Map();
     this.zpravy.set(k, zz);
-    zz.set(id, { id, od: this.ja, text, cas: Date.now(), ceka: true });
+    zz.set(id, { id, od: this.ja, text, cas: Date.now(), ceka: true, ...(odkazy.length ? { odkazy } : {}) });
     this._oznam();
     let prijemci;
     if (k === TYM) {
@@ -128,7 +136,7 @@ export class Posta {
       prijemci = new Set(k.split("~"));
     }
     prijemci.add(this.ja);
-    const telo = { [`zpravy/${k}/${id}`]: { od: this.ja, text, cas: CAS_SERVERU } };
+    const telo = { [`zpravy/${k}/${id}`]: { od: this.ja, text, cas: CAS_SERVERU, ...(odkazy.length ? { odkazy } : {}) } };
     const meta = { cas: CAS_SERVERU, od: this.ja, id, text: text.slice(0, 140) };
     for (const p of prijemci) telo[`schranka/${p}/${k}`] = meta;
     try {

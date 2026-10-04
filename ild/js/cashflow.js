@@ -5,7 +5,7 @@
 import { datumKratce, dnes, iso, nazevProjektu, pridejDny, rozsah, zIso, popisRozsahu } from "./data.js";
 import * as F from "./finance.js";
 import { rozmery, segment, strana, tiskni } from "./export.js";
-import { h, ikona, menu, okno, oznam, pole, vymen } from "./ui.js";
+import { h, ikona, menu, okno, oznam, pole, titulekOkna, vymen } from "./ui.js";
 import { stahni, vytvorXlsx } from "./xlsx.js";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -90,7 +90,8 @@ export function graf(mesice, mena, { sirka = 860, vyska = 230, tisk = false } = 
 // --- pohled Cashflow (Harmonogram → Cashflow) ------------------------------------------------------
 
 export class Cashflow {
-  constructor({ tym, projektId, naKalendar = () => {} }) {
+  // vlevo = přepínač Termíny | Cashflow na začátku lišty (jako v programu)
+  constructor({ tym, projektId, naKalendar = () => {}, vlevo = null }) {
     this.tym = tym;
     this.pid = projektId;
     this.naKalendar = naKalendar;
@@ -101,16 +102,17 @@ export class Cashflow {
     this.pocet = h("span", { class: "tiche male" });
     this.seznam = h("div", { class: "tabulka-obal" });
     const seg = segment([["vse", "Vše"], [F.VYDANA, "Vydané"], [F.PRIJATA, "Přijaté"]], "vse", (v) => { this.filtr = v; this.obnov(); });
-    this.el = h("div", { class: "cashflow" },
-      h("div", { class: "cf-lista" },
-        h("div", { class: "mezera" }),
-        h("button", { type: "button", class: "tlacitko male", onclick: () => otevriReport({ tym, projektId }) }, ikona("export"), "Report pro vedení")),
+    this.lista = h("div", { class: "kal-lista" }, vlevo, h("div", { class: "mezera" }),
+      h("button", { type: "button", class: "ikonove", title: "Report cashflow – PDF, Excel, tisk", onclick: () => otevriReport({ tym, projektId }) },
+        ikona("print"), h("span", { text: "Export" })));
+    this.telo = h("div", { class: "cashflow" },
       this.dlazdice, this.grafObal,
       h("section", { class: "karta" },
         h("div", { class: "karta-hlavicka cf-hlavicka" }, h("h2", { text: "Faktury" }), seg, this.pocet, h("div", { class: "mezera" }),
           h("button", { type: "button", class: "tlacitko male", onclick: () => dialogFaktury(tym, projektId, null, { typ: F.VYDANA }) }, ikona("plus"), "Vydaná faktura"),
           h("button", { type: "button", class: "tlacitko male", onclick: () => dialogFaktury(tym, projektId, null, { typ: F.PRIJATA }) }, ikona("plus"), "Přijatá faktura")),
         this.seznam));
+    this.el = h("div", { class: "kal" }, this.lista, this.telo);
     this.obnov();
   }
 
@@ -340,7 +342,7 @@ export function dialogFaktury(tym, pid, fid = null, { typ = F.VYDANA, datum = nu
     datumIn.disabled = !!pt;
     podleTerminu.textContent = pt ? "den, kdy termín končí – posouvá se s ním" : "";
     dniText.textContent = `${dni} ${dni === 1 ? "den" : dni >= 2 && dni <= 4 ? "dny" : "dní"} od data faktury`;
-    okenko.dialog.querySelector(".okno-hlavicka h2").textContent = nova ? (prijem ? "Nová vydaná faktura" : "Nová přijatá faktura") : "Upravit fakturu";
+    okenko.nadpis(nova ? (prijem ? "Nová vydaná faktura" : "Nová přijatá faktura") : "Upravit fakturu");
     obnovNapovedu();
   }
   castka.addEventListener("input", obnovNapovedu);
@@ -448,8 +450,9 @@ export function otevriReport({ tym, projektId = "" }) {
   const popisV = h("p", { class: "tiche male" });
   const nahled = h("div", { class: "nahled-stran" });
   const pocet = h("span", { class: "tiche male" });
-  const dialog = h("dialog", { class: "okno export" }, h("div", { class: "export-rozlozeni" },
-    h("div", { class: "export-formular" }, h("h2", { text: "Cashflow – report pro vedení" }),
+  const dialog = h("dialog", { class: "okno export" });
+  dialog.append(titulekOkna(dialog, "Cashflow", () => zavri()), h("div", { class: "export-rozlozeni" },
+    h("div", { class: "export-formular" }, h("h2", { text: "Cashflow" }),
       pole("Co", co), pole("Období grafu a měsíců", obd), h("p", { class: "tiche male", text: "Souhrn a faktury jsou vždy k dnešku. Částky bez DPH." }),
       pole("Orientace", orientace), h("div", { class: "pole" }, h("span", { text: "Barvy" }), barvySeg),
       h("div", { class: "mezera" }), popisV, h("div", { class: "pole" }, h("span", { text: "Výstup" }), formatSeg),

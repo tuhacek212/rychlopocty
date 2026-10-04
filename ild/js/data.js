@@ -50,6 +50,28 @@ export function rozsah(pol) {
   return [z, k];
 }
 
+// data.prekryv_dovolene: dovolená téhož člověka, která zasahuje do z–k (krome = id upravované), jinak null.
+// Dvě dovolené přes sebe nedávají smysl – zakládání, úpravy, tažení ani přesun je nedovolí.
+export function prekryvDovolene(seznam, kdo, z, k, krome = "") {
+  return (seznam || []).find((pol) => {
+    if ((krome && pol.id === krome) || (pol.uzivatel || "") !== (kdo || "")) return false;
+    const r = rozsah(pol);
+    return r && r[0] <= k && r[1] >= z;
+  }) || null;
+}
+
+// data.text_prekryvu
+export function textPrekryvu(pol) {
+  const r = rozsah(pol);
+  return "V tu dobu už je dovolená" + (r ? ` ${popisRozsahu(...r)}` : "");
+}
+
+// výjimka, když by se dovolená kryla s jinou dovolenou téhož člověka
+export function hlidejPrekryvDovolene(seznam, kdo, z, k, krome = "") {
+  const jina = prekryvDovolene(seznam, kdo, z, k, krome);
+  if (jina) throw new Error(textPrekryvu(jina));
+}
+
 export const noveId = () => [...crypto.getRandomValues(new Uint8Array(16))]
   .map((b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -541,8 +563,15 @@ export class Osobni {
 
   vzhled() {
     const v = this.hodnota.vzhled_kalendare && typeof this.hodnota.vzhled_kalendare === "object" ? this.hodnota.vzhled_kalendare : {};
-    const vysledek = { pruhy: "plne", tydny: true, vikendy: true, svatky: true, svatky_sk: true, probehle: false };
+    // konstanty.normalizuj_vzhled_kalendare
+    const vysledek = { pruhy: "plne", kontrast: "bezny", pismo: 100, vyska: 100, tydny: true, vikendy: true, svatky: true,
+      svatky_sk: true, probehle: false, sytost: 100, vikendy_sila: 40 };
     if (["plne", "svetle", "obrys"].includes(v.pruhy)) vysledek.pruhy = v.pruhy;
+    if (["jemny", "bezny", "vyrazny"].includes(v.kontrast)) vysledek.kontrast = v.kontrast;
+    for (const [k, dolni, horni] of [["pismo", 80, 150], ["vyska", 80, 160], ["sytost", 30, 140], ["vikendy_sila", 0, 100]]) {
+      const x = parseInt(v[k], 10);
+      if (Number.isFinite(x)) vysledek[k] = Math.max(dolni, Math.min(horni, x));
+    }
     for (const k of ["tydny", "vikendy", "svatky", "svatky_sk", "probehle"]) if (k in v) vysledek[k] = !!v[k];
     return vysledek;
   }

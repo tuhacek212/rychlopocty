@@ -5,7 +5,8 @@
 
 import {
   BARVA_REALIZACE, BARVY_TERMINU, BEZ_PROJEKTU, C_DOVOLENA, C_POZNAMKA, DNY, DOVOLENE, MESICE, NEAKTIVNI,
-  OSTATNI_V_KALENDARI, POZNAMKY, SOUKROME, Dovolene, barvaTerminu, cislo, datumKratce, dnes, hodinDovoleneDenne,
+  OSTATNI_V_KALENDARI, POZNAMKY, SOUKROME, Dovolene, barvaTerminu, cislo, datumKratce, dnes, hlidejPrekryvDovolene,
+  hodinDovoleneDenne,
   hodinyText, iso, jeHotovo, najdiDatumy, nastavRozsah, nazevProjektu, novyTermin, popisRozsahu,
   pridejDny, rozsah, svatkyDne, upravZdroj, zIso, zaznamTerminu,
 } from "./data.js";
@@ -16,21 +17,69 @@ const DRUHY_ZDROJU = { [SOUKROME]: "soukrome", [DOVOLENE]: "dovolene", [BEZ_PROJ
 const kolator = new Intl.Collator("cs");
 const velke = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
-// rozměry podle přiblížení (0 … 4, plynule – jako KalendarHarmonogramu._parametry_zoomu)
-const UROVNE = [
-  { mesic: 210, pruh: 13, pismo: 10, cislo: 16, drah: 2, minDrah: 1 },
-  { mesic: 280, pruh: 15, pismo: 11, cislo: 18, drah: 3, minDrah: 1 },
-  { mesic: 360, pruh: 17, pismo: 11.5, cislo: 20, drah: 4, minDrah: 2 },
-  { mesic: 500, pruh: 19, pismo: 12, cislo: 22, drah: 6, minDrah: 2 },
-  { mesic: 820, pruh: 22, pismo: 13, cislo: 24, drah: 9, minDrah: 3 },
+// Rozměry podle přiblížení (0 … 4, plynule) – mrizka.KalendarHarmonogramu.ZOOMY a _nastav_rozmery:
+// menší buňky = víc měsíců vedle sebe, větší = víc termínů v jednom dni. Buňka má pevnou výšku,
+// co se nevejde do drah, ukáže „+N“.
+const ZOOMY = [
+  { sirka: 150, sloupce: 4, bunka: 36, nadpis: 30, dny: 20, horni: 19, pruh: 6, drahy: 2, cislo: 11, tyden: 18 },
+  { sirka: 230, sloupce: 3, bunka: 58, nadpis: 36, dny: 22, horni: 23, pruh: 10, drahy: 2, cislo: 12, tyden: 22 },
+  { sirka: 330, sloupce: 2, bunka: 86, nadpis: 46, dny: 26, horni: 27, pruh: 16, drahy: 3, cislo: 13, tyden: 26 },
+  { sirka: 460, sloupce: 2, bunka: 136, nadpis: 46, dny: 26, horni: 28, pruh: 18, drahy: 5, cislo: 13, tyden: 28 },
+  { sirka: 680, sloupce: 1, bunka: 190, nadpis: 50, dny: 28, horni: 30, pruh: 19, drahy: 7, cislo: 14, tyden: 30 },
 ];
+const OKRAJ_X = 22, OKRAJ_Y = 10, MEZERA_Y = 14;
 
-function parametry(zoom) {
-  const z = Math.max(0, Math.min(4, zoom));
-  const a = UROVNE[Math.floor(z)], b = UROVNE[Math.min(4, Math.floor(z) + 1)], t = z - Math.floor(z);
-  const mix = (k) => a[k] + (b[k] - a[k]) * t;
-  return { mesic: mix("mesic"), pruh: Math.round(mix("pruh")), pismo: mix("pismo"), cislo: Math.round(mix("cislo")),
-    drah: Math.round(mix("drah")), minDrah: Math.round(mix("minDrah")) };
+function parametry(zoom, vz) {
+  const zz = Math.max(0, Math.min(ZOOMY.length - 1, zoom));
+  const i = Math.floor(zz), t = zz - i;
+  let z = ZOOMY[i];
+  if (i < ZOOMY.length - 1 && t >= 0.001) {
+    const a = ZOOMY[i], b = ZOOMY[i + 1];
+    z = Object.fromEntries(Object.keys(a).map((k) => [k, Math.round(a[k] + (b[k] - a[k]) * t)]));
+    z.sloupce = a.sloupce;
+  }
+  const pismo = (vz.pismo || 100) / 100, vyska = (vz.vyska || 100) / 100;
+  const pruh = Math.max(4, Math.round(z.pruh * vyska));
+  const navic = Math.max(0, Math.round(z.cislo * (pismo - 1)));
+  return {
+    minSirka: z.sirka, maxSloupcu: z.sloupce, mezeraX: z.sirka >= 300 ? 36 : 22, nadpis: z.nadpis, dny: z.dny,
+    bunka: z.bunka + (pruh - z.pruh) * z.drahy + navic, horni: z.horni + navic, pruh, rozestup: pruh >= 12 ? 3 : 2,
+    drahy: z.drahy, tyden: vz.tydny ? z.tyden : 0, velky: z.nadpis >= 40, cislo: Math.round(z.cislo * pismo),
+    pismoPruhu: Math.max(8, Math.min(Math.round((pruh >= 18 ? 12 : 11) * pismo), pruh - 3)),
+    pismoSvatku: Math.round((z.cislo <= 13 ? 10 : 11) * pismo), pismoTydne: z.cislo <= 12 ? 10 : 11,
+  };
+}
+
+const MESICE_GEN = ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"];
+const DNY_CELE = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"];
+const MESICE_ZKR = ["led", "úno", "bře", "dub", "kvě", "čvn", "čvc", "srp", "zář", "říj", "lis", "pro"];
+const datumDlouze = (d) => `${d.getDate()}. ${MESICE_GEN[d.getMonth()]} ${d.getFullYear()}`;
+const pocetDniText = (n) => `${n} ${n === 1 ? "den" : n >= 2 && n <= 4 ? "dny" : "dní"}`;
+const dniVMesici = (m) => new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+const denTydne = (d) => (d.getDay() + 6) % 7;
+
+// data.relativni_text
+function relativni(z, k, dnesek) {
+  if (z <= dnesek && dnesek <= k) return [+z !== +k ? "probíhá" : "dnes", "var(--c-primary-dark)"];
+  if (k < dnesek) { const n = Math.round((dnesek - k) / 86400000); return [n > 1 ? `před ${pocetDniText(n)}` : "včera", "var(--c-danger)"]; }
+  const n = Math.round((z - dnesek) / 86400000);
+  return [n === 1 ? "zítra" : `za ${pocetDniText(n)}`, n <= 7 ? "var(--c-warning)" : "var(--c-muted)"];
+}
+
+// barva pruhu podle sytosti z Nastavení → Kalendář (KalendarHarmonogramu._barva_druhu)
+function sytost(barva, procent) {
+  if (!procent || Math.abs(procent - 100) < 1 || !/^#[0-9a-f]{6}$/i.test(barva)) return barva;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(barva.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+  let hue = 0, s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    hue = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hue *= 60;
+  }
+  s = Math.max(0, Math.min(1, s * procent / 100));
+  return `hsl(${hue.toFixed(1)} ${(s * 100).toFixed(1)}% ${(l * 100).toFixed(1)}%)`;
 }
 
 function tydenRoku(d) {
@@ -152,8 +201,10 @@ const popisKam = (tym, kam) => {
 
 export class Kalendar {
   // faktury = () => pruhy faktur (finance.pruhyFaktur) do harmonogramu R a O; naFakturu(id, akce, x, y | termín)
+  // vlevo = prvek na začátek lišty (přepínač Termíny | Cashflow), naDovolene(rok) = sluníčko (okno Dovolené),
+  // naTermin(projekt, termín) = „Otevřít v harmonogramu projektu“
   constructor({ tym, osobni, projektId = null, naProjekt = () => {}, naExport = () => {}, posledniProjekt = () => "",
-    faktury = null, naFakturu = () => {} }) {
+    faktury = null, naFakturu = () => {}, vlevo = null, naDovolene = null, naTermin = null }) {
     this.faktury = faktury;
     this.naFakturu = naFakturu;
     this.tym = tym;
@@ -162,6 +213,9 @@ export class Kalendar {
     this.naProjekt = naProjekt;
     this.naExport = naExport;
     this.posledniProjekt = posledniProjekt;
+    this.vlevo = vlevo;
+    this.naDovolene = naDovolene;
+    this.naTermin = naTermin;
     const dnesek = zIso(dnes());
     this.zacatek = new Date(dnesek.getFullYear(), dnesek.getMonth() - 12, 1);
     this.konec = new Date(dnesek.getFullYear(), dnesek.getMonth() + 13, 1); // bez
@@ -183,28 +237,58 @@ export class Kalendar {
     if (this.projektId) this.osobni.uprav((h) => { h.harmonogram_zoom = z; });
     else this.osobni.upravKalendar({ zoom: z });
     this.posuvnik.value = String(z);
+    this.posuvnik.style.setProperty("--hodnota", `${(z / 4) * 100}%`);
     this._prekresli(true);
   }
 
   _vytvor() {
-    this.souhrn = h("span", { class: "tiche kal-souhrn" });
-    this.posuvnik = h("input", { type: "range", min: 0, max: 4, step: 0.05, value: String(this.zoom), class: "kal-zoom",
-      "aria-label": "Přiblížení", title: "Přiblížení (Ctrl + kolečko)", oninput: () => this.nastavZoom(Number(this.posuvnik.value)) });
-    this.bFiltr = h("button", { type: "button", class: "ikonove kal-filtr", title: "Filtr", "aria-label": "Filtr",
-      onclick: () => this._filtr() }, ikona("filtr"), h("span", { class: "pocet" }));
+    // jedna lišta jako v programu: nadpis a souhrn vlevo, přiblížení · Filtr · Dovolené · Historie · Export vpravo
+    this.souhrn = h("span", { class: "kal-souhrn" });
+    this.posuvnik = h("input", { type: "range", min: 0, max: 4, step: 0.01, value: String(this.zoom), class: "kal-zoom",
+      "aria-label": "Přiblížení", oninput: () => this.nastavZoom(Number(this.posuvnik.value)) });
+    this.bFiltr = h("button", { type: "button", class: "ikonove kal-filtr", "aria-label": "Filtr",
+      onclick: () => this._filtr() }, ikona("filter"), h("span", { class: "pocet" }));
     const nadpis = this.projektId ? null : h("button", { type: "button", class: "kal-nadpis", title: "Přejít na dnešek",
       onclick: () => this.jdiNaDnes() }, h("h1", { text: "Kalendář" }));
-    this.lista = h("div", { class: "kal-lista" }, nadpis, this.souhrn, h("div", { class: "mezera" }),
-      h("button", { type: "button", class: "tlacitko male", text: "Dnes", onclick: () => this.jdiNaDnes() }),
-      h("label", { class: "kal-zoom-obal", title: "Přiblížení" }, ikona("lupa_plus"), this.posuvnik),
+    this.lista = h("div", { class: "kal-lista" }, this.vlevo, nadpis, this.souhrn, h("div", { class: "mezera" }),
+      h("span", { class: "kal-zoom-obal", title: "Přiblížení – posuň, nebo Ctrl + kolečko myši v kalendáři" },
+        ikona("minus", "ikona", 12), this.posuvnik, ikona("plus", "ikona", 12)),
       this.projektId ? null : this.bFiltr,
-      this.projektId ? null : h("button", { type: "button", class: "ikonove", title: "Historie termínů", "aria-label": "Historie termínů",
-        onclick: () => this._historie() }, ikona("historie")),
-      h("button", { type: "button", class: "ikonove", title: "Export", "aria-label": "Export", onclick: () => this.export() }, ikona("export")));
+      this.projektId || !this.naDovolene ? null : h("button", { type: "button", class: "ikonove", title: "Dovolené – plán na celý rok, kolik kdo má, export",
+        "aria-label": "Dovolené", onclick: () => this.naDovolene(this.den.getFullYear()) }, ikona("sun")),
+      this.projektId ? null : h("button", { type: "button", class: "ikonove", title: "Historie termínů – kdo který termín kdy změnil (nejnovější nahoře)",
+        "aria-label": "Historie termínů", onclick: () => this._historie() }, ikona("history")),
+      this.projektId
+        ? h("button", { type: "button", class: "ikonove", title: "Export – PDF, Excel, tisk: kalendář nebo časový diagram",
+          onclick: () => this.export() }, ikona("print"), h("span", { text: "Export" }))
+        : h("button", { type: "button", class: "ikonove", "aria-label": "Export",
+          title: "Export – PDF, Excel, tisk: kalendář nebo časový diagram, všechny zobrazené\nprojekty nebo jeden (výchozí podoba v Nastavení → Export a tisk)",
+          onclick: () => this.export() }, ikona("print")));
     this.mesice = h("div", { class: "kal-mesice" });
     this.obal = h("div", { class: "kal-obal" }, this.mesice);
     this.bok = h("aside", { class: "kal-bok" });
-    this.el = h("div", { class: `kal${this.projektId ? " harmonogram" : ""}` }, this.lista, h("div", { class: "kal-telo" }, this.obal, this.bok));
+    // hrana mezi kalendářem a bočním panelem jde táhnout (harmonogram.kalendar_s_bocnim_panelem)
+    const hrana = h("div", { class: "kal-hrana" });
+    const klicSirky = this.projektId ? "sirka_boku_harmonogramu" : "sirka_boku_kalendare";
+    const sirkaBoku = (s) => { const v = Math.max(240, Math.min(640, parseInt(s, 10) || 330)); this.bok.style.setProperty("--sirka-boku", `${v}px`); return v; };
+    sirkaBoku(this.osobni.hodnota[klicSirky]);
+    hrana.addEventListener("pointerdown", (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      const x0 = ev.clientX, w0 = this.bok.getBoundingClientRect().width;
+      let w = w0;
+      hrana.classList.add("tazena");
+      const pohyb = (e) => { w = sirkaBoku(w0 - (e.clientX - x0)); };
+      const konec = () => {
+        document.removeEventListener("pointermove", pohyb);
+        document.removeEventListener("pointerup", konec);
+        hrana.classList.remove("tazena");
+        if (Math.round(w) !== Math.round(w0)) this.osobni.uprav((n) => { n[klicSirky] = Math.round(w); });
+      };
+      document.addEventListener("pointermove", pohyb);
+      document.addEventListener("pointerup", konec);
+    });
+    this.el = h("div", { class: `kal${this.projektId ? " harmonogram" : ""}` }, this.lista, h("div", { class: "kal-telo" }, this.obal, hrana, this.bok));
 
     this.obal.addEventListener("scroll", () => this._priRolovani(), { passive: true });
     this.obal.addEventListener("wheel", (ev) => {
@@ -256,13 +340,19 @@ export class Kalendar {
     const nast = this.osobni.kalendar();
     const aktivni = this.projektId ? 0 : filtrJeAktivni(nast);
     let text = `${terminu} ${terminu === 1 ? "termín" : terminu >= 2 && terminu <= 4 ? "termíny" : "termínů"}`;
-    if (zPoznamek) text += ` · ${zPoznamek} ${zPoznamek === 1 ? "datum" : zPoznamek <= 4 ? "data" : "dat"} z poznámek`;
-    if (faktur) text += ` · ${faktur} ${faktur === 1 ? "faktura" : faktur <= 4 ? "faktury" : "faktur"}`;
-    if (aktivni) text += " · filtrováno";
+    if (this.projektId) {
+      const hotovych = this.polozky.filter((p) => !p.pevny && jeHotovo(p.pol)).length;
+      if (hotovych) text += `  ·  ${hotovych} hotovo`;
+    }
+    if (zPoznamek) text += `  ·  ${zPoznamek} ${zPoznamek === 1 ? "datum" : zPoznamek <= 4 ? "data" : "dat"} z poznámek`;
+    if (faktur) text += `  ·  ${faktur} ${faktur === 1 ? "faktura" : faktur <= 4 ? "faktury" : "faktur"}`;
     this.souhrn.textContent = text;
-    this.bFiltr.classList.toggle("aktivni", !!aktivni);
+    this.bFiltr.classList.toggle("zapnuto", !!aktivni);
     this.bFiltr.querySelector(".pocet").textContent = aktivni ? String(aktivni) : "";
+    this.bFiltr.dataset.tip = "Filtr – které projekty, soukromé termíny a dovolené, druhy termínů, hotové"
+      + (aktivni ? "\n(něco je skryté)" : "");
     if (document.activeElement !== this.posuvnik) this.posuvnik.value = String(this.zoom);
+    this.posuvnik.style.setProperty("--hodnota", `${(this.zoom / 4) * 100}%`);
     this._prekresli(true);
     if (this.boc === "uprava") return;   // rozepsané úpravy nerušit (změna od kolegy)
     if (this.boc === "termin" && this._mapa.has(this.vybranyTermin)) {
@@ -276,7 +366,7 @@ export class Kalendar {
 
   // jen přebarví vybraný den / pruh (bez nového vykreslení – dvojklik musí trefit stejný prvek)
   _oznacVyber() {
-    const den = this.boc === "den" ? iso(this.den) : "";
+    const den = iso(this.den);
     for (const el of this.mesice.querySelectorAll(".kal-den[data-d]")) el.classList.toggle("vybrany", el.dataset.d === den);
     for (const el of this.mesice.querySelectorAll(".kal-pruh")) el.classList.toggle("vybrany", el.dataset.id === this.vybranyTermin);
   }
@@ -284,103 +374,157 @@ export class Kalendar {
   // --- vykreslení měsíců ---
 
   _kotva() {
+    // měsíc nahoře ve viditelné části a jak daleko v něm (0–1) – KalendarHarmonogramu._kotva_posunu
     const vrch = this.obal.scrollTop;
     for (const m of this.mesice.children) {
-      if (m.offsetTop + m.offsetHeight > vrch) return [m.dataset.m, m.offsetTop - vrch];
+      if (m.offsetTop - MEZERA_Y <= vrch && vrch < m.offsetTop + m.offsetHeight) {
+        return [m.dataset.m, Math.max(0, (vrch - m.offsetTop) / Math.max(1, m.offsetHeight))];
+      }
     }
     return null;
   }
 
   _prekresli(drzKotvu = false) {
     const kotva = drzKotvu ? this._kotva() : null;
-    const par = parametry(this.zoom);
     const vz = this.osobni.vzhled();
-    this.staty = vz.svatky_sk ? ["cz", "sk"] : ["cz"];
-    const sirka = this.obal.clientWidth || 900;
-    const sloupcu = Math.max(1, Math.floor(sirka / par.mesic));
-    this.mesice.style.gridTemplateColumns = `repeat(${sloupcu}, minmax(0, 1fr))`;
-    this.mesice.style.setProperty("--pruh", `${par.pruh}px`);
-    this.mesice.style.setProperty("--pismo", `${par.pismo}px`);
-    this.mesice.style.setProperty("--cislo", `${par.cislo}px`);
-    this.mesice.className = `kal-mesice pruhy-${vz.pruhy}${vz.vikendy ? "" : " bez-vikendu"}${vz.tydny ? " s-tydny" : ""}`;
-    const dnesek = dnes();
-    const prvniDen = this.zacatek, posledni = pridejDny(this.konec, -1);
-    const vRozsahu = this.polozky.filter((p) => p.rz[1] >= prvniDen && p.rz[0] <= posledni);
+    const par = parametry(this.zoom, vz);
+    this.staty = vz.svatky ? (vz.svatky_sk ? ["cz", "sk"] : ["cz"]) : [];
+    this.mesice.className = `kal-mesice pruhy-${vz.pruhy}${vz.vikendy ? "" : " bez-vikendu"}`;
+    // podklad víkendů a svátků podle výraznosti (KalendarHarmonogramu._podklady_dnu)
+    const t = 0.015 + (0.2 * vz.vikendy_sila) / 100 + (vz.kontrast === "vyrazny" ? 0.03 : 0);
+    const st = this.mesice.style;
+    st.setProperty("--kal-vikend", `color-mix(in srgb, var(--c-text) ${(t * 100).toFixed(1)}%, var(--c-card))`);
+    st.setProperty("--kal-svatek", `color-mix(in srgb, var(--c-danger) ${((t * 0.9 + 0.02) * 100).toFixed(1)}%, var(--c-card))`);
+    st.setProperty("--c-mrizka", vz.kontrast === "vyrazny" ? "color-mix(in srgb, var(--c-faint) 55%, var(--c-mrizka))"
+      : vz.kontrast === "jemny" ? "color-mix(in srgb, var(--c-mrizka) 47%, transparent)" : "var(--c-mrizka)");
+    st.setProperty("--minule", vz.kontrast === "vyrazny" ? "var(--c-muted)" : "var(--c-disabled)");
+    st.setProperty("--pruh", `${par.pruh}px`);
+    st.setProperty("--pismo-pruhu", `${par.pismoPruhu}px`);
+    st.setProperty("--r-pruhu", `${Math.min(3, par.pruh / 2)}px`);
+    st.setProperty("--rad", `${Math.min(4, par.bunka / 8)}px`);
+    this.parametry = par;
+    this.vzhled = vz;
+    // rozvržení: měsíce v řádcích vedle sebe (KalendarHarmonogramu._prepocitej)
+    const w = Math.max(this.obal.clientWidth || 900, 320);
+    const sloupce = Math.max(1, Math.min(par.maxSloupcu, Math.floor((w - 2 * OKRAJ_X + par.mezeraX) / (par.minSirka + par.mezeraX))));
+    const sirkaM = (w - 2 * OKRAJ_X - (sloupce - 1) * par.mezeraX) / sloupce;
+    const cw = (sirkaM - par.tyden) / 7;
+    const dnesek = zIso(dnes());
     const mesice = [];
-    for (let m = new Date(this.zacatek); m < this.konec; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
-      mesice.push(this._mesic(m, vRozsahu, par, vz, dnesek));
+    for (let m = new Date(this.zacatek); m < this.konec; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) mesice.push(m);
+    const prvky = [];
+    let y = OKRAJ_Y;
+    for (let i = 0; i < mesice.length; i += sloupce) {
+      const radek = mesice.slice(i, i + sloupce);
+      const tydnu = Math.max(...radek.map((m) => Math.ceil((denTydne(m) + dniVMesici(m)) / 7)));
+      const vyska = par.nadpis + par.dny + tydnu * par.bunka;
+      radek.forEach((m, c) => prvky.push(this._mesic(m, OKRAJ_X + c * (sirkaM + par.mezeraX), y, sirkaM, vyska, cw, par, vz, dnesek)));
+      y += vyska + MEZERA_Y;
     }
-    vymen(this.mesice, mesice);
+    this.mesice.style.height = `${y + OKRAJ_Y}px`;
+    vymen(this.mesice, prvky);
     if (kotva) {
       const el = [...this.mesice.children].find((m) => m.dataset.m === kotva[0]);
-      if (el) this.obal.scrollTop = el.offsetTop - kotva[1];
+      if (el) this.obal.scrollTop = el.offsetTop + kotva[1] * el.offsetHeight;
     }
   }
 
-  _mesic(m, polozky, par, vz, dnesek) {
+  // Jeden měsíc jako v programu (KalendarHarmonogramu.paintEvent): nadpis „Říjen 2026“, dny v týdnu,
+  // čísla týdnů vlevo, mřížka jen kolem dnů měsíce, buňky pevné výšky, pruhy v drahách celého měsíce.
+  _mesic(m, x, y, sirkaM, vyska, cw, par, vz, dnesek) {
     const rok = m.getFullYear(), mesic = m.getMonth();
-    const posledni = new Date(rok, mesic + 1, 0);
-    const vMesici = polozky.filter((p) => p.rz[1] >= m && p.rz[0] <= posledni);
-    const tydny = [];
-    for (let pondeli = pridejDny(m, -((m.getDay() + 6) % 7)); pondeli <= posledni; pondeli = pridejDny(pondeli, 7)) {
-      tydny.push(this._tyden(pondeli, m, posledni, vMesici, par, vz, dnesek));
-    }
-    return h("section", { class: "kal-mesic", dataset: { m: iso(m).slice(0, 7) } },
-      h("div", { class: "kal-mesic-nadpis" }, h("strong", { text: `${velke(MESICE[mesic])} ${rok}` })),
-      h("div", { class: "kal-hlavicka" }, vz.tydny ? h("span", { class: "kal-tc" }) : null,
-        DNY.map((d, i) => h("span", { class: i >= 5 ? "vikend" : "", text: d }))),
-      tydny);
-  }
+    const pocet = dniVMesici(m);
+    const posledni = new Date(rok, mesic, pocet);
+    const prvniSloupec = denTydne(m);
+    const maly = par.bunka < 50;
+    const bunka = (d) => { const idx = prvniSloupec + d.getDate() - 1; return [Math.floor(idx / 7), idx % 7]; };
 
-  _tyden(pondeli, prvni, posledni, polozky, par, vz, dnesek) {
-    const dny = [];
-    for (let i = 0; i < 7; i++) dny.push(pridejDny(pondeli, i));
-    const nedele = dny[6];
-    const od = pondeli < prvni ? prvni : pondeli, doo = nedele > posledni ? posledni : nedele;
-    // úseky pruhů v týdnu (jen dny tohoto měsíce), dráhy od nejdřívějších a nejdelších
-    const useky = polozky.filter((p) => p.rz[1] >= od && p.rz[0] <= doo).map((p) => {
-      const z = p.rz[0] < od ? od : p.rz[0], k = p.rz[1] > doo ? doo : p.rz[1];
-      return { p, sloupec: pocetDni(pondeli, z), delka: pocetDni(z, k) + 1, zacatek: iso(z) === iso(p.rz[0]), konec: iso(k) === iso(p.rz[1]) };
-    }).sort((a, b) => a.sloupec - b.sloupec || b.delka - a.delka || kolator.compare(a.p.text, b.p.text));
-    const drahy = [];
-    for (const u of useky) {
-      let d = drahy.findIndex((konec) => konec < u.sloupec);
-      if (d < 0) { d = drahy.length; drahy.push(-1); }
-      drahy[d] = u.sloupec + u.delka - 1;
-      u.draha = d;
+    // dráhy přes celý měsíc (_drahy_mesice): od nejdřívějších a nejdelších
+    const udalosti = this.polozky.filter((p) => p.rz[1] >= m && p.rz[0] <= posledni)
+      .sort((a, b) => a.rz[0] - b.rz[0] || (b.rz[1] - b.rz[0]) - (a.rz[1] - a.rz[0]) || kolator.compare(a.nazev || "", b.nazev || ""));
+    const konce = [];
+    const preteceni = new Map();
+    const pruhy = [];
+    for (const p of udalosti) {
+      let draha = konce.findIndex((e) => e < p.rz[0]);
+      if (draha < 0) { konce.push(p.rz[1]); draha = konce.length - 1; } else konce[draha] = p.rz[1];
+      const zz = p.rz[0] < m ? m : p.rz[0], kk = p.rz[1] > posledni ? posledni : p.rz[1];
+      if (draha >= par.drahy) {
+        for (let d = zz; d <= kk; d = pridejDny(d, 1)) preteceni.set(d.getDate(), (preteceni.get(d.getDate()) || 0) + 1);
+        continue;
+      }
+      for (let d = zz; d <= kk;) {
+        const konecTydne = pridejDny(d, 6 - denTydne(d));
+        const segK = konecTydne < kk ? konecTydne : kk;
+        const [r1, s1] = bunka(d), [, s2] = bunka(segK);
+        const zac = +d === +p.rz[0], kon = +segK === +p.rz[1];
+        const x1 = s1 * cw + (zac ? 4 : 0), x2 = (s2 + 1) * cw - (kon ? 4 : 0);
+        pruhy.push({ p, zac, kon, left: x1, width: Math.max(6, x2 - x1), top: r1 * par.bunka + par.horni + draha * (par.pruh + par.rozestup) });
+        d = pridejDny(segK, 1);
+      }
     }
-    const videt = Math.min(par.drah, drahy.length);
-    const skryte = new Array(7).fill(0);
-    for (const u of useky) if (u.draha >= videt) for (let i = u.sloupec; i < u.sloupec + u.delka; i++) skryte[i]++;
-    const drah = Math.max(par.minDrah, videt);
-    const vyska = par.cislo + drah * (par.pruh + 2) + (skryte.some(Boolean) ? 14 : 4);
+
+    const tydnu = Math.ceil((prvniSloupec + pocet) / 7);
     const oznacene = this.oznacene;
-    const bunky = dny.map((d, i) => {
-      const v = d >= prvni && d <= posledni;
-      if (!v) return h("div", { class: "kal-den mimo" });
+    const den = iso(this.den);
+    const bunky = [];
+    for (let i = 1; i <= pocet; i++) {
+      const d = new Date(rok, mesic, i);
+      const [radek, sloupec] = bunka(d);
       const di = iso(d);
-      const svatky = vz.svatky ? svatkyDne(d, this.staty) : [];
-      const tridy = ["kal-den", i >= 5 ? "vikend" : "", svatky.length ? "svatek" : "", di === dnesek ? "dnes" : "",
-        di < dnesek ? "minuly" : "", di === iso(this.den) && this.boc === "den" ? "vybrany" : "",
-        oznacene && d >= oznacene[0] && d <= oznacene[1] ? "oznaceny" : ""].filter(Boolean).join(" ");
-      return h("div", { class: tridy, dataset: { d: di },
-        title: svatky.map(([s, n]) => `${n}${s === "sk" ? " (SK)" : ""}`).join(" · ") || null },
-      h("span", { class: "kal-cislo", text: d.getDate() }),
-      svatky.length && par.mesic >= 360 ? h("span", { class: "kal-svatek", text: svatky[0][1] }) : null,
-      skryte[i] ? h("button", { type: "button", class: "kal-vic", dataset: { d: di }, text: `+${skryte[i]}` }) : null);
-    });
-    const pruhy = useky.filter((u) => u.draha < videt).map((u) => {
-      const p = u.p;
-      const tridy = ["kal-pruh", u.zacatek ? "zacatek" : "", u.konec ? "konec" : "", jeHotovo(p.pol) ? "hotovo" : "",
-        vz.probehle && iso(p.rz[1]) < dnesek ? "probehly" : "", p.id === this.vybranyTermin ? "vybrany" : "",
-        p.pevny ? "pevny" : "", p.cizi ? "cizi" : "", p.druh === "poznamka" ? "poznamka" : ""].filter(Boolean).join(" ");
+      const svatky = this.staty.length ? svatkyDne(d, this.staty) : [];
+      const vRozsahu = oznacene && d >= oznacene[0] && d <= oznacene[1];
+      const kraj = vRozsahu && (+d === +oznacene[0] || +d === +oznacene[1]);
+      const sNazvem = svatky.length && !kraj && cw >= 40;
+      const tridy = ["kal-den", sloupec >= 5 ? "vikend" : "", svatky.length ? "svatek" : "", +d === +dnesek ? "dnes" : "",
+        d < dnesek ? "minuly" : "", di === den ? "vybrany" : "", vRozsahu ? "oznaceny" : "", kraj ? "kraj" : "",
+        sNazvem ? "s-nazvem" : "", sloupec === 6 || i === pocet ? "pravy" : "", i + 7 > pocet ? "spodni" : ""].filter(Boolean).join(" ");
+      const navic = preteceni.get(i);
+      const vlajky = sNazvem ? h("span", { class: "vlajky", style: { "--vv": `${Math.max(7, Math.min(11, par.cislo * 0.68))}px` } },
+        svatky.map(([s]) => h("i", { class: `vlajka ${s}` }))) : null;
+      bunky.push(h("div", { class: tridy, dataset: { d: di }, style: { gridRow: String(radek + 1), gridColumn: String(sloupec + 1) },
+        title: svatky.map(([s, n]) => `${n}${s === "sk" ? " (SK)" : ""}`).join("\n") || null },
+      h("span", { class: "kal-cislo", style: { top: `${maly ? 2 : 6}px`, fontSize: `${par.cislo}px` } }, String(i), vlajky,
+        sNazvem && cw >= 70 ? h("span", { class: "kal-svatek", text: svatky[0][1], style: { fontSize: `${par.pismoSvatku}px` } }) : null),
+      navic ? h("button", { type: "button", class: `kal-vic${maly ? " tecka-vic" : ""}`, dataset: { d: di }, text: maly ? "" : `+${navic}`,
+        title: `Další ${navic === 1 ? "termín" : navic < 5 ? "termíny" : "termínů"} v tento den` }) : null));
+    }
+    const vzPruhu = vz.pruhy;
+    const prvkyPruhu = pruhy.map(({ p, zac, kon, left, width, top }) => {
+      const ztlumit = jeHotovo(p.pol) || (vz.probehle && p.rz[1] < dnesek);
+      const tridy = ["kal-pruh", zac ? "zacatek" : "", kon ? "konec" : "", ztlumit ? "ztlumeny" : "", p.id === this.vybranyTermin ? "vybrany" : "",
+        p.pevny ? "pevny" : "", p.cizi ? "cizi" : "", p.druh === "poznamka" && vzPruhu === "plne" ? "poznamka" : ""].filter(Boolean).join(" ");
       return h("div", { class: tridy, dataset: { id: p.id }, title: this._tip(p),
-        style: { left: `${(u.sloupec / 7) * 100}%`, width: `${(u.delka / 7) * 100}%`, top: `${par.cislo + u.draha * (par.pruh + 2)}px`, "--b": p.barva } },
-      h("span", { text: p.text }));
+        style: { left: `${left}px`, width: `${width}px`, top: `${top}px`, "--b": sytost(p.barva, vz.sytost) } },
+      par.pruh >= 12 ? h("span", { text: `${jeHotovo(p.pol) ? "✓ " : ""}${p.text}` }) : null);
     });
-    return h("div", { class: "kal-tyden", style: { height: `${vyska}px` } },
-      vz.tydny ? h("span", { class: "kal-tc", text: tydenRoku(pondeli) }) : null,
-      h("div", { class: "kal-dny" }, bunky, h("div", { class: "kal-pruhy" }, pruhy)));
+
+    // čísla týdnů (ISO) – aktuální týden zvýrazněný
+    const tydny = [];
+    if (par.tyden) {
+      const pondeli = pridejDny(m, -prvniSloupec);
+      const pondeliDnes = iso(pridejDny(dnesek, -denTydne(dnesek)));
+      tydny.push(h("span", { class: "titul", style: { top: `${par.nadpis}px`, height: `${par.dny - 6}px` }, text: par.tyden < 24 ? "T" : "týd." }));
+      for (let r = 0; r < tydnu; r++) {
+        const po = pridejDny(pondeli, r * 7);
+        const c = tydenRoku(po);
+        const aktualni = iso(po) === pondeliDnes;
+        tydny.push(h("span", { class: `tc${aktualni ? " aktualni" : ""}`, text: String(c),
+          style: { top: `${par.nadpis + par.dny + r * par.bunka + (maly ? 2 : 6)}px` } }));
+      }
+    }
+
+    const nadpisPismo = par.velky ? 17 : 14;
+    return h("section", { class: "kal-mesic", dataset: { m: iso(m).slice(0, 7) },
+      style: { left: `${x}px`, top: `${y}px`, width: `${sirkaM}px`, height: `${vyska}px` } },
+    h("div", { class: "kal-mesic-nadpis", style: { left: "4px", top: "4px", height: `${par.nadpis - 10}px`, fontSize: `${nadpisPismo}px` } },
+      velke(MESICE[mesic]), h("span", { text: String(rok) })),
+    par.tyden ? h("div", { class: "kal-tydny", style: { left: "0", top: "0", width: `${par.tyden}px`, height: "100%", fontSize: `${par.pismoTydne}px` } }, tydny) : null,
+    h("div", { class: "kal-hlavicka", style: { left: `${par.tyden}px`, top: `${par.nadpis}px`, width: `${7 * cw}px`, height: `${par.dny - 6}px`, fontSize: `${par.velky ? 11 : 10}px` } },
+      DNY.map((d, i) => h("span", { class: i >= 5 ? "vikend" : "", text: velke(d) }))),
+    h("div", { class: "kal-mrizka", style: { left: `${par.tyden}px`, top: `${par.nadpis + par.dny}px`, width: `${7 * cw}px`,
+      height: `${tydnu * par.bunka}px`, gridTemplateRows: `repeat(${tydnu}, ${par.bunka}px)` } },
+    bunky, h("div", { class: "kal-pruhy" }, prvkyPruhu)));
   }
 
   _tip(p) {
@@ -552,9 +696,11 @@ export class Kalendar {
 
   _zvyrazni() {
     const o = this.oznacene;
+    const z = o ? iso(o[0]) : "", k = o ? iso(o[1]) : "";
     for (const el of this.mesice.querySelectorAll(".kal-den[data-d]")) {
       const d = el.dataset.d;
-      el.classList.toggle("oznaceny", !!o && d >= iso(o[0]) && d <= iso(o[1]));
+      el.classList.toggle("oznaceny", !!o && d >= z && d <= k);
+      el.classList.toggle("kraj", !!o && (d === z || d === k));
     }
   }
 
@@ -594,7 +740,7 @@ export class Kalendar {
       "-",
       { text: "Přejít na dnešek", akce: () => this.jdiNaDnes() },
       { text: `Exportovat ${MESICE[d.getMonth()]}…`, ikona: "export", akce: () => this.export([m, new Date(d.getFullYear(), d.getMonth() + 1, 0)]) },
-      this.projektId ? null : { text: `Dovolené ${d.getFullYear()} – kolik kdo má…`, akce: () => { window.location.hash = `#/dovolena/${d.getFullYear()}`; } },
+      this.projektId || !this.naDovolene ? null : { text: "Plán dovolených…", ikona: "sun", akce: () => this.naDovolene(d.getFullYear()) },
     ]);
   }
 
@@ -623,17 +769,17 @@ export class Kalendar {
     menu(x, y, polozky);
   }
 
-  // --- boční panel: přehled dne / detail / úpravy ---
+  // --- boční panel: přehled dne (PrehledDne) / detail termínu (DetailTerminu) / úpravy ---
 
   _panel(nadpis, ...obsah) {
     const vObsahu = h("div", { class: "kal-bok-obsah" }, obsah);
-    if (window.matchMedia("(max-width: 900px)").matches) {
+    if (window.matchMedia("(max-width: 760px)").matches) {
       if (this._oknoBoku) this._oknoBoku.zavri();
-      this._oknoBoku = okno(nadpis, vObsahu, []);
+      this._oknoBoku = okno(nadpis, vObsahu, [], { bezNadpisu: true });
       this._oknoBoku.dialog.addEventListener("close", () => { this._oknoBoku = null; });
       return;
     }
-    vymen(this.bok, h("h2", { class: "kal-bok-nadpis", text: nadpis }), vObsahu);
+    vymen(this.bok, vObsahu);
   }
 
   vyberDen(d) {
@@ -644,76 +790,99 @@ export class Kalendar {
     this._ukazDen(true);
   }
 
-  _ukazDen(uzivatel = false) {
-    if (!uzivatel && window.matchMedia("(max-width: 900px)").matches) return;
-    const d = this.den;
-    const dne = this.polozky.filter((p) => p.rz[0] <= d && p.rz[1] >= d).sort((a, b) => kolator.compare(a.text, b.text));
-    const svatky = svatkyDne(d, this.staty || ["cz"]);
-    this._panel(`${velke(DNY[(d.getDay() + 6) % 7])} ${datumKratce(d, true)}`,
-      svatky.map(([s, n]) => h("p", { class: "svatek-text", text: `${n}${s === "sk" ? " (SK)" : ""}` })),
-      dne.map((p) => h("button", { type: "button", class: `radek termin${jeHotovo(p.pol) ? " hotovo" : ""}`, onclick: () => this.vyberTermin(p.id) },
-        h("i", { class: "tecka", style: { background: p.barva } }),
-        h("div", { class: "radek-text" }, h("strong", { text: p.druh === "dovolene" ? p.text : p.nazev }),
-          h("small", { class: "tiche", text: [popisRozsahu(...p.rz), p.projekt && !this.projektId ? nazevProjektu(p.projekt) : popisKam(this.tym, kamPatri(p))].filter(Boolean).join(" · ") })))),
-      !dne.length && !svatky.length ? h("p", { class: "tiche", text: "Nic naplánováno." }) : null,
-      h("div", { class: "kal-bok-akce" },
-        h("button", { type: "button", class: "tlacitko male", onclick: () => this.novyTermin(d, d) }, ikona("plus"), "Termín")));
+  // řádek termínu (harmonogram.RadekTerminu): proužek / datum s odpočtem, nad názvem projekt
+  _radekTerminu(p, sOdpoctem = false) {
+    const pol = p.pol, rz = p.rz;
+    const dnesek = zIso(dnes());
+    const dny = pocetDni(...rz) + 1;
+    const projekt = !this.projektId ? (p.projekt ? [p.projekt.lokalita, p.projekt.nazev].filter(Boolean).join(" · ") || nazevProjektu(p.projekt)
+      : p.druh === "dovolene" ? this.tym.jmeno(pol.uzivatel, "Dovolená") : popisKam(this.tym, kamPatri(p))) : "";
+    const upr = p.barva === BARVA_REALIZACE ? String(pol.upresneni || "").trim() : "";
+    const znacka = sOdpoctem
+      ? h("span", { class: "termin-znacka", style: { background: `color-mix(in srgb, ${p.barva} 11%, transparent)` } },
+        h("b", { text: String(rz[0].getDate()), style: { color: p.barva } }), h("small", { text: MESICE_ZKR[rz[0].getMonth()] }))
+      : h("span", { class: "termin-prouzek", style: { background: p.barva } });
+    const [odpocet, barvaOdpoctu] = relativni(rz[0], rz[1], dnesek);
+    return h("button", { type: "button", class: `termin-radek${jeHotovo(pol) ? " hotovo" : ""}`, onclick: () => this.vyberTermin(p.id, true) },
+      znacka,
+      h("span", { class: "termin-texty" },
+        projekt ? h("span", { class: "projekt-nad", text: projekt }) : null,
+        h("strong", { text: `${jeHotovo(pol) ? "✓ " : ""}${p.druh === "dovolene" ? "Dovolená" : p.nazev || "Termín"}` }),
+        h("span", { class: "faint", text: `${DNY[denTydne(rz[0])]} ${popisRozsahu(...rz)}${dny > 1 ? ` · ${pocetDniText(dny)}` : ""}`
+          + (upr && upr.toLowerCase() !== String(pol.nazev || "").trim().toLowerCase() ? ` · ${upr}` : "") })),
+      sOdpoctem && !jeHotovo(pol) ? h("span", { class: "odpocet", text: odpocet, style: { color: barvaOdpoctu } }) : null);
   }
 
-  vyberTermin(id) {
+  _ukazDen(uzivatel = false) {
+    if (!uzivatel && window.matchMedia("(max-width: 760px)").matches) return;
+    const d = this.den;
+    const dnesek = zIso(dnes());
+    const dne = this.polozky.filter((p) => p.rz[0] <= d && p.rz[1] >= d);
+    const svatky = svatkyDne(d, this.staty?.length ? this.staty : ["cz", "sk"]);
+    const nadchazejici = this.projektId ? [] : this.polozky.filter((p) => !p.pevny && !jeHotovo(p.pol) && p.rz[1] >= dnesek)
+      .sort((a, b) => a.rz[0] - b.rz[0] || a.rz[1] - b.rz[1]).slice(0, 12);
+    this._panel(datumDlouze(d),
+      h("div", { class: "den-tydne", text: `${+d === +dnesek ? "Dnes · " : ""}${DNY_CELE[denTydne(d)]} · ${tydenRoku(d)}. týden` }),
+      h("h2", { text: datumDlouze(d) }),
+      svatky.map(([s, n]) => h("div", { class: "stitek-svatku" }, h("span", { class: "vlajky", style: { "--vv": "10px" } }, h("i", { class: `vlajka ${s}` })), n)),
+      h("div", { style: { height: "8px" } }),
+      h("div", { class: "seznam" }, dne.map((p) => this._radekTerminu(p))),
+      !dne.length ? h("p", { class: "tiche", text: "V tento den nic není." }) : null,
+      h("div", {}, h("button", { type: "button", class: "tlacitko duch", onclick: () => this.novyTermin(d, d) }, ikona("plus"), "Přidat termín na tento den")),
+      nadchazejici.length ? [h("div", { class: "sekce-boku", text: "NADCHÁZEJÍCÍ" }),
+        h("div", { class: "seznam" }, nadchazejici.map((p) => this._radekTerminu(p, true)))] : null);
+  }
+
+  vyberTermin(id, posunout = false) {
     const p = this._mapa.get(id);
     if (!p) return;
     this.vybranyTermin = id;
     this.boc = "termin";
     this._oznacVyber();
     this._ukazTermin(p);
+    if (posunout) this.jdiNa(p.rz[0]);
   }
 
   _ukazTermin(p) {
     const pol = p.pol;
+    const zpet = h("button", { type: "button", class: "tlacitko duch", title: "Zpět na přehled dne", onclick: () => this.vyberDen(this.den) }, ikona("chevron-left"), "Den");
     if (p.druh === "faktura") {
-      this._panel(p.nazev, h("p", { class: "text-poznamky", text: pol.poznamka || "" }),
-        h("div", { class: "kal-bok-akce" },
-          h("button", { type: "button", class: "tlacitko male hlavni", onclick: () => this.naFakturu(pol._faktura, "upravit") }, ikona("upravit"), "Upravit"),
-          h("button", { type: "button", class: "tlacitko male", onclick: (ev) => { const r = ev.currentTarget.getBoundingClientRect(); this.naFakturu(pol._faktura, "menu", r.left, r.bottom); } }, "Další…"),
-          h("button", { type: "button", class: "tlacitko male", onclick: () => this.naFakturu(pol._faktura, "cashflow") }, "Cashflow zakázky")),
-        h("button", { type: "button", class: "odkaz", text: "← Přehled dne", onclick: () => this.vyberDen(this.den) }));
+      this._panel(p.nazev, h("div", { class: "kal-bok-akce" }, zpet, h("span", { class: "mezera" }),
+        h("button", { type: "button", class: "tlacitko", onclick: () => this.naFakturu(pol._faktura, "upravit") }, ikona("edit"), "Upravit")),
+      h("h2", { text: p.nazev }), h("p", { class: "text-poznamky tiche", text: pol.poznamka || "" }),
+      h("div", {}, h("button", { type: "button", class: "tlacitko duch", onclick: () => this.naFakturu(pol._faktura, "cashflow") }, "Cashflow zakázky", ikona("chevron-right"))));
       return;
     }
-    const radky = [];
-    const pridej = (nazev, hodnota) => { if (hodnota) radky.push(h("dt", { text: nazev }), h("dd", {}, hodnota)); };
-    if (p.projekt) pridej("Projekt", this.projektId ? nazevProjektu(p.projekt)
-      : h("a", { href: `#/projekt/${encodeURIComponent(p.projekt.id)}`, text: nazevProjektu(p.projekt) }));
-    else pridej("Kam patří", popisKam(this.tym, kamPatri(p)));
-    pridej("Kdy", `${popisRozsahu(...p.rz)}${p.rz[1] > p.rz[0] ? ` (${pocetDni(...p.rz) + 1} dní)` : ""}`);
+    const dny = pocetDni(...p.rz) + 1;
+    const projekt = p.projekt ? [p.projekt.lokalita, p.projekt.nazev].filter(Boolean).join(" · ") || nazevProjektu(p.projekt) : popisKam(this.tym, kamPatri(p));
+    let doplnek = "";
     if (p.druh === "dovolene") {
       const dov = new Dovolene(this.tym.hodnota("dovolene"), this.tym.nastaveni);
-      pridej("Kdo", this.tym.jmeno(pol.uzivatel, "nevím kdo"));
-      pridej("Bere", hodinyText(dov.hodinPolozky(pol), dov.den) + (hodinDovoleneDenne(pol, dov.den) < dov.den ? ` · ${cislo(pol.hodin)} h denně` : ""));
-    } else if (p.druh !== "poznamka") {
-      pridej("Druh", h("span", {}, h("i", { class: "tecka", style: { background: p.barva } }), this.tym.nazevDruhu(pol)));
-      pridej("Stav", jeHotovo(pol) ? "Hotovo" : "Plánováno");
+      const bil = dov.bilance(pol.uzivatel || "", p.rz[0].getFullYear());
+      doplnek = `${hodinyText(dov.hodinPolozky(pol), dov.den)}${hodinDovoleneDenne(pol, dov.den) < dov.den ? ` · ${cislo(pol.hodin)} h denně` : ""}`
+        + (!p.cizi ? ` · letos zbývá ${hodinyText(bil.zbyva, dov.den)}` : "");
     }
-    if (pol.poznamka) radky.push(h("dt", { text: p.druh === "poznamka" ? "Poznámka" : "Poznámka" }), h("dd", { class: "text-poznamky", text: pol.poznamka }));
-    if (pol.vytvoril) pridej("Vytvořil", `${pol.vytvoril}${pol.vytvoreno ? `, ${casText(pol.vytvoreno)}` : ""}`);
-    const zmeny = (Array.isArray(pol.zmeny) ? pol.zmeny : []).slice(-10).reverse();
-    const tlacitka = [];
-    if (p.druh === "poznamka") {
-      tlacitka.push(h("button", { type: "button", class: "tlacitko male", onclick: () => this.naProjekt(p.projekt.id) }, ikona("otevrit"), "Otevřít projekt"));
-    } else if (!p.cizi) {
-      if (this.faktury && p.druh === "projekt") {
-        tlacitka.push(h("button", { type: "button", class: "tlacitko male", title: "Vydaná faktura navázaná na tento termín", onclick: () => this.naFakturu("", "nova", p.id) }, "Fakturovat…"));
-      }
-      tlacitka.push(h("button", { type: "button", class: "tlacitko male hlavni", onclick: () => this._uprava(p) }, ikona("upravit"), "Upravit"),
-        h("button", { type: "button", class: "tlacitko male", onclick: () => this._prepniHotovo(p) }, ikona("hotovo"), jeHotovo(pol) ? "Znovu otevřít" : "Hotovo"),
-        h("button", { type: "button", class: "ikonove", title: "Smazat", "aria-label": "Smazat", onclick: () => this._smaz(p) }, ikona("smazat")));
-    }
-    this._panel(p.druh === "dovolene" ? `Dovolená – ${this.tym.jmeno(pol.uzivatel, "")}` : p.nazev,
-      h("dl", { class: "udaje" }, radky),
-      tlacitka.length ? h("div", { class: "kal-bok-akce" }, tlacitka) : null,
-      zmeny.length ? h("details", { class: "historie-terminu" }, h("summary", { text: "Historie termínu" }),
-        zmeny.map((z) => h("div", { class: "radek-historie" }, h("small", { class: "tiche", text: [casText(z.cas), z.kdo].filter(Boolean).join(" · ") }), h("span", { text: z.text })))) : null,
-      h("button", { type: "button", class: "odkaz", text: "← Přehled dne", onclick: () => this.vyberDen(this.den) }));
+    let zmeny = (Array.isArray(pol.zmeny) ? pol.zmeny : []).slice().reverse();
+    if (!zmeny.length && pol.vytvoreno) zmeny = [{ cas: pol.vytvoreno, kdo: pol.vytvoril, text: "Vytvořen" }];
+    const lzeUpravit = !p.cizi && p.druh !== "poznamka";
+    this._panel(p.nazev,
+      h("div", { class: "kal-bok-akce" }, zpet, h("span", { class: "mezera" }),
+        lzeUpravit ? h("button", { type: "button", class: "tlacitko", title: "Změnit název, datum, druh, poznámku…", onclick: () => this._uprava(p) }, ikona("edit"), "Upravit") : null),
+      h("div", { class: "projekt-nad", style: { color: "var(--c-primary-dark)", fontWeight: "700", fontSize: "12px" }, text: projekt }),
+      h("h2", { text: `${jeHotovo(pol) ? "✓ " : ""}${p.druh === "dovolene" ? `Dovolená – ${this.tym.jmeno(pol.uzivatel, "")}` : p.nazev}` }),
+      h("div", { class: "tiche", text: `${DNY[denTydne(p.rz[0])]} ${popisRozsahu(...p.rz)}${dny > 1 ? ` · ${pocetDniText(dny)}` : ""}${jeHotovo(pol) ? " · hotovo" : ""}` }),
+      p.druh !== "dovolene" && p.druh !== "poznamka" ? h("div", { class: "druh-terminu" }, h("i", { class: "tecka", style: { background: p.barva } }), this.tym.nazevDruhu(pol)) : null,
+      doplnek ? h("div", { class: "tiche", text: doplnek }) : null,
+      h("div", { style: { height: "6px" } }),
+      pol.poznamka ? [h("div", { class: "faint", text: "Poznámka" }), h("p", { class: "text-poznamky inset", style: { padding: "10px", margin: "2px 0 0" }, text: pol.poznamka })] : null,
+      p.projekt && !this.projektId ? h("div", {}, h("button", { type: "button", class: "tlacitko duch",
+        onclick: () => (this.naTermin ? this.naTermin(p.projekt.id, p.id) : this.naProjekt(p.projekt.id)) }, "Otevřít v harmonogramu projektu", ikona("chevron-right"))) : null,
+      this.faktury && p.druh === "projekt" && lzeUpravit ? [h("div", { class: "sekce-boku", text: "FAKTURACE" }),
+        h("div", {}, h("button", { type: "button", class: "tlacitko duch", title: "Vydaná faktura po tomto termínu – posouvá se s ním",
+          onclick: () => this.naFakturu("", "nova", p.id) }, ikona("plus"), "Fakturovat…"))] : null,
+      zmeny.length ? [h("div", { class: "sekce-boku", text: "HISTORIE TERMÍNU" }),
+        h("div", { class: "historie-terminu-seznam" }, zmeny.slice(0, 15).map((z) => h("div", { class: "radek-historie" },
+          h("span", { text: z.text }), h("small", { class: "faint", text: [casText(z.cas), z.kdo].filter(Boolean).join("  ·  ") }))))] : null);
   }
 
   _uprava(p) {
@@ -797,11 +966,15 @@ export class Kalendar {
     const tym = this.tym;
     const popis = popisZmen(tym, p.pol, novy);
     const puvodniKam = kamPatri(p);
+    // dovolená (i ta, kam se termín přesouvá) se nesmí krýt s jinou dovolenou téhož člověka
+    const kdo = kam.startsWith(DOVOLENE) ? kam.split(":")[1] || "" : p.druh === "dovolene" ? p.pol.uzivatel || "" : null;
+    if (kdo !== null) hlidejPrekryvDovolene(tym.hodnota("dovolene"), kdo, ...rozsah(novy), p.id);
     if (popis) {
       await upravZdroj(tym, this.osobni, p.zdroj, (seznam) => {
         const pol = seznam.find((x) => x.id === p.id);
         if (!pol) throw new Error("Termín už mezitím někdo smazal.");
         if (p.druh === "dovolene" && !tym.jeSpravce && (pol.uzivatel || "") !== tym.ja.id) throw new Error("Cizí dovolenou měnit nemůžeš.");
+        if (p.druh === "dovolene") hlidejPrekryvDovolene(seznam, pol.uzivatel, ...rozsah(novy), p.id);
         for (const k of ["nazev", "poznamka", "stav", "barva", "upresneni", "hodin"]) if (k in novy) pol[k] = novy[k];
         nastavRozsah(pol, ...rozsah(novy));
         if (p.druh === "dovolene" && !pol.hodin) delete pol.hodin;
@@ -821,6 +994,8 @@ export class Kalendar {
       await upravZdroj(tym, this.osobni, DOVOLENE, (s) => {
         const pol = s.find((x) => x.id === p.id);
         if (!pol) return false;
+        const r = rozsah(pol);
+        if (r) hlidejPrekryvDovolene(s, kdo, ...r, p.id);
         pol.uzivatel = kdo;
         zaznamTerminu(pol, `Dovolená – ${tym.jmeno(kdo, "nevím kdo")}`, tym.ja.jmeno);
       });
@@ -833,7 +1008,12 @@ export class Kalendar {
     const odkud = p.projekt ? nazevProjektu(p.projekt) : popisKam(tym, kamPatri(p));
     zaznamTerminu(pol, cil === DOVOLENE ? `Dovolená – ${tym.jmeno(kdo, "nevím kdo")}` : cil === SOUKROME ? "Soukromý termín"
       : cil === BEZ_PROJEKTU ? "Bez projektu" : `Přesunut do projektu ${popisKam(tym, cil)}`, tym.ja.jmeno);
-    await upravZdroj(tym, this.osobni, cil, (s) => { if (!s.some((x) => x.id === pol.id)) s.push(pol); },
+    await upravZdroj(tym, this.osobni, cil, (s) => {
+      if (s.some((x) => x.id === pol.id)) return;
+      const r = rozsah(pol);
+      if (cil === DOVOLENE && r) hlidejPrekryvDovolene(s, kdo, ...r, pol.id);
+      s.push(pol);
+    },
       DRUHY_ZDROJU[cil] ? "" : `Přidán termín (z ${odkud}): ${pol.nazev || ""}`);
     await upravZdroj(tym, this.osobni, p.zdroj, (s, projekt) => {
       const i = s.findIndex((x) => x.id === p.id);
@@ -850,6 +1030,7 @@ export class Kalendar {
       await upravZdroj(this.tym, this.osobni, p.zdroj, (s) => {
         const pol = s.find((x) => x.id === p.id);
         if (!pol) return false;
+        if (p.zdroj === DOVOLENE) hlidejPrekryvDovolene(s, pol.uzivatel, z, k, p.id);
         nastavRozsah(pol, z, k);
         zaznamTerminu(pol, (druh === "presun" ? "Přesunut na " : "Změněna délka: ") + popis, this.tym.ja.jmeno);
       }, this._historieUpravy(p, `${druh === "presun" ? "Přesunut" : "Změněna délka"} termínu (v kalendáři): ${p.pol.nazev || ""} → ${popis}`));
@@ -857,6 +1038,7 @@ export class Kalendar {
       this.boc = "termin";
       this.obnov();
     } catch (e) {
+      this.obnov();   // pruh zpátky na původní místo
       oznam(e?.message || "Změnu se nepodařilo uložit.", true);
     }
   }
@@ -954,7 +1136,11 @@ export class Kalendar {
         nastavRozsah(udaje, zd, kd);
         const pol = novyTermin(udaje, tym.ja.jmeno);
         const zdroj = kdo !== null ? DOVOLENE : cil;
-        await upravZdroj(tym, this.osobni, zdroj, (s) => { s.push(pol); },
+        if (kdo !== null) hlidejPrekryvDovolene(tym.hodnota("dovolene"), kdo, ...rozsah(pol));
+        await upravZdroj(tym, this.osobni, zdroj, (s) => {
+          if (kdo !== null) hlidejPrekryvDovolene(s, kdo, ...rozsah(pol));
+          s.push(pol);
+        },
           DRUHY_ZDROJU[zdroj] ? "" : `${this.projektId ? "Přidán termín" : "Přidán termín (v kalendáři)"}: ${jmeno} (${popisRozsahu(...rozsah(pol))})`);
         if (!this.projektId && !kdo && cil !== SOUKROME) this._posledniKam = cil;
         this._zajistiViditelnost(zdroj, udaje.barva);
@@ -1105,7 +1291,7 @@ export function vyberDruhu(tym, vybrana) {
   const vysledek = { hodnota: () => hodnota, priZmene: () => {} };
   const el = h("div", { class: "vyber-druhu", role: "radiogroup" });
   const prekresli = () => vymen(el, BARVY_TERMINU.map((b) => h("button", { type: "button", role: "radio", "aria-checked": String(b === hodnota),
-    class: b === hodnota ? "vybrany" : "", onclick: () => { hodnota = b; prekresli(); vysledek.priZmene(); } },
+    class: b === hodnota ? "vybrany" : "", style: { "--b": b }, onclick: () => { hodnota = b; prekresli(); vysledek.priZmene(); } },
   h("i", { class: "tecka", style: { background: b } }), tym.vyznamBarvy(b))));
   prekresli();
   vysledek.el = el;

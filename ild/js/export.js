@@ -7,7 +7,7 @@ import {
   pridejDny, rozsah, svatkyDne, zIso,
 } from "./data.js";
 import { sestavPolozky } from "./kalendar.js";
-import { h, oznam, pole, vymen } from "./ui.js";
+import { h, oznam, pole, titulekOkna, vymen } from "./ui.js";
 import { sloupec, stahni, vytvorXlsx } from "./xlsx.js";
 
 const PAPIRY = { A4: [210, 297], A3: [297, 420] };
@@ -37,7 +37,7 @@ export function segment(volby, hodnota, zmena) {
 
 // --- dialog ------------------------------------------------------------------------------------
 
-export function otevriExport({ tym, osobni, projektId = null, kalendar = null, obdobi = null }) {
+export function otevriExport({ tym, osobni, projektId = null, kalendar = null, obdobi = null, dovolene = false }) {
   const ulozeny = nactiProfil();
   const p = {
     vzhled: projektId ? "harmonogram" : "kalendar", seznam: false, stranky: "jedna", stran: 2, papir: "A4", naSirku: true,
@@ -58,6 +58,7 @@ export function otevriExport({ tym, osobni, projektId = null, kalendar = null, o
       co.append(h("option", { value: pr.id, text: `Projekt – ${nazevProjektu(pr)}` }));
     }
     co.append(h("option", { value: DOVOLENE_VYBER, text: tym.jeSpravce ? "Dovolené – přehled lidí (převod, čerpáno, zbývá)" : "Moje dovolená" }));
+    if (dovolene) co.value = DOVOLENE_VYBER;   // okno Dovolené → Export…
   }
 
   const od = h("input", { type: "date" }), doo = h("input", { type: "date" });
@@ -94,7 +95,8 @@ export function otevriExport({ tym, osobni, projektId = null, kalendar = null, o
     casti.vzhled, casti.stranky, casti.papir, pole("Barvy", segBarvy), pole("Zahrnout", zahrnout),
     h("div", { class: "mezera" }), popis, pole("Výstup", segFormat),
     h("div", { class: "export-tlacitka" }, h("button", { type: "button", class: "tlacitko", text: "Zavřít", onclick: () => zavri() }), hlavni));
-  const dialog = h("dialog", { class: "okno export" }, h("div", { class: "export-rozlozeni" }, formular,
+  const dialog = h("dialog", { class: "okno export" });
+  dialog.append(titulekOkna(dialog, projektId ? "Export harmonogramu" : "Export kalendáře", () => zavri()), h("div", { class: "export-rozlozeni" }, formular,
     h("div", { class: "export-nahled" }, h("div", { class: "export-nahled-hlavicka" }, h("strong", { text: "Náhled" }), strankovani), nahled)));
   const zavri = () => { dialog.close(); dialog.remove(); };
   dialog.addEventListener("cancel", (ev) => { ev.preventDefault(); zavri(); });
