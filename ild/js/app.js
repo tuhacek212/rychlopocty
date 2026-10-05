@@ -22,7 +22,7 @@ import {
   motivZMinula, nastavMotiv, normalizujZobrazeni, odznakStavu, pocetDniText, radekProjektu, relativniText, sklonuj,
   textyZahlavi, tipProjektu,
 } from "./vzhled.js";
-import { Posta, TYM, konverzaceS, protejsek } from "./zpravy.js";
+import { Posta, REAKCE, TYM, citace, konverzaceS, normalizujHledani, protejsek } from "./zpravy.js";
 
 // Jen přes https (hesla, tokeny; šifrování v prohlížeči jinde ani nejde) – web ho sám nevynucuje.
 if (window.location.protocol === "http:" && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
@@ -1296,101 +1296,358 @@ function casKonverzace(cas) {
   return datumKratce(d, d.getFullYear() !== dnesek.getFullYear());
 }
 
+// odkazy v textu zprávy: adresy webu (nová karta) a cesty na disku (otevře program v počítači)
+const ODKAZ_V_TEXTU = /(\bhttps?:\/\/[^\s<>"]+|\bwww\.[^\s<>"]+)|((?<![\w])(?:[A-Za-z]:\\|\\\\[^\s\\/]+\\)[^\n<>"|?*]*)/g;
+const KONEC_ODKAZU = /[\s.,;:!?)\]}'"“”„]+$/;
+
+function textSOdkazy(text) {
+  const casti = [];
+  let pozice = 0;
+  for (const m of text.matchAll(ODKAZ_V_TEXTU)) {
+    const hodnota = m[0].replace(KONEC_ODKAZU, "");
+    if (hodnota.length < 4) continue;
+    casti.push(text.slice(pozice, m.index));
+    if (m[1]) {
+      casti.push(h("a", { href: /^https?:/i.test(hodnota) ? hodnota : `https://${hodnota}`, target: "_blank", rel: "noopener noreferrer", text: hodnota }));
+    } else {
+      casti.push(h("button", { type: "button", class: "odkaz-v-textu", title: "Otevřít v počítači", text: hodnota,
+        onclick: () => otevriVPocitaci(hodnota) }));
+    }
+    pozice = m.index + hodnota.length;
+  }
+  casti.push(text.slice(pozice));
+  return casti;
+}
+
+// úryvek kolem nalezeného (výsledek hledání): nejdřív celý dotaz, pak nejdelší slovo
+function uryvek(text, slova) {
+  const puvodni = text.split(/\s+/).filter(Boolean).join(" ");
+  const norm = normalizujHledani(puvodni);
+  if (norm.length !== puvodni.length) return [puvodni, "", ""];
+  for (const s of [slova.join(" "), ...[...slova].sort((a, b) => b.length - a.length)]) {
+    const i = s ? norm.indexOf(s) : -1;
+    if (i >= 0) {
+      const od = Math.max(0, i - 24);
+      return [(od ? "…" : "") + puvodni.slice(od, i), puvodni.slice(i, i + s.length), puvodni.slice(i + s.length)];
+    }
+  }
+  return [puvodni, "", ""];
+}
+
 function pohledZpravy(parametr) {
   const vybrana = parametr || stav.konverzace || "";
   stav.konverzace = vybrana;
+  const ja = tym.ja.id;
+  const ZOBRAZIT = 120;
+  // vlákno: kdo je dole, zůstává dole; kdo čte starší, tomu se nic neposune (kotva = první viditelná zpráva)
+  const v = { dole: true, odchod: 0, zobrazit: ZOBRAZIT, prvniNeprectena: undefined, cil: stav.skocNa || null, odpoved: null };
+  stav.skocNa = null;
   const seznam = h("div", { class: "konverzace" });
+  const hledani = h("input", { type: "search", class: "hledani-zprav", placeholder: "Hledat ve zprávách", "aria-label": "Hledat ve zprávách",
+    title: "Hledá ve všech konverzacích – i v názvech poslaných souborů (Ctrl+F)", value: stav.hledaniZprav || "" });
+  const stavHledani = h("p", { class: "faint stav-hledani", hidden: true });
+  const levy = h("div", { class: "levy-zpravy" }, h("label", { class: "pole-hledani-zprav" }, ikona("search"), hledani), seznam, stavHledani);
   const vlakno = h("div", { class: "vlakno", "aria-live": "polite" });
+  const odznakDolu = h("span", { class: "odznak-dolu", hidden: true });
+  const dolu = h("button", { type: "button", class: "tlacitko-dolu", hidden: true, title: "Na nejnovější zprávu", "aria-label": "Na nejnovější zprávu",
+    onclick: () => naKonec() }, ikona("chevron-down", "ikona", 18), odznakDolu);
+  const pruhOdpovedi = h("div", { class: "pruh-psani", hidden: true });
   const pole2 = h("textarea", { rows: 1, maxlength: 4000, placeholder: "Napiš zprávu…", "aria-label": "Zpráva", title: "Enter odešle, Shift+Enter = nový řádek" });
+  pole2.value = posta.koncepty.get(vybrana) || "";
   const odeslat = h("button", { type: "submit", class: "odeslat", title: "Odeslat (Enter)", "aria-label": "Odeslat" }, ikona("send", "ikona", 20));
   const prizpusob = () => { pole2.style.height = "40px"; pole2.style.height = `${Math.min(Math.max(pole2.scrollHeight + 2, 40), 140)}px`; };
-  pole2.addEventListener("input", prizpusob);
+  pole2.addEventListener("input", () => {
+    prizpusob();
+    if (pole2.value.trim()) posta.koncepty.set(vybrana, pole2.value); else posta.koncepty.delete(vybrana);
+  });
   pole2.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); formular.requestSubmit(); }
+    if (ev.key === "Escape" && v.odpoved) { ev.preventDefault(); nastavOdpoved(null); }
   });
   const formular = h("form", { class: "pole-zpravy", onsubmit: async (ev) => {
     ev.preventDefault();
     const text = pole2.value.trim();
     if (!text || !vybrana) return;
+    const odpoved = v.odpoved;
     pole2.value = "";
+    posta.koncepty.delete(vybrana);
+    nastavOdpoved(null);
     prizpusob();
-    const ok = await proved(() => posta.posli(vybrana, text));
+    v.dole = true;
+    v.prvniNeprectena = null;   // po odpovědi čára „Nepřečtené“ zmizí
+    const ok = await proved(() => posta.posli(vybrana, text, null, odpoved));
     if (!ok && !pole2.value) pole2.value = text;
     pole2.focus();
   } }, pole2, odeslat);
-  const nazevKonverzace = (k) => (k === TYM ? "Celý tým" : tym.jmeno(protejsek(k, tym.ja.id), "Kolega"));
-  const kolecko = (k, v = 36) => (k === TYM ? h("span", { class: "kolecko-tymu" }, ikona("users", "ikona", 20))
-    : avatar(tym.uzivatele.find((u) => u.id === protejsek(k, tym.ja.id)) || { id: protejsek(k, tym.ja.id), jmeno: nazevKonverzace(k) }, v));
+  const nazevKonverzace = (k) => (k === TYM ? "Celý tým" : tym.jmeno(protejsek(k, ja), "Kolega"));
+  const kolecko = (k, vel = 36) => (k === TYM ? h("span", { class: "kolecko-tymu" }, ikona("users", "ikona", 20))
+    : avatar(tym.uzivatele.find((u) => u.id === protejsek(k, ja)) || { id: protejsek(k, ja), jmeno: nazevKonverzace(k) }, vel));
   const hlavickaVlakna = h("div", { class: "hlavicka-vlakna" });
-  let posledniPocet = -1;
+  const jmenoAutora = (id) => (id === ja ? "Ty" : tym.jmeno(id, "Kolega"));
 
-  function obnov() {
-    const konverzace = [TYM, ...tym.aktivni.filter((u) => u.id !== tym.ja.id).map((u) => konverzaceS(tym.ja.id, u.id))];
+  function nastavOdpoved(z) {
+    v.odpoved = z ? citace(z) : null;
+    pruhOdpovedi.hidden = !v.odpoved;
+    if (!v.odpoved) return;
+    vymen(pruhOdpovedi, ikona("reply", "ikona zelena"), h("div", { class: "texty" },
+      h("strong", { text: jmenoAutora(v.odpoved.od) }), h("span", { class: "faint", text: v.odpoved.text })),
+    h("button", { type: "button", class: "ikonove male", title: "Neodpovídat (Esc)", "aria-label": "Neodpovídat", onclick: () => nastavOdpoved(null) }, ikona("x", "ikona", 10)));
+    pole2.focus();
+  }
+
+  function naKonec() {
+    v.dole = true;
+    vlakno.scrollTop = vlakno.scrollHeight;
+    ukazDolu();
+  }
+
+  function ukazDolu() {
+    const nahore = vlakno.scrollHeight - vlakno.scrollTop - vlakno.clientHeight > 120;
+    dolu.hidden = !nahore;
+    const nove = nahore ? posta.seznam(vybrana).filter((z) => z.od !== ja && z.cas > v.odchod && !("ceka" in z)).length : 0;
+    odznakDolu.hidden = !nove;
+    odznakDolu.textContent = nove < 100 ? String(nove) : "99+";
+  }
+
+  function skocNa(id) {
+    const zpravy = posta.seznam(vybrana);
+    const i = zpravy.findIndex((z) => z.id === id);
+    if (i < 0) {
+      oznam("Původní zpráva je starší – stahuje se historie, zkus to za chvíli znovu.");
+      posta.nactiStarsi(vybrana);
+      return;
+    }
+    v.zobrazit = Math.max(v.zobrazit, zpravy.length - i + 5);
+    v.cil = id;
+    obnov();
+  }
+
+  function nabidniReakce(z, kotva) {
+    const moje = posta.reakceZpravy(vybrana, z.id)[ja];
+    const p = popup(kotva, h("div", { class: "volba-reakci" }, REAKCE.map((e) => h("button", { type: "button",
+      class: e === moje ? "vybrana" : "", title: e === moje ? "Odebrat reakci" : "Reagovat", text: e,
+      onclick: () => { p.zavri(); reaguj(z, e); } }))), () => {}, { trida: "popup-reakci", vlevo: true });
+  }
+
+  function reaguj(z, e) {
+    posta.reaguj(vybrana, z.id, e).catch(() => oznam("Reakci se nepodařilo uložit – správce musí ve Firebase vložit nová pravidla.", true));
+  }
+
+  function menuZpravy(z, ev, bublina) {
+    ev.preventDefault();
+    const vyber = String(window.getSelection?.() || "");
+    const polozky = [];
+    if (!("ceka" in z)) {
+      polozky.push({ text: "Reagovat…", ikona: "smile", akce: () => nabidniReakce(z, bublina) },
+        { text: "Odpovědět", ikona: "reply", akce: () => nastavOdpoved(z) });
+    }
+    polozky.push({ text: vyber && bublina.contains(window.getSelection().anchorNode) ? "Kopírovat výběr" : "Kopírovat text", ikona: "copy",
+      akce: () => zkopiruj(vyber && bublina.contains(window.getSelection().anchorNode) ? vyber : z.text) });
+    if (z.chyba) {
+      polozky.push("-", { text: "Zkusit znovu odeslat", ikona: "refresh", akce: () => proved(() => posta.zkusZnovu(vybrana, z.id)) },
+        { text: "Zahodit", ikona: "trash", nebezpecne: true, akce: () => posta.zahod(vybrana, z.id) });
+    }
+    menu(ev.clientX, ev.clientY, polozky);
+  }
+
+  function bublinaZpravy(z, navazuje) {
+    const moje = z.od === ja;
+    const d = new Date(z.cas);
+    const autor = tym.uzivatele.find((u) => u.id === z.od);
+    const reakce = posta.reakceZpravy(vybrana, z.id);
+    const skupiny = new Map();
+    for (const [kdo, e] of Object.entries(reakce)) skupiny.set(e, [...(skupiny.get(e) || []), kdo]);
+    const poradi = [...skupiny.keys()].sort((a, b) => ((REAKCE.indexOf(a) + 1 || 99) - (REAKCE.indexOf(b) + 1 || 99)));
+    const odpoved = z.odpoved;
+    const bezVzkazu = (z.odkazy || []).length && z.text === `📎 ${z.odkazy.map((o) => o.nazev).join(", ")}`;
+    const bublina = h("div", { class: `bublina${moje ? " moje" : ""}${z.chyba ? " chyba" : ""}${v.cil === z.id ? " zvyraznena" : ""}`, dataset: { id: z.id } },
+      !moje && vybrana === TYM && !navazuje ? h("small", { class: "odesilatel", text: tym.jmeno(z.od, "Kolega"), style: { color: barvaUzivatele(autor || { id: z.od }) } }) : null,
+      odpoved ? h("button", { type: "button", class: "citace", title: "Ukázat původní zprávu", onclick: () => skocNa(odpoved.id) },
+        h("strong", { text: jmenoAutora(odpoved.od), style: { color: barvaUzivatele(tym.uzivatele.find((u) => u.id === odpoved.od) || { id: odpoved.od }) } }),
+        h("span", { text: odpoved.text })) : null,
+      bezVzkazu ? null : h("p", {}, textSOdkazy(z.text)),
+      (z.odkazy || []).map((o) => o.typ === "projekt" ? h("div", { class: "odkaz-zpravy" },
+        h("a", { class: "odkaz-otevrit", href: `#/projekt/${encodeURIComponent(o.projekt)}`, title: "Otevřít projekt" },
+          ikona("folder"), h("span", { text: `Projekt ${o.nazev}` })))
+        : h("div", { class: "odkaz-zpravy" },
+          h("button", { type: "button", class: "odkaz-otevrit", title: `${o.cesta}\nOtevřít v počítači`, onclick: () => otevriVPocitaci(o.cesta, o.projekt) },
+            ikona(o.slozka ? "folder" : "file"), h("span", { text: o.nazev })),
+          h("button", { type: "button", class: "ikonove male", title: "Kopírovat cestu", "aria-label": "Kopírovat cestu", onclick: () => zkopiruj(o.cesta) }, ikona("copy")))),
+      h("small", { class: "cas-zpravy", text: z.chyba ? "neodesláno" : z.ceka ? "odesílá se…"
+        : `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}` }));
+    bublina.addEventListener("contextmenu", (ev) => menuZpravy(z, ev, bublina));
+    const akce = "ceka" in z ? null : h("div", { class: "akce-zpravy" },
+      h("button", { type: "button", title: "Odpovědět", "aria-label": "Odpovědět", onclick: () => nastavOdpoved(z) }, ikona("reply", "ikona", 14)),
+      h("button", { type: "button", title: "Reagovat", "aria-label": "Reagovat", onclick: (ev) => nabidniReakce(z, ev.currentTarget) }, ikona("smile", "ikona", 14)));
+    return h("div", { class: `radek-zpravy${moje ? " moje" : ""}${navazuje ? " navazuje" : ""}`, dataset: { id: z.id } },
+      h("div", { class: "sloupec-zpravy" }, bublina,
+        poradi.length ? h("div", { class: "reakce-zpravy" }, poradi.map((e) => {
+          const lide = skupiny.get(e);
+          return h("button", { type: "button", class: `reakce${lide.includes(ja) ? " moje" : ""}`, text: lide.length > 1 ? `${e} ${lide.length}` : e,
+            title: lide.map(jmenoAutora).join(", "), onclick: () => reaguj(z, e) });
+        })) : null),
+      akce);
+  }
+
+  function obnovSeznam() {
+    const dotaz = hledani.value.trim();
+    stav.hledaniZprav = hledani.value;
+    if (dotaz) {
+      const slova = normalizujHledani(dotaz).split(" ").filter(Boolean);
+      const vysledky = posta.hledej(dotaz);
+      vymen(seznam, vysledky.map(([k, z]) => {
+        const kdo = z.od === ja ? "Ty: " : k === TYM ? `${tym.jmeno(z.od).split(" ")[0]}: ` : "";
+        const [pred, nalezeno, za] = uryvek([z.text, ...(z.odkazy || []).map((o) => o.nazev).filter((n) => !z.text.includes(n))].join(" "), slova);
+        return h("a", { href: `#/zpravy/${encodeURIComponent(k)}`, class: "radek-konverzace vysledek", onclick: (ev) => {
+          ev.preventDefault();
+          if (k === vybrana) { skocNa(z.id); return; }
+          stav.skocNa = z.id;
+          window.location.hash = `#/zpravy/${encodeURIComponent(k)}`;
+        } }, kolecko(k),
+        h("div", { class: "texty" },
+          h("div", { class: "r1" }, h("span", { class: "jmeno", text: nazevKonverzace(k) }), h("span", { class: "cas", text: casKonverzace(z.cas) })),
+          h("div", { class: "r2" }, h("span", { class: "nahled-zpravy" }, kdo + pred, nalezeno ? h("mark", { text: nalezeno }) : null, za))));
+      }));
+      const uplna = posta.historieUplna();
+      stavHledani.hidden = vysledky.length && uplna;
+      stavHledani.textContent = `${vysledky.length ? "" : "Nic nenalezeno."}${uplna ? "" : " Prohledávám i starší zprávy – ještě se stahují."}`.trim();
+      return;
+    }
+    stavHledani.hidden = true;
+    const konverzace = [TYM, ...tym.aktivni.filter((u) => u.id !== ja).map((u) => konverzaceS(ja, u.id))];
     for (const k of Object.keys(posta.schranka)) if (!konverzace.includes(k)) konverzace.push(k);
     konverzace.sort((a, b) => (a === TYM ? -1 : b === TYM ? 1 : 0) || (posta.schranka[b]?.cas || 0) - (posta.schranka[a]?.cas || 0)
       || kolator.compare(nazevKonverzace(a), nazevKonverzace(b)));
     vymen(seznam, konverzace.map((k) => {
       const meta = posta.schranka[k];
-      const od = meta?.od === tym.ja.id ? "Ty: " : k === TYM && meta?.od ? `${tym.jmeno(meta.od).split(" ")[0]}: ` : "";
-      const neprecteno = posta.neprecteno(k);
-      return h("a", { href: `#/zpravy/${encodeURIComponent(k)}`, class: `radek-konverzace${k === vybrana ? " vybrany" : ""}${neprecteno ? " neprectene" : ""}` },
+      const od = meta?.od === ja ? "Ty: " : k === TYM && meta?.od ? `${tym.jmeno(meta.od).split(" ")[0]}: ` : "";
+      const pocet = posta.pocet(k);
+      const koncept = k !== vybrana && posta.koncepty.get(k);
+      return h("a", { href: `#/zpravy/${encodeURIComponent(k)}`, class: `radek-konverzace${k === vybrana ? " vybrany" : ""}${pocet ? " neprectene" : ""}` },
         kolecko(k),
         h("div", { class: "texty" },
           h("div", { class: "r1" }, h("span", { class: "jmeno", text: nazevKonverzace(k) }), h("span", { class: "cas", text: casKonverzace(meta?.cas) })),
-          h("div", { class: "r2" }, h("span", { class: "nahled-zpravy", text: meta?.text ? od + meta.text : "Zatím bez zpráv" }),
-            neprecteno ? h("span", { class: "odznak-zprav", text: "1" }) : null)));
+          h("div", { class: "r2" }, h("span", { class: "nahled-zpravy", text: koncept ? `Koncept: ${koncept}` : meta?.text ? od + meta.text : "Zatím bez zpráv" }),
+            pocet ? h("span", { class: "odznak-zprav", text: pocet < 100 ? String(pocet) : "99+" }) : null)));
     }));
+  }
+
+  let hledaniCasovac = 0;
+  let stahujeVse = false;
+  hledani.addEventListener("input", () => {
+    clearTimeout(hledaniCasovac);
+    hledaniCasovac = setTimeout(() => {
+      obnovSeznam();
+      if (hledani.value.trim() && !stahujeVse && !posta.historieUplna()) {
+        stahujeVse = true;
+        posta.nactiVse().finally(() => { stahujeVse = false; obnovSeznam(); });
+      }
+    }, 200);
+  });
+  hledani.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && hledani.value) { ev.preventDefault(); hledani.value = ""; obnovSeznam(); } });
+
+  function obnov() {
+    obnovSeznam();
     if (!vybrana) return;
-    const druhy = protejsek(vybrana, tym.ja.id);
+    const druhy = protejsek(vybrana, ja);
     vymen(hlavickaVlakna, h("a", { href: "#/zpravy/", class: "ikonove jen-mobil", "aria-label": "Zpět", onclick: () => { stav.konverzace = ""; } }, ikona("chevron-left")),
       kolecko(vybrana, 32), h("div", {}, h("h3", { text: nazevKonverzace(vybrana) }),
         h("div", { class: "faint", text: vybrana === TYM ? `${tym.aktivni.length} ${tym.aktivni.length === 1 ? "člen" : tym.aktivni.length < 5 ? "členové" : "členů"} týmu` : tym.uzivatele.find((u) => u.id === druhy)?.email || "" })));
     const zpravy = posta.seznam(vybrana);
-    const dole = vlakno.scrollHeight - vlakno.scrollTop - vlakno.clientHeight < 80;
+    if (v.prvniNeprectena === undefined && zpravy.length) {
+      // čára „Nepřečtené“ podle stavu při prvním zobrazení zpráv (pak se konverzace označí přečtená)
+      const hranice = posta.prectene[vybrana] || 0;
+      const i = zpravy.findIndex((z) => z.od !== ja && z.cas > hranice && !("ceka" in z));
+      v.prvniNeprectena = i >= 0 ? zpravy[i].id : null;
+      if (i >= 0) {
+        v.zobrazit = Math.max(v.zobrazit, zpravy.length - i + 10);
+        v.cil ||= "neprectene";
+      }
+    }
+    // začátek vlákna drží – nové zprávy ho nesmí odsunout
+    const prvni = vlakno.querySelector(".radek-zpravy")?.dataset.id;
+    const poradiPrvni = prvni ? zpravy.findIndex((z) => z.id === prvni) : -1;
+    if (poradiPrvni >= 0) v.zobrazit = Math.max(v.zobrazit, zpravy.length - poradiPrvni);
+    // kotva: první viditelná zpráva a její odsazení (kdo čte starší, tomu se nic neposune)
+    let kotva = null;
+    if (!v.dole) {
+      for (const r of vlakno.querySelectorAll(".radek-zpravy")) {
+        if (r.offsetTop + r.offsetHeight > vlakno.scrollTop) { kotva = [r.dataset.id, r.offsetTop - vlakno.scrollTop]; break; }
+      }
+    }
     const prvky = [];
-    let posledniDen = "", posledniOd = "", posledniCas = 0;
-    for (const z of zpravy) {
+    if (posta.nacita.has(vybrana)) prvky.push(h("p", { class: "oddelovac-dne", text: "Načítám starší zprávy…" }));
+    let posledniDen = "", predchozi = null;
+    for (const z of zpravy.slice(-v.zobrazit)) {
       const d = new Date(z.cas);
       const den = iso(d);
       if (den !== posledniDen) {
         posledniDen = den;
-        posledniOd = "";
+        predchozi = null;
         prvky.push(h("div", { class: "oddelovac-dne", text: den === dnes() ? "Dnes" : `${DNY_CELE[denTydne(d)]} ${datumKratce(d, d.getFullYear() !== new Date().getFullYear())}` }));
       }
-      const moje = z.od === tym.ja.id;
-      const navazuje = z.od === posledniOd && z.cas - posledniCas < 5 * 60000;
-      posledniOd = z.od;
-      posledniCas = z.cas;
-      const autor = tym.uzivatele.find((u) => u.id === z.od);
-      prvky.push(h("div", { class: `bublina${moje ? " moje" : ""}${navazuje ? " navazuje" : ""}${z.chyba ? " chyba" : ""}` },
-        !moje && vybrana === TYM && !navazuje ? h("small", { class: "odesilatel", text: tym.jmeno(z.od, "Kolega"), style: { color: barvaUzivatele(autor || { id: z.od }) } }) : null,
-        h("p", { text: z.text }),
-        (z.odkazy || []).map((o) => o.typ === "projekt" ? h("div", { class: "odkaz-zpravy" },
-          h("a", { class: "odkaz-otevrit", href: `#/projekt/${encodeURIComponent(o.projekt)}`, title: "Otevřít projekt" },
-            ikona("folder"), h("span", { text: `Projekt ${o.nazev}` })))
-          : h("div", { class: "odkaz-zpravy" },
-            h("button", { type: "button", class: "odkaz-otevrit", title: `${o.cesta}\nOtevřít v počítači`, onclick: () => otevriVPocitaci(o.cesta, o.projekt) },
-              ikona(o.slozka ? "folder" : "file"), h("span", { text: o.nazev })),
-            h("button", { type: "button", class: "ikonove male", title: "Kopírovat cestu", "aria-label": "Kopírovat cestu", onclick: () => zkopiruj(o.cesta) }, ikona("copy")))),
-        h("small", { class: "cas-zpravy", text: z.chyba ? "neodesláno" : z.ceka ? "odesílá se…"
-          : `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}` })));
+      if (z.id === v.prvniNeprectena) {
+        prvky.push(h("div", { class: "oddelovac-dne neprectene", dataset: { id: "neprectene" }, text: "Nepřečtené zprávy" }));
+        predchozi = null;
+      }
+      const navazuje = predchozi && z.od === predchozi.od && z.cas - predchozi.cas < 5 * 60000;
+      predchozi = z;
+      prvky.push(bublinaZpravy(z, navazuje));
     }
     if (!zpravy.length) prvky.push(h("p", { class: "prazdne", text: "Zatím tu nic není – napiš první zprávu." }));
     vymen(vlakno, prvky);
-    if (dole || posledniPocet !== zpravy.length) vlakno.scrollTop = vlakno.scrollHeight;
-    posledniPocet = zpravy.length;
-    if (document.visibilityState === "visible") posta.oznacPrectene(vybrana);
+    if (!vlakno.isConnected) {
+      // pohled se teprve staví – posun (cíl, konec) až po vložení do stránky
+    } else if (v.cil) {
+      const cil = vlakno.querySelector(`[data-id="${CSS.escape(v.cil)}"]`);
+      if (cil) {
+        vlakno.scrollTop = Math.max(0, cil.offsetTop - 12);
+        v.dole = vlakno.scrollHeight - vlakno.scrollTop - vlakno.clientHeight < 8;
+        if (!v.dole) v.odchod = Date.now();
+        const zvyraznit = cil.querySelector?.(".bublina");
+        if (zvyraznit) setTimeout(() => zvyraznit.classList.remove("zvyraznena"), 1800);
+        v.cil = null;
+      }
+    } else if (v.dole) {
+      vlakno.scrollTop = vlakno.scrollHeight;
+    } else if (kotva) {
+      const r = vlakno.querySelector(`.radek-zpravy[data-id="${CSS.escape(kotva[0])}"]`);
+      if (r) vlakno.scrollTop = r.offsetTop - kotva[1];
+    }
+    ukazDolu();
+    if (zpravy.length && document.visibilityState === "visible") posta.oznacPrectene(vybrana);
   }
+
+  vlakno.addEventListener("scroll", () => {
+    const dole = vlakno.scrollHeight - vlakno.scrollTop - vlakno.clientHeight < 8;
+    if (v.dole && !dole) v.odchod = Date.now();
+    v.dole = dole;
+    ukazDolu();
+    if (vlakno.scrollTop < 40 && vlakno.scrollHeight > vlakno.clientHeight) {
+      // nahoře: další zprávy z paměti, pak starší ze serveru
+      const pocet = posta.seznam(vybrana).length;
+      if (pocet > v.zobrazit) { v.zobrazit += ZOBRAZIT; obnov(); }
+      else if (posta.maStarsi(vybrana) && !posta.nacita.has(vybrana)) { v.zobrazit = pocet + ZOBRAZIT; posta.nactiStarsi(vybrana); }
+    }
+  }, { passive: true });
 
   if (vybrana) posta.otevri(vybrana);
   obnov();
   const el2 = h("section", { class: "pohled" },
     h("div", { class: "nadpisy" }, h("span", { class: "faint", text: "TÝM" }), h("h1", { text: "Zprávy" })),
-    h("div", { class: `zpravy-telo${vybrana ? " s-vlaknem" : ""}` }, seznam,
-      vybrana ? h("div", { class: "panel-vlakna" }, hlavickaVlakna, vlakno, formular)
+    h("div", { class: `zpravy-telo${vybrana ? " s-vlaknem" : ""}` }, levy,
+      vybrana ? h("div", { class: "panel-vlakna" }, hlavickaVlakna, h("div", { class: "obal-vlakna" }, vlakno, dolu), pruhOdpovedi, formular)
         : h("div", { class: "panel-vlakna prazdny" }, h("p", { text: "Vyber konverzaci." }))));
-  if (vybrana) setTimeout(() => { vlakno.scrollTop = vlakno.scrollHeight; if (window.matchMedia("(pointer: fine)").matches) pole2.focus(); }, 0);
-  return { el: el2, obnov };
+  if (vybrana) {
+    setTimeout(() => {
+      obnov();
+      prizpusob();
+      if (window.matchMedia("(pointer: fine)").matches) pole2.focus();
+    }, 0);
+  }
+  const hledej = () => { hledani.focus(); hledani.select(); };
+  if (stav.hledaniZprav) obnovSeznam();
+  return { el: el2, obnov, hledej };
 }
 
 // --- klávesové zkratky (jako v programu) ----------------------------------------------------------------
@@ -1403,7 +1660,12 @@ document.addEventListener("keydown", (ev) => {
     m: () => { el.aZpravy.click(); },
     b: () => prepniSeznam(),
     0: () => { window.location.hash = "#/projekty"; },
-    f: () => { if (stav.sbaleno) nastavSbaleni(false); el.hledani.focus(); el.hledani.select(); },
+    f: () => {
+      if (pohled?.klic === "zpravy" && pohled.hledej) { pohled.hledej(); return; }   // ve Zprávách hledá ve zprávách
+      if (stav.sbaleno) nastavSbaleni(false);
+      el.hledani.focus();
+      el.hledani.select();
+    },
     n: () => dialogProjektu(tym, null, otevriProjekt),
   }[k];
   if (!akce) return;

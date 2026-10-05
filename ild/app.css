@@ -715,7 +715,7 @@ body.taznuti, body.taznuti * { cursor: grabbing !important; }
 .radek-konverzace.vybrany { background: var(--c-primary-light); }
 .kolecko-tymu { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--c-primary-light); color: var(--c-primary-dark); flex: none; }
 .kolecko-tymu .ikona { width: 20px; height: 20px; }
-.radek-konverzace .texty { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.radek-konverzace .texty { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .radek-konverzace .r1 { display: flex; gap: 6px; align-items: baseline; }
 .radek-konverzace .jmeno { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .radek-konverzace.neprectene .jmeno { font-weight: 600; }
@@ -748,6 +748,56 @@ body.taznuti, body.taznuti * { cursor: grabbing !important; }
 .odeslat:hover { background: var(--c-hover); }
 .odeslat .ikona { width: 20px; height: 20px; }
 .prazdne { align-self: center; margin-top: 30px; color: var(--c-faint); }
+/* hledání, odpovědi, reakce, tlačítko ↓ (okno_zpravy.PanelZprav) */
+.levy-zpravy { width: 300px; flex: none; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.levy-zpravy .konverzace { width: auto; flex: 1; min-height: 0; }
+.pole-hledani-zprav { position: relative; display: block; }
+.pole-hledani-zprav .ikona { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--c-muted); pointer-events: none; }
+.hledani-zprav { width: 100%; padding-left: 30px; }
+.stav-hledani { margin: 0 4px; }
+.radek-konverzace.vysledek mark { background: none; color: var(--c-primary-dark); font-weight: 600; }
+.obal-vlakna { position: relative; flex: 1; min-height: 0; display: flex; }
+.obal-vlakna .vlakno { flex: 1; }
+.tlacitko-dolu { position: absolute; right: 14px; bottom: 10px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--c-border);
+  background: var(--c-card); color: var(--c-primary-dark); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.tlacitko-dolu:hover { border-color: var(--c-primary); }
+.tlacitko-dolu[hidden], .odznak-dolu[hidden], .pruh-psani[hidden] { display: none; }
+.odznak-dolu { position: absolute; top: -7px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--c-primary);
+  color: #fff; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; }
+.radek-zpravy { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.radek-zpravy.navazuje { margin-top: 0; }
+.radek-zpravy.moje { flex-direction: row-reverse; }
+.sloupec-zpravy { display: flex; flex-direction: column; align-items: flex-start; max-width: min(560px, 78%); min-width: 0; }
+.radek-zpravy.moje .sloupec-zpravy { align-items: flex-end; }
+.radek-zpravy .bublina { max-width: 100%; margin-top: 0; align-self: auto; }
+.bublina.zvyraznena { outline: 2px solid var(--c-primary); }
+.akce-zpravy { display: flex; gap: 2px; visibility: hidden; }
+.radek-zpravy:hover .akce-zpravy, .akce-zpravy:focus-within { visibility: visible; }
+.akce-zpravy button { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--c-border); background: var(--c-card); color: var(--c-muted);
+  display: grid; place-items: center; cursor: pointer; padding: 0; }
+.akce-zpravy button:hover { border-color: var(--c-primary); }
+.citace { display: grid; width: 100%; margin: 2px 0 4px; padding: 3px 8px 4px; border: 0; border-left: 3px solid var(--c-primary); border-radius: 4px;
+  background: var(--c-card); color: var(--c-muted); font: inherit; text-align: left; cursor: pointer; }
+.citace:hover { background: var(--c-hover); }
+.citace strong { font-size: 11px; }
+.citace span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reakce-zpravy { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 6px 0; }
+.reakce { padding: 1px 7px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-card); color: var(--c-text); font: 13px var(--pismo); cursor: pointer; }
+.reakce.moje { background: var(--c-primary-light); border-color: var(--c-primary-border); }
+.reakce:hover { border-color: var(--c-primary); }
+.volba-reakci { display: flex; gap: 2px; padding: 4px; }
+.volba-reakci button { padding: 2px 5px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 20px; line-height: 1.2; cursor: pointer; }
+.volba-reakci button:hover { background: var(--c-hover); }
+.volba-reakci button.vybrana { background: var(--c-primary-light); border-color: var(--c-primary-border); }
+.pruh-psani { display: flex; align-items: center; gap: 8px; padding: 6px 4px 6px 8px; background: var(--c-inset); border: 1px solid var(--c-border); border-radius: 6px; }
+.pruh-psani .texty { flex: 1; min-width: 0; display: grid; }
+.pruh-psani strong { color: var(--c-primary-dark); }
+.pruh-psani .faint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pruh-psani .ikona { color: var(--c-primary-dark); }
+.oddelovac-dne.neprectene { color: var(--c-primary-dark); font-weight: 600; border-bottom: 1px solid var(--c-primary-border); padding-bottom: 2px; }
+.bublina p a { color: var(--c-primary-dark); }
+.odkaz-v-textu { padding: 0; border: 0; background: none; color: var(--c-primary-dark); font: inherit; text-decoration: underline; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+@media (hover: none) { .akce-zpravy { display: none; } }
 
 /* --- Nastavení (DialogNastaveni) ---------------------------------------------------------------- */
 dialog.okno.nastaveni { width: min(1060px, calc(100vw - 24px)); height: min(760px, calc(var(--vv-vyska, 100dvh) - 24px)); }
@@ -969,8 +1019,8 @@ body:not(.tiskne) #tisk-obsah { display: none; }
   .nahled { padding: 10px 14px 12px; }
   .nahled.prazdny { display: none; }
   .nahled-akce { margin: 8px 0 6px; }
-  .konverzace { width: 100%; }
-  .zpravy-telo.s-vlaknem .konverzace { display: none; }
+  .levy-zpravy { width: 100%; }
+  .zpravy-telo.s-vlaknem .levy-zpravy { display: none; }
   .zpravy-telo:not(.s-vlaknem) .panel-vlakna { display: none; }
   .pohled:has(.zpravy-telo.s-vlaknem) > .nadpisy { display: none; }   /* otevřená konverzace = celá výška */
   .jen-mobil { display: inline-flex !important; }

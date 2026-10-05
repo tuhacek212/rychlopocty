@@ -2,7 +2,7 @@
 // signálem) a na pozadí se stáhnou nové (příští spuštění má novou verzi). Data týmu (Firebase, jiná
 // adresa) ani přihlášení se sem nikdy neukládají – jdou vždy živě.
 
-const VERZE = "ild-2026-10-04b";
+const VERZE = "ild-2026-10-05";
 const SOUBORY = ["./", "index.html", "app.css", "manifest.webmanifest", "logo.png", "ikona.png", "ikona-192.png", "ikona-512.png", "ikona-apple-180.png",
   "js/app.js", "js/oblak.js", "js/data.js", "js/ui.js", "js/zpravy.js", "js/kalendar.js", "js/export.js", "js/xlsx.js",
   "js/finance.js", "js/cashflow.js", "js/projekty.js", "js/vzhled.js", "js/dovolene.js", "js/nastaveni.js", "js/instalace.js"];
