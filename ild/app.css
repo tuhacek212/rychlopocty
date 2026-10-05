@@ -61,7 +61,7 @@
 html, body { margin: 0; height: 100%; }
 body {
   background: var(--c-bg); color: var(--c-text); font: 13px/1.38 var(--pismo);
-  -webkit-text-size-adjust: 100%; overflow: hidden;
+  -webkit-text-size-adjust: 100%; overflow: hidden; -webkit-tap-highlight-color: transparent;
 }
 [hidden] { display: none !important; }
 h1 { font-size: 22px; margin: 0; font-weight: 600; line-height: 1.25; }
@@ -210,11 +210,17 @@ button.radek:hover, a.radek:hover, .radek.klikaci:hover { background: var(--c-ho
 .banner-info > .ikona { color: var(--c-primary-dark); }
 
 /* --- okno aplikace: lišta aktivit | seznam projektů | obsah, dole stavový řádek -------------------- */
+/* env(safe-area-inset-*) = výřez displeje, zaoblené rohy a lišta gest systému (iPhone, Android od 15) –
+   tam nesmí nic důležitého, jinak to telefon zakryje. --vv-* = viditelná část bez lišt prohlížeče
+   a klávesnice (měří ui.js; 100vh je v telefonu počítá i pod nimi). */
 #aplikace { height: 100%; }
-.ram { display: grid; grid-template-rows: minmax(0, 1fr) 24px; height: 100vh; height: 100dvh; }
+.ram { display: grid; grid-template-rows: minmax(0, 1fr) calc(24px + env(safe-area-inset-bottom)); height: var(--vyska-okna, 100vh);
+  padding-top: env(safe-area-inset-top); }
+@supports (height: 100dvh) { .ram { height: 100dvh; } }
 .ram-telo { display: flex; min-height: 0; min-width: 0; }
 
-.activitybar { width: 48px; flex: none; display: flex; flex-direction: column; padding: 4px 0 6px; background: var(--c-activity); border-right: 1px solid var(--c-border); z-index: 4; }
+.activitybar { width: calc(48px + env(safe-area-inset-left)); flex: none; display: flex; flex-direction: column; padding: 4px 0 6px env(safe-area-inset-left);
+  background: var(--c-activity); border-right: 1px solid var(--c-border); z-index: 4; }
 .aktivita {
   position: relative; width: 48px; height: 46px; flex: none; padding: 0; display: grid; place-items: center;
   border: 0; border-left: 2px solid transparent; border-right: 2px solid transparent; background: transparent; color: var(--c-activity-ikona); cursor: pointer;
@@ -305,14 +311,16 @@ button.radek:hover, a.radek:hover, .radek.klikaci:hover { background: var(--c-ho
 .panel-sipka .ikona { width: 11px; height: 11px; }
 
 /* obsah vpravo */
-.obsah { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 20px 28px 14px; background: var(--c-bg); overflow: hidden; }
+.obsah { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 20px calc(28px + env(safe-area-inset-right)) 14px 28px;
+  background: var(--c-bg); overflow: hidden; container: obsah / inline-size; }
 .pohled { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .pohled.roluje { overflow-y: auto; }
 .nadpisy { display: grid; gap: 4px; }
 .nadpisy .faint { text-transform: uppercase; }
 
 /* stavový řádek (QFrame#statusbar) */
-.statusbar { display: flex; align-items: stretch; height: 24px; padding-right: 6px; background: var(--c-statusbar); color: #fff; font-size: 12px; overflow: hidden; }
+.statusbar { display: flex; align-items: stretch; padding: 0 calc(6px + env(safe-area-inset-right)) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--c-statusbar); color: #fff; font-size: 12px; overflow: hidden; }
 .statusbar button, .statusbar span { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: #fff;
   font: 400 12px var(--pismo); padding: 1px 8px; white-space: nowrap; }
 .statusbar button { cursor: pointer; }
@@ -395,7 +403,7 @@ button.radek:hover, a.radek:hover, .radek.klikaci:hover { background: var(--c-ho
 .odpocet { font-size: 12px; font-weight: 700; white-space: nowrap; }
 
 /* --- historie projektu (PopupHistorie + HistorieDelegate) ------------------------------------------- */
-.popup.historie { width: 600px; height: min(520px, calc(100vh - 80px)); display: flex; flex-direction: column; padding: 12px 10px 10px 14px; }
+.popup.historie { width: min(600px, calc(100vw - 16px)); height: min(520px, calc(var(--vv-vyska, 100dvh) - 80px)); display: flex; flex-direction: column; padding: 12px 10px 10px 14px; }
 .popup.historie h2 { margin-bottom: 8px; }
 .historie-hledani { margin-bottom: 8px; }
 .historie-seznam { flex: 1; overflow-y: auto; }
@@ -473,8 +481,8 @@ button.radek:hover, a.radek:hover, .radek.klikaci:hover { background: var(--c-ho
 .tabulka td.tucne { font-weight: 600; }
 
 /* --- nabídka (QMenu) --------------------------------------------------------------------------- */
-.menu { position: fixed; z-index: 60; min-width: 180px; max-width: 380px; padding: 4px; background: var(--c-popup); border: 1px solid var(--c-border);
-  border-radius: 6px; box-shadow: var(--stin-popup); outline: none; }
+.menu { position: fixed; z-index: 60; min-width: 180px; max-width: min(380px, calc(100vw - 8px)); max-height: calc(var(--vv-vyska, 100dvh) - 8px); overflow-y: auto;
+  padding: 4px; background: var(--c-popup); border: 1px solid var(--c-border); border-radius: 6px; box-shadow: var(--stin-popup); outline: none; }
 .menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 22px 5px 6px; border: 0; background: none; color: var(--c-text);
   font: 13px var(--pismo); text-align: left; border-radius: 3px; cursor: default; white-space: nowrap; }
 .menu button:hover, .menu button:focus-visible, .menu button:focus { background: var(--c-primary); color: #fff; outline: none; }
@@ -493,7 +501,7 @@ button.radek:hover, a.radek:hover, .radek.klikaci:hover { background: var(--c-ho
 .menu-cara { height: 1px; background: var(--c-border); margin: 4px 6px; }
 
 /* rozbalovací panel (QFrame#popover) */
-.popup { position: fixed; z-index: 50; width: min(340px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow: auto; padding: 12px 14px;
+.popup { position: fixed; z-index: 50; width: min(340px, calc(100vw - 16px)); max-height: calc(var(--vv-vyska, 100dvh) - 16px); overflow: auto; padding: 12px 14px;
   background: var(--c-popup); border: 1px solid var(--c-border); border-radius: 6px; box-shadow: var(--stin-popup); }
 
 /* bubliny s nápovědou (QToolTip) a popisky lišty aktivit (PopisekAktivity) */
@@ -507,8 +515,11 @@ button.radek:hover, a.radek:hover, .radek.klikaci:hover { background: var(--c-ho
 @keyframes vyjed { from { opacity: 0; transform: translateX(-4px); } }
 
 /* --- okna (QDialog s titulkovou lištou Windows v barvách motivu) ----------------------------------- */
+/* uprostřed viditelné části (top / bottom = pruh bez lišt prohlížeče a klávesnice), nikdy pod ní */
 dialog.okno {
-  width: min(480px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; border: 1px solid var(--c-border);
+  width: min(480px, calc(100vw - 24px)); max-height: calc(var(--vv-vyska, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  top: calc(var(--vv-horni, 0px) + env(safe-area-inset-top)); bottom: calc(var(--vv-spodni, 0px) + env(safe-area-inset-bottom));
+  padding: 0; border: 1px solid var(--c-border);
   border-radius: 8px; background: var(--c-bg); color: var(--c-text); box-shadow: var(--stin-okna); overflow: hidden;
   display: flex; flex-direction: column;
 }
@@ -531,7 +542,7 @@ dialog.okno.siroke-okno { width: min(680px, calc(100vw - 24px)); }
 
 /* oznámení (vzhled.Toast) – dole uprostřed okna, nad stavovým řádkem */
 #oznameni {
-  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 6px); z-index: 80; max-width: calc(100vw - 32px);
+  position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translate(-50%, 6px); z-index: 80; max-width: calc(100vw - 32px);
   display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 6px; background: var(--c-toast); color: #fff;
   opacity: 0; pointer-events: none; transition: opacity 0.15s, transform 0.15s;
 }
@@ -540,9 +551,20 @@ dialog.okno.siroke-okno { width: min(680px, calc(100vw - 24px)); }
 .oznameni-akce:hover { background: rgba(255, 255, 255, 0.08); }
 
 /* --- přihlášení (nastaveni.DialogPrihlaseni) a načítání (uvod.UvodniLogo) ------------------------- */
-.obrazovka-prihlaseni { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--c-bg); overflow: auto; height: 100%; }
-.karta-prihlaseni { width: min(400px, 100%); padding: 12px 12px 34px 40px; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 14px;
+.obrazovka-prihlaseni { display: grid; place-items: center; background: var(--c-bg); overflow: auto; height: 100%;
+  padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
+.prihlaseni-sloupec { display: grid; justify-items: center; gap: 14px; width: min(400px, 100%); }
+.karta-prihlaseni { width: 100%; padding: 12px 12px 34px 40px; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 14px;
   box-shadow: 0 8px 36px rgba(16, 24, 40, 0.24); }
+.odkaz-instalace { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--c-muted); font: 600 13px var(--pismo); cursor: pointer; text-align: center; }
+.odkaz-instalace:hover { background: var(--c-hover); color: var(--c-primary-dark); }
+@media (max-width: 440px) {
+  .karta-prihlaseni { padding: 10px 10px 26px 22px; }
+  .karta-prihlaseni .vnitrek { padding-right: 12px; }
+  .nadpis-prihlaseni { margin-top: 10px; }
+  .podnadpis-prihlaseni { margin-bottom: 22px; }
+}
 .karta-prihlaseni .horni { display: flex; justify-content: flex-end; height: 24px; }
 .karta-prihlaseni .vnitrek { padding-right: 28px; display: flex; flex-direction: column; }
 .karta-prihlaseni .logo-ild { width: 35px; height: 44px; align-self: center; }
@@ -561,13 +583,14 @@ dialog.okno.siroke-okno { width: min(680px, calc(100vw - 24px)); }
 .tlacitko-prihlasit { min-height: 40px; border-radius: 8px; border: 0; font: 600 14px var(--pismo); background: var(--c-text); color: var(--c-card); cursor: pointer; }
 .tlacitko-prihlasit:hover { background: var(--c-text-2); }
 .tlacitko-prihlasit:disabled { background: var(--c-faint); cursor: default; }
-.uvod { min-height: 100vh; height: 100%; display: grid; place-content: center; justify-items: center; gap: 22px; background: var(--c-bg); }
+.uvod { height: 100%; display: grid; place-content: center; justify-items: center; gap: 22px; background: var(--c-bg); }
 .uvod .logo-ild { width: 130px; height: 163px; background: var(--c-primary); animation: naskoc 0.7s ease-out both; }
 .uvod p { margin: 0; min-width: 260px; text-align: center; color: var(--c-text-2); font-size: 13px; }
 @keyframes naskoc { from { opacity: 0; transform: scale(0.94); } }
 
 /* --- kalendář a harmonogram (KalendarPanel, KalendarHarmonogramu) ---------------------------------- */
-.kal { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.kal { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; container: kal / inline-size; }
+.kal.bez-boku .kal-bok, .kal.bez-boku .kal-hrana { display: none; }   /* úzký kalendář: přehled dne a detail v okénku */
 .kal-lista { display: flex; align-items: center; gap: 6px; min-height: 30px; flex-wrap: wrap; }
 .kal-nadpis { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; margin-right: 10px; }
 .kal-nadpis h1 { font-size: 22px; }
@@ -727,7 +750,7 @@ body.taznuti, body.taznuti * { cursor: grabbing !important; }
 .prazdne { align-self: center; margin-top: 30px; color: var(--c-faint); }
 
 /* --- Nastavení (DialogNastaveni) ---------------------------------------------------------------- */
-dialog.okno.nastaveni { width: min(1060px, calc(100vw - 24px)); height: min(760px, calc(100vh - 24px)); max-height: none; }
+dialog.okno.nastaveni { width: min(1060px, calc(100vw - 24px)); height: min(760px, calc(var(--vv-vyska, 100dvh) - 24px)); }
 dialog.okno.nastaveni .okno-telo { padding: 0; flex: 1; }
 dialog.okno.nastaveni .okno-obsah { margin: 0; padding: 0; flex: 1; overflow: hidden; display: flex; }
 .nast { flex: 1; min-height: 0; display: grid; grid-template-columns: 240px minmax(0, 1fr); }
@@ -745,7 +768,7 @@ dialog.okno.nastaveni .okno-obsah { margin: 0; padding: 0; flex: 1; overflow: hi
 .nast-hlava { display: flex; gap: 12px; align-items: flex-start; }
 .nast-hlava .ikona { width: 22px; height: 22px; color: var(--c-primary-dark); margin-top: 3px; }
 .nast-paticka { display: flex; justify-content: flex-end; gap: 6px; padding: 12px 28px 14px; border-top: 1px solid var(--c-border); }
-.skupina { display: grid; gap: 6px; align-content: start; }
+.skupina { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-content: start; }
 .skupina-nadpis { font-size: 14px; font-weight: 600; }
 .skupina-karta { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 6px; }
 .nast-radek { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-top: 1px solid var(--c-border); }
@@ -754,7 +777,18 @@ dialog.okno.nastaveni .okno-obsah { margin: 0; padding: 0; flex: 1; overflow: hi
 .nast-radek .texty { flex: 1; min-width: 0; display: grid; gap: 2px; }
 .nast-radek .texty strong { font-weight: 600; }
 .nast-radek .texty small { color: var(--c-muted); font-size: 12px; }
-.nast-radek select { width: auto; min-width: 220px; }
+.nast-radek select { width: auto; min-width: min(220px, 100%); max-width: 100%; }
+.nast-sloupce { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.nast-obsah { container: nast / inline-size; }
+@container nast (max-width: 620px) {
+  .nast-sloupce { grid-template-columns: minmax(0, 1fr); }
+  .nast-radek { padding: 10px 12px; gap: 10px; }
+  .nast-radek:has(> select), .nast-radek:has(> .segment) { flex-direction: column; align-items: stretch; }
+  .nast-radek > select { min-width: 0; width: 100%; }
+  .nast-radek > .segment { align-self: flex-start; flex-wrap: wrap; }
+  .dlazdice-motivu { flex-wrap: wrap; gap: 8px; }
+  .miniatura { width: 88px; height: 56px; }
+}
 .dlazdice-motivu { display: flex; gap: 10px; }
 .dlazdice-motivu button { display: grid; gap: 6px; justify-items: center; padding: 8px 8px 6px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-card);
   color: var(--c-text-2); font: 600 12px var(--pismo); cursor: pointer; }
@@ -764,7 +798,7 @@ dialog.okno.nastaveni .okno-obsah { margin: 0; padding: 0; flex: 1; overflow: hi
 .miniatura i { display: block; }
 
 /* --- dovolené (OknoDovolenych) ----------------------------------------------------------------- */
-dialog.okno.dovolene { width: min(1180px, calc(100vw - 24px)); height: min(780px, calc(100vh - 24px)); max-height: none; }
+dialog.okno.dovolene { width: min(1180px, calc(100vw - 24px)); height: min(780px, calc(var(--vv-vyska, 100dvh) - 24px)); }
 dialog.okno.dovolene .okno-telo { flex: 1; }
 dialog.okno.dovolene .okno-obsah { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
 .plan { flex: 1; min-height: 160px; overflow: auto; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 6px; position: relative; user-select: none; }
@@ -785,7 +819,7 @@ dialog.okno.dovolene .okno-obsah { flex: 1; display: flex; flex-direction: colum
 .tabulka-dovolenych { max-height: 40%; overflow: auto; }
 
 /* --- export (dialog_tisku.DialogExportu) ---------------------------------------------------------- */
-dialog.okno.export { width: min(1200px, calc(100vw - 24px)); height: min(860px, calc(100vh - 24px)); max-height: none; }
+dialog.okno.export { width: min(1200px, calc(100vw - 24px)); height: min(860px, calc(var(--vv-vyska, 100dvh) - 24px)); }
 .export-rozlozeni { display: grid; grid-template-columns: 360px minmax(0, 1fr); flex: 1; min-height: 0; }
 .export-formular { display: flex; flex-direction: column; padding: 16px 18px; overflow: auto; border-right: 1px solid var(--c-border); }
 .export-formular h2 { margin-bottom: 12px; }
@@ -912,56 +946,156 @@ body:not(.tiskne) #tisk-obsah { display: none; }
 .dlazdice-polozka small { color: var(--c-muted); }
 .dlazdice-polozka strong { font-size: 16px; }
 
-/* --- úzká obrazovka (telefon) a dotyk: lišta aktivit dole, seznam projektů jako samostatná stránka --- */
+/* --- okno Nainstalovat aplikaci (instalace.js) ---------------------------------------------------- */
+.instalace-hlava { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.instalace-hlava img { width: 52px; height: 52px; flex: none; border-radius: 12px; box-shadow: 0 0 0 1px var(--c-border); }
+.instalace-hlava strong { font-size: 15px; }
+.tlacitko.instalovat { min-height: 38px; margin-bottom: 14px; }
+.kroky-instalace { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 10px; }
+.kroky-instalace li { display: flex; align-items: center; gap: 10px; }
+.kroky-instalace li > span:nth-child(2) { flex: 1; min-width: 0; }
+.kroky-instalace .cislo { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  background: var(--c-primary-light); color: var(--c-primary-dark); font-weight: 700; font-size: 12px; }
+.kroky-instalace .ikona { width: 20px; height: 20px; color: var(--c-primary-dark); }
+.odkaz-nadpis { margin: 6px 0 6px; }
+.odkaz-webu { display: flex; align-items: center; gap: 2px; padding: 3px 3px 3px 10px; margin-bottom: 10px; background: var(--c-inset); border-radius: 6px; }
+.odkaz-webu .adresa { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; user-select: all; }
+
+/* --- obsah podle vlastní šířky (telefon, tablet na výšku se seznamem projektů, úzké okno) ------------- */
 .jen-mobil { display: none !important; }
-@media (max-width: 760px) {
-  .ram { grid-template-rows: minmax(0, 1fr) calc(54px + env(safe-area-inset-bottom)); }
-  .ram-telo { position: relative; }
-  .statusbar { display: none; }
-  .activitybar { position: fixed; left: 0; right: 0; bottom: 0; width: auto; height: calc(54px + env(safe-area-inset-bottom)); flex-direction: row;
-    justify-content: space-around; padding: 0 4px env(safe-area-inset-bottom); border-right: 0; border-top: 1px solid var(--c-border); }
-  .activitybar .mezera { display: none; }
-  .aktivita { flex: 1; height: 54px; border-left: 0; border-top: 2px solid transparent; }
-  .aktivita.vybrana { border-left: 0; border-top-color: var(--c-primary); }
-  .sidebar { position: absolute; inset: 0; width: auto; z-index: 5; display: none; }
-  .ram.seznam-otevreny .sidebar { display: flex; }
-  .hrana { display: none; }
-  .obsah { padding: 14px 14px 8px; }
-  .prehled-mrizka { grid-template-columns: 1fr; }
-  .soubory-rozlozeni { grid-template-columns: 1fr; }
-  .nahled { display: none; }
-  .kal-bok, .kal-hrana { display: none; }
-  .kal-souhrn, .kal-zoom-obal .ikona { display: none; }
-  .kal-zoom { width: 80px; }
+@container obsah (max-width: 620px) {
+  .prehled-mrizka { grid-template-columns: minmax(0, 1fr); }
+  .soubory-rozlozeni { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 10px; }
+  .nahled { padding: 10px 14px 12px; }
+  .nahled.prazdny { display: none; }
+  .nahled-akce { margin: 8px 0 6px; }
   .konverzace { width: 100%; }
   .zpravy-telo.s-vlaknem .konverzace { display: none; }
   .zpravy-telo:not(.s-vlaknem) .panel-vlakna { display: none; }
+  .pohled:has(.zpravy-telo.s-vlaknem) > .nadpisy { display: none; }   /* otevřená konverzace = celá výška */
   .jen-mobil { display: inline-flex !important; }
-  .nast { grid-template-columns: 1fr; }
-  .nast-bok { flex-direction: row; overflow-x: auto; padding: 8px; }
-  .nast-bok input, .nast-cara { display: none; }
-  .nast-polozka { width: auto; white-space: nowrap; }
-  .lista .hledani { width: 100%; margin-left: 0; }
-  .export-rozlozeni { grid-template-columns: 1fr; }
-  .export-nahled { display: none; }
-  .export-formular { border-right: 0; }
-  .r-dlazdice { grid-template-columns: repeat(2, 1fr); }
-  #oznameni { bottom: calc(66px + env(safe-area-inset-bottom)); }
-  .roh-zalozek { padding-bottom: 2px; }
-  .zalozka { padding: 8px 10px 7px; }
+  .lista .hledani { width: auto; flex: 1 1 170px; margin-left: 0; }
 }
+/* záložky přes celou šířku, tlačítka z rohu záložek (historie, +, ⋯) vedle nadpisu projektu */
+@container obsah (max-width: 560px) {
+  .pohled.projekt { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto minmax(0, 1fr); gap: 8px 4px; }
+  .pohled.projekt > .zahlavi-projektu { grid-column: 1; grid-row: 1; align-self: center; }
+  .pohled.projekt > .zalozky-radek { display: contents; }
+  .pohled.projekt .roh-zalozek { grid-column: 2; grid-row: 1; align-self: start; padding: 0; margin: -4px -6px 0 0; }
+  .pohled.projekt .zalozky { grid-column: 1 / -1; grid-row: 2; }
+  .pohled.projekt .zalozka { flex: 1 1 auto; justify-content: center; gap: 6px; padding-left: 6px; padding-right: 6px; }
+  .pohled.projekt .zalozka .ikona { display: none; }
+  .pohled.projekt > .telo-zalozky { grid-column: 1 / -1; grid-row: 3; }
+}
+@container kal (max-width: 620px) {
+  .kal-souhrn { display: none; }
+  .kal-lista { gap: 4px; }
+  .kal-nadpis { margin-right: 4px; }
+  .kal-zoom-obal { flex: 1 1 56px; max-width: 130px; margin-right: 2px; }   /* nejdřív se zúží posuvník, až pak se lišta zalomí */
+  .kal-zoom-obal .ikona { display: none; }
+  .kal-zoom { width: 100%; }
+}
+
+/* --- kompaktní rozvržení = telefon (úzký) a telefon na šířku (nízký, dotyk) – ui.KOMPAKTNI -------------
+   Seznam projektů se vysouvá přes obsah, stavový řádek není, okna jsou listy vyjíždějící zespodu
+   a končí nad lištou prohlížeče / klávesnicí (--vv-spodni). */
+@media (max-width: 760px), (max-height: 520px) and (pointer: coarse) {
+  .ram { grid-template-rows: minmax(0, 1fr); }
+  .statusbar { display: none; }
+  .ram-telo { position: relative; }
+  .activitybar { padding-bottom: calc(6px + env(safe-area-inset-bottom)); overflow-y: auto; scrollbar-width: none; }
+  .sidebar { position: absolute; top: 0; bottom: 0; left: calc(48px + env(safe-area-inset-left)); width: min(380px, calc(100% - 48px - env(safe-area-inset-left)));
+    z-index: 6; display: none; box-shadow: var(--stin-popup); padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .ram.seznam-otevreny .sidebar { display: flex; }
+  .hrana { display: none; }
+  .obsah { padding: 14px calc(14px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) 14px; }
+  h1, .kal-nadpis h1 { font-size: 19px; }
+  .pohled { gap: 10px; }
+
+  dialog.okno, dialog.okno.siroke-okno {
+    width: 100%; max-width: min(640px, 100%); margin: 0 auto; top: auto; bottom: var(--vv-spodni, 0px);
+    max-height: calc(var(--vv-vyska, 100dvh) - 8px - env(safe-area-inset-top));
+    border-width: 1px 0 0; border-radius: 12px 12px 0 0; transform: none !important; animation: list-zespodu 0.2s ease-out;
+  }
+  dialog.okno.nastaveni, dialog.okno.dovolene, dialog.okno.export {
+    width: 100%; max-width: 100%; height: calc(var(--vv-vyska, 100dvh) - 8px - env(safe-area-inset-top));
+  }
+  dialog.okno::backdrop { background: rgba(0, 0, 0, 0.32); }
+  .okno-titulek { border-radius: 12px 12px 0 0; }
+  .okno-telo { padding: 14px calc(16px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
+  .okno-tlacitka { padding-top: 12px; }
+  .okno-tlacitka .tlacitko { flex: 1 1 auto; }
+  html.klavesnice .okno-telo { padding-bottom: 10px; }
+
+  .nast { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .nast-bok { flex-direction: row; overflow-x: auto; padding: 6px 8px; border-right: 0; border-bottom: 1px solid var(--c-border); scrollbar-width: none; }
+  .nast-bok input, .nast-cara { display: none; }
+  .nast-polozka { width: auto; flex: none; white-space: nowrap; }
+  .nast-obsah { padding: 16px calc(14px + env(safe-area-inset-right)) 16px calc(14px + env(safe-area-inset-left)); gap: 14px; }
+  .nast-paticka { padding: 10px calc(14px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); }
+  .nast-paticka .tlacitko { flex: 1 1 auto; }
+  html.klavesnice .nast-paticka { padding-bottom: 10px; }
+
+  .export-rozlozeni { grid-template-columns: minmax(0, 1fr); }
+  .export-nahled { display: none; }
+  .export-formular { border-right: 0; padding: 14px calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left)); }
+  .export-tlacitka { position: sticky; bottom: 0; margin: 8px -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--c-bg); border-top: 1px solid var(--c-border); }
+  .export-tlacitka .tlacitko { flex: 1 1 auto; }
+  .plan { min-height: 120px; }
+  .tabulka-dovolenych { max-height: 45%; }
+}
+@keyframes list-zespodu { from { translate: 0 32px; } }
+@media (prefers-reduced-motion: reduce) { dialog.okno { animation: none !important; } }
+
+/* telefon na výšku: lišta aktivit dole přes celou šířku (při psaní se schová – klávesnice) */
+@media (max-width: 760px) {
+  .ram { grid-template-rows: minmax(0, 1fr) calc(54px + env(safe-area-inset-bottom)); }
+  .activitybar { position: fixed; left: 0; right: 0; bottom: 0; width: auto; height: calc(54px + env(safe-area-inset-bottom)); flex-direction: row;
+    justify-content: space-around; padding: 0 calc(4px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(4px + env(safe-area-inset-left));
+    border-right: 0; border-top: 1px solid var(--c-border); overflow: visible; }
+  .activitybar .mezera { display: none; }
+  .aktivita { flex: 1; height: 54px; border-left: 0; border-right: 0; border-top: 2px solid transparent; }
+  .aktivita.vybrana { border-left: 0; border-top-color: var(--c-primary); }
+  .sidebar { left: 0; right: 0; width: auto; box-shadow: none;
+    padding: 10px calc(10px + env(safe-area-inset-right)) 10px calc(10px + env(safe-area-inset-left)); }
+  .obsah { padding: 14px calc(14px + env(safe-area-inset-right)) 8px calc(14px + env(safe-area-inset-left)); }
+  #oznameni { bottom: calc(66px + env(safe-area-inset-bottom)); }
+  html.klavesnice .activitybar { display: none; }
+  html.klavesnice .ram { grid-template-rows: minmax(0, 1fr) 0; }
+  html.klavesnice #oznameni { bottom: calc(12px + var(--vv-spodni, 0px)); }
+}
+
+/* --- dotyk (telefon, tablet): větší cíle, bez lupy a náhledu odkazu po podržení prstu ------------------- */
 .kal-mesice, .kal-pruh { -webkit-touch-callout: none; touch-action: manipulation; }
 @media (pointer: coarse) {
   body { font-size: 14px; }
+  a, button, .projekt-radek, .ukol, .poznamka, .strom tr, .tabulka-qt tr, .tabulka tr, .plan { -webkit-touch-callout: none; }
+  .projekt-radek, .ukol, .poznamka, .strom tbody tr, .tabulka-qt tbody tr, .tabulka.faktury tbody tr, .radek-konverzace, .termin-radek, .zalozka, .aktivita,
+    .nast-polozka, .filtr-stavu, .stitek-druhu { -webkit-user-select: none; user-select: none; }
   .tlacitko { min-height: 40px; }
   .ikonove { min-width: 40px; height: 40px; }
   .ikonove.male { min-width: 34px; height: 32px; visibility: visible !important; }
   input, select, textarea { min-height: 40px; font-size: 16px; }
   input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; }
+  input[type="range"] { min-height: 0; height: 32px; }
+  input[type="range"]::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -9px; }
+  input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; }
   .segment button { padding: 8px 14px; font-size: 14px; }
   .menu button { padding: 11px 22px 11px 10px; font-size: 15px; }
   .zalozka { padding: 10px 14px 9px; }
   .projekt-radek { padding: 10px; }
+  .filtr-seznamu button { min-height: 36px; }
+  .strom td { padding: 10px 8px; }
+  .tabulka-qt td { height: 40px; }
   .kal-vic { padding: 2px 6px; font-size: 12px; }
   .poznamka-hlava .ikonove, .ukol .ikonove { visibility: visible; }
+  .okno-titulek { height: 40px; }
+  .okno-zavrit { width: 52px; height: 40px; }
+  .heslo-oko { top: 7px; }
+  .hrana::before { inset: 0 -8px; }
+  .panel-sipka { width: 22px; height: 56px; margin-top: -28px; }
+  .odeslat { width: 44px; height: 44px; }
+  .pole-zpravy textarea { height: 44px; min-height: 44px; }
 }
+

@@ -212,7 +212,8 @@ export function tabulkaProjektu(tym, projekty, stav, otevrit, prekresli, cashflo
   }));
   const telo = h("tbody", {}, radky.map(({ p, hodnoty }) => h("tr", {
     class: `${NEAKTIVNI.has(p.status) ? "neaktivni" : ""}${p.id === stav.vybrany ? " vybrany" : ""}`, dataset: { id: p.id }, tabindex: "-1",
-    onclick: () => vyber(p.id),
+    // na dotyk (bez myši) otevře projekt rovnou klepnutí – dvojklepnutí telefon nepozná spolehlivě
+    onclick: () => { vyber(p.id); if (window.matchMedia("(hover: none)").matches) otevrit(p.id); },
     ondblclick: () => otevrit(p.id),
     onkeydown: (ev) => { if (ev.key === "Enter") otevrit(p.id); },
     oncontextmenu: (ev) => { ev.preventDefault(); vyber(p.id); menuProjektu(ev.clientX, ev.clientY, tym, p, otevrit, cashflow); } },

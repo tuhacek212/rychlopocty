@@ -14,8 +14,9 @@ import { otevriExport } from "./export.js";
 import * as FIN from "./finance.js";
 import { Kalendar } from "./kalendar.js";
 import { otevriNastaveni } from "./nastaveni.js";
+import { jeNainstalovano, odkazInstalace, otevriInstalaci } from "./instalace.js";
 import { dialogProjektu, tabulkaProjektu } from "./projekty.js";
-import { h, ikona, menu, menuPod, okno, oznam, pole, popup, vymen, zavriMenu, zavriPopup, zkopiruj } from "./ui.js";
+import { h, ikona, kompaktni, menu, menuPod, okno, oznam, pole, popup, vymen, zavriMenu, zavriPopup, zkopiruj } from "./ui.js";
 import {
   DNY_CELE, DNY_ZKR, avatar, barvaUzivatele, casHezky, cisloTydne, denHezky, denTydne, historieSUdalostmi, mesicZkratka,
   motivZMinula, nastavMotiv, normalizujZobrazeni, odznakStavu, pocetDniText, radekProjektu, relativniText, sklonuj,
@@ -124,7 +125,7 @@ function ukazPrihlaseni(hlaska = "") {
     chyba,
     h("label", { class: "zustat" }, zustat, h("span", { text: "Zůstat přihlášen na tomto zařízení" })),
     tlacitko));
-  vymen(koren, h("div", { class: "obrazovka-prihlaseni" }, formular));
+  vymen(koren, h("div", { class: "obrazovka-prihlaseni" }, h("div", { class: "prihlaseni-sloupec" }, formular, odkazInstalace())));
   jmeno.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); heslo.focus(); } });
   jmeno.focus();
 }
@@ -287,7 +288,7 @@ function ikonaDat(pripojeno) {
 // --- lišta aktivit a stavový řádek ------------------------------------------------------------------
 
 function aktivitaProjekt() {
-  if (window.matchMedia("(max-width: 760px)").matches) {
+  if (kompaktni()) {
     el.ram.classList.toggle("seznam-otevreny");
     return;
   }
@@ -361,7 +362,7 @@ function menuUzivatele() {
     { nadpis: tym.jeSpravce ? "Správce" : "Uživatel" },
     tym.jeSpravce ? { text: "Správa uživatelů…", ikona: "users", akce: () => nastaveni("uzivatele") } : null,
     "-",
-    pozvankaInstalace ? { text: "Nainstalovat jako aplikaci", ikona: "download", akce: instaluj } : null,
+    jeNainstalovano() ? null : { text: "Nainstalovat aplikaci…", ikona: "telefon", akce: otevriInstalaci },
     { text: "Přihlásit se jako jiný…", ikona: "users", akce: odhlas },
     { text: "Odhlásit se", ikona: "power", akce: () => okno(APP_NAME, [h("p", { text: "Odhlásit se na tomto zařízení?" }),
       h("p", { class: "tiche", text: "Pro další práci se bude potřeba znovu přihlásit." })],
@@ -372,7 +373,7 @@ function menuUzivatele() {
 }
 
 function nastaveni(sekce = "vzhled") {
-  otevriNastaveni({ tym, osobni, sekce, odhlas, instaluj: pozvankaInstalace ? instaluj : null });
+  otevriNastaveni({ tym, osobni, sekce, odhlas, instaluj: jeNainstalovano() ? null : otevriInstalaci });
 }
 
 function ukonci() {
@@ -492,9 +493,16 @@ function nastavSbaleni(sbaleno, ulozit = true) {
 }
 
 function prepniSeznam() {
-  if (window.matchMedia("(max-width: 760px)").matches) { el.ram.classList.toggle("seznam-otevreny"); return; }
+  if (kompaktni()) { el.ram.classList.toggle("seznam-otevreny"); return; }
   nastavSbaleni(!stav.sbaleno);
 }
+
+// Kompaktní rozvržení: vysunutý seznam projektů zavře klepnutí vedle něj (telefon na šířku – nezakrývá vše).
+document.addEventListener("pointerdown", (ev) => {
+  if (!el.ram?.classList.contains("seznam-otevreny") || el.sidebar.contains(ev.target) || el.aProjekt.contains(ev.target)
+    || ev.target.closest?.(".menu, dialog, .popup")) return;
+  el.ram.classList.remove("seznam-otevreny");
+}, true);
 
 function tahniHranu(ev) {
   if (ev.button !== 0 || stav.sbaleno || ev.target.closest(".panel-sipka")) return;
@@ -575,6 +583,7 @@ function trasa() {
   if (klic === "projekt" && pohled?.klic === "projekt" && pohled.id === parametr && pohled.prepniZalozku) {
     zavriMenu();
     zavriPopup();
+    el.ram.classList.remove("seznam-otevreny");   // telefon: klepnutí na už otevřený projekt seznam zavře
     pohled.prepniZalozku(dalsi);
     return;
   }
@@ -1107,6 +1116,7 @@ function zalozkaSoubory(id) {
     h("thead", {}, h("tr", {}, h("th", { text: "Název" }), h("th", { text: "Cesta" }))), telo));
 
   function obnovNahled(o) {
+    nahled.classList.toggle("prazdny", !o);   // úzká obrazovka: náhled pod seznamem, jen když je něco vybrané
     if (!o) {
       vymen(nahled, h("div", { class: "nahled-hlava" }, h("h3", { text: "Náhled" })),
         h("div", { class: "nahled-prazdny", text: "Vyber složku nebo soubor – ukáže se tu, kde přesně leží." }));
@@ -1414,16 +1424,8 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", (
 
 oblak.priOdhlaseni = (text) => ukazPrihlaseni(text);
 
-// Instalovatelná aplikace (tablet, telefon, počítač): service worker drží stránku pro rychlý start;
-// data týmu jdou vždy živě z Firebase (sw.js je necachuje).
-let pozvankaInstalace = null;
-window.addEventListener("beforeinstallprompt", (ev) => { ev.preventDefault(); pozvankaInstalace = ev; });
-async function instaluj() {
-  if (!pozvankaInstalace) return;
-  pozvankaInstalace.prompt();
-  await pozvankaInstalace.userChoice.catch(() => null);
-  pozvankaInstalace = null;
-}
+// Instalovatelná aplikace (tablet, telefon, počítač – instalace.js): service worker drží stránku pro rychlý
+// start; data týmu jdou vždy živě z Firebase (sw.js je necachuje).
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }

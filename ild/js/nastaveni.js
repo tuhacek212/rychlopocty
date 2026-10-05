@@ -83,7 +83,7 @@ export function otevriNastaveni({ tym, osobni, sekce = "vzhled", odhlas = () => 
       const zobr = normalizujZobrazeni(n.seznam_zobrazeni);
       const predvolbaSeznamu = Object.entries(PREDVOLBY_SEZNAMU).find(([, z]) => JSON.stringify(z.pole) === JSON.stringify(zobr.pole)
         && z.prvni_radek === zobr.prvni_radek && z.zbytek === zobr.zbytek)?.[0] || "";
-      const nahled = h("div", { class: "sidebar", style: { width: "300px", border: "1px solid var(--c-border)", borderRadius: "6px", padding: "8px", gap: "0" } });
+      const nahled = h("div", { class: "sidebar", style: { width: "300px", maxWidth: "100%", border: "1px solid var(--c-border)", borderRadius: "6px", padding: "8px", gap: "0" } });
       const ukazkove = [
         { id: "n1", nazev: "Silo – dopravníky", lokalita: "Kojetín", investor: "Agro Kojetín a.s.", cislo: "2026-014", status: "Realizace", provozni_soubor: "PS 02",
           ukoly: [{ id: "u1", text: "x", hotovo: false }, { id: "u2", text: "y", hotovo: false }], harmonogram: [] },
@@ -107,7 +107,7 @@ export function otevriNastaveni({ tym, osobni, sekce = "vzhled", odhlas = () => 
       obnovZahlavi();
       return [
         skupina("Barevný režim", "", radek("Vzhled aplikace", "Světlý, tmavý, nebo podle nastavení systému.", dlazdice, true)),
-        h("div", { style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "18px" } },
+        h("div", { class: "nast-sloupce" },
           skupina("Seznam projektů", "Co a v jakém pořadí ukazuje seznam vlevo.",
             radek("Rozvržení", "", vyber([["", "Vlastní"], ...Object.keys(PREDVOLBY_SEZNAMU).map((k) => [k, k])], predvolbaSeznamu || (n.seznam_zobrazeni ? "" : VYCHOZI_ZOBRAZENI),
               (v) => { if (v) zmenZobrazeni({ ...structuredClone(PREDVOLBY_SEZNAMU[v]), stav: normalizujZobrazeni(n.seznam_zobrazeni).stav,
@@ -169,7 +169,8 @@ export function otevriNastaveni({ tym, osobni, sekce = "vzhled", odhlas = () => 
       return [
         skupina("Správce projektů", "",
           radek("Webová verze", "Stejná data týmu jako program na počítači. Soubory projektů se otevírají v programu.", h("span", { class: "faint", text: VERZE_WEBU })),
-          instaluj ? radek("Nainstalovat jako aplikaci", "Vlastní okno a ikona na ploše, rychlejší start", h("button", { type: "button", class: "tlacitko", onclick: instaluj }, ikona("download"), "Nainstalovat")) : null),
+          instaluj ? radek("Aplikace do telefonu, tabletu a počítače", "Ikona na ploše, celá obrazovka bez lišt prohlížeče, rychlejší start",
+            h("button", { type: "button", class: "tlacitko", onclick: instaluj }, ikona("telefon"), "Nainstalovat…")) : null),
       ];
     },
   };

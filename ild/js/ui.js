@@ -94,6 +94,10 @@ const IKONY = {
     ["Q", .88, .14, .74, .14], ["L", .26, .14], ["Q", .12, .14, .12, .28], ["L", .12, .56], ["Q", .12, .7, .26, .7]],
   ["L", .3, .36, .7, .36], ["L", .3, .5, .58, .5]],
   send: [["P", [.1, .46], [.9, .12], [.6, .9], [.46, .56], "Z"], ["L", .46, .56, .9, .12]],
+  // jen na webu – návod k instalaci (Sdílet v iPhonu, nabídka prohlížeče, telefon)
+  "share-up": [["P", [.36, .38], [.22, .38], [.22, .88], [.78, .88], [.78, .38], [.64, .38]], ["L", .5, .1, .5, .6], ["P", [.34, .25], [.5, .1], [.66, .25]]],
+  menu: [["L", .18, .3, .82, .3], ["L", .18, .5, .82, .5], ["L", .18, .7, .82, .7]],
+  phone: [["R", .28, .08, .44, .84, .1], ["L", .44, .8, .56, .8]],
 };
 
 // dřívější názvy ikon webu → kresby programu
@@ -102,6 +106,7 @@ const ALIASY = {
   odeslat: "send", odhlasit: "power", hledat: "search", kopirovat: "copy", slozka: "folder", soubor: "file", zavrit: "x",
   smazat: "trash", historie: "history", filtr: "filter", export: "print", upravit: "edit", hotovo: "check", zamek: "lock",
   otevrit: "external", tisk: "print", lupa_plus: "plus", uzivatel: "user", nastaveni: "settings", vice: "dots",
+  sdilet: "share-up", nabidka: "menu", telefon: "phone",
 };
 
 const NS = "http://www.w3.org/2000/svg";
@@ -220,8 +225,9 @@ export function menu(x, y, polozky, uroven = 0) {
   el.addEventListener("contextmenu", (ev) => ev.preventDefault());
   document.body.append(el);
   const r = el.getBoundingClientRect();
+  const [horni, dolni] = viditelnyPruh();
   el.style.left = `${Math.max(4, Math.min(x, window.innerWidth - r.width - 4))}px`;
-  el.style.top = `${Math.max(4, Math.min(y, window.innerHeight - r.height - 4))}px`;
+  el.style.top = `${Math.max(horni + 4, Math.min(y, dolni - r.height - 4))}px`;
   _menu[uroven] = el;
   if (!uroven) el.focus?.();
   return el;
@@ -246,10 +252,11 @@ export function popup(kotva, obsah, priZavreni = () => {}, { trida = "", vlevo =
   const umisti = () => {
     const k = kotva.getBoundingClientRect();
     const r = el.getBoundingClientRect();
+    const [horni, dolni] = viditelnyPruh();
     const x = vlevo ? k.left : k.right - r.width;
     el.style.left = `${Math.max(8, Math.min(x, window.innerWidth - r.width - 8))}px`;
     const dole = k.bottom + 2;
-    el.style.top = `${Math.max(8, dole + r.height > window.innerHeight - 8 ? window.innerHeight - r.height - 8 : dole)}px`;
+    el.style.top = `${Math.max(horni + 8, dole + r.height > dolni - 8 ? dolni - r.height - 8 : dole)}px`;
   };
   umisti();
   const venku = (ev) => { if (!el.contains(ev.target) && !kotva.contains(ev.target) && !ev.target.closest?.(".menu, dialog")) zavri(); };
@@ -285,7 +292,7 @@ export function titulekOkna(dialog, nadpis, zavri) {
     h("button", { type: "button", class: "okno-zavrit", tabindex: "-1", "aria-label": "Zavřít", onclick: zavri }, ikona("x", "ikona", 10)));
   let tah = null;
   lista.addEventListener("pointerdown", (ev) => {
-    if (ev.button !== 0 || ev.target.closest("button")) return;
+    if (ev.button !== 0 || ev.target.closest("button") || kompaktni()) return;   // list zespodu (telefon) se neposouvá
     const m = /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(dialog.style.transform || "") || [0, 0, 0];
     tah = { x: ev.clientX - +m[1], y: ev.clientY - +m[2] };
     lista.setPointerCapture(ev.pointerId);
@@ -412,3 +419,84 @@ document.addEventListener("mouseover", (ev) => {
 document.addEventListener("pointerdown", skryjTip, true);
 document.addEventListener("wheel", skryjTip, { passive: true, capture: true });
 document.addEventListener("keydown", skryjTip, true);
+
+// --- telefon a tablet -------------------------------------------------------------------------------
+// Kompaktní rozvržení = úzká obrazovka (telefon) nebo nízká na dotyk (telefon na šířku): seznam projektů
+// je vysouvací panel a okna listy zespodu. Stejná podmínka je v app.css.
+export const KOMPAKTNI = "(max-width: 760px), (max-height: 520px) and (pointer: coarse)";
+export function kompaktni() {
+  return window.matchMedia(KOMPAKTNI).matches;
+}
+
+// Viditelná část stránky [nahoře, dole] v souřadnicích okna – bez lišt prohlížeče a klávesnice
+// (100vh je v telefonu počítá i pod nimi, proto tam okna a tlačítka mizela).
+function viditelnyPruh() {
+  const vyska = document.documentElement.clientHeight || window.innerHeight;
+  const vv = window.visualViewport;
+  if (!vv || Math.abs(vv.scale - 1) > 0.01) return [0, vyska];
+  const horni = Math.max(0, Math.min(vyska, vv.offsetTop));
+  return [horni, Math.max(horni, Math.min(vyska, vv.offsetTop + vv.height))];
+}
+
+const jeTextovePole = (el) => el instanceof HTMLTextAreaElement || el?.isContentEditable
+  || (el instanceof HTMLInputElement && ["text", "search", "email", "number", "password", "tel", "url"].includes(el.type));
+
+// CSS proměnné --vv-vyska / --vv-horni / --vv-spodni (viditelná část) a třída „klavesnice“ na <html>
+// (telefon: lišta dole se při psaní schová, okna zůstanou nad klávesnicí – i na iPhonu, kde se stránka nezmenší).
+let _maxVyska = 0, _sirkaMereni = 0, _snimek = 0;
+function zmerObrazovku() {
+  _snimek = 0;
+  const vyska = document.documentElement.clientHeight || window.innerHeight;
+  const [horni, dolni] = viditelnyPruh();
+  if (window.innerWidth !== _sirkaMereni) { _sirkaMereni = window.innerWidth; _maxVyska = 0; }
+  _maxVyska = Math.max(_maxVyska, dolni - horni);
+  const s = document.documentElement.style;
+  s.setProperty("--vyska-okna", `${Math.round(vyska)}px`);
+  s.setProperty("--vv-vyska", `${Math.round(dolni - horni)}px`);
+  s.setProperty("--vv-horni", `${Math.round(horni)}px`);
+  s.setProperty("--vv-spodni", `${Math.round(vyska - dolni)}px`);
+  document.documentElement.classList.toggle("klavesnice", jeTextovePole(document.activeElement) && dolni - horni < _maxVyska * 0.85);
+}
+function zmerPozdeji() {
+  if (!_snimek) _snimek = requestAnimationFrame(zmerObrazovku);
+}
+zmerObrazovku();
+window.addEventListener("resize", zmerPozdeji);
+window.addEventListener("orientationchange", () => setTimeout(zmerObrazovku, 300));
+window.visualViewport?.addEventListener("resize", zmerPozdeji);
+window.visualViewport?.addEventListener("scroll", zmerPozdeji);
+document.addEventListener("focusin", () => setTimeout(zmerObrazovku, 350));   // klávesnice vyjíždí chvíli
+document.addEventListener("focusout", () => setTimeout(zmerObrazovku, 50));
+
+// Podržení prstu = pravé tlačítko. Android po podržení pošle contextmenu sám, iPhone a iPad ne – nabídky
+// „na pravé tlačítko“ (projekt v seznamu, úkol, poznámka, odkaz, faktura…) by tam chyběly.
+// Kalendář má podržení vlastní (přesun termínu, výběr dnů).
+let _podrzeni = null;
+function zrusPodrzeni() {
+  if (_podrzeni) clearTimeout(_podrzeni.casovac);
+  _podrzeni = null;
+}
+document.addEventListener("touchstart", (ev) => {
+  zrusPodrzeni();
+  const cil = ev.target instanceof Element ? ev.target : null;
+  if (ev.touches.length !== 1 || !cil || cil.closest(".kal-mesice, input, textarea, select, [contenteditable], .menu, .okno-titulek")) return;
+  const t = ev.touches[0];
+  const stav = { x: t.clientX, y: t.clientY, nativni: false, vyvolano: false };
+  stav.casovac = setTimeout(() => {
+    if (_podrzeni !== stav || stav.nativni || !cil.isConnected) return;
+    stav.vyvolano = true;
+    navigator.vibrate?.(12);
+    cil.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: stav.x, clientY: stav.y, button: 2, buttons: 2 }));
+  }, 550);
+  _podrzeni = stav;
+}, { passive: true });
+document.addEventListener("touchmove", (ev) => {
+  const t = ev.touches[0];
+  if (_podrzeni && t && Math.hypot(t.clientX - _podrzeni.x, t.clientY - _podrzeni.y) > 10) zrusPodrzeni();
+}, { passive: true });
+document.addEventListener("touchend", (ev) => {
+  if (_podrzeni?.vyvolano && ev.cancelable) ev.preventDefault();   // po nabídce už žádný klik na položku pod prstem
+  zrusPodrzeni();
+}, { passive: false });
+document.addEventListener("touchcancel", zrusPodrzeni, { passive: true });
+document.addEventListener("contextmenu", (ev) => { if (_podrzeni && ev.isTrusted) _podrzeni.nativni = true; }, true);

@@ -11,7 +11,7 @@ import {
   pridejDny, rozsah, svatkyDne, upravZdroj, zIso, zaznamTerminu,
 } from "./data.js";
 import { zmrazNavazane } from "./finance.js";
-import { h, ikona, menu, okno, oznam, pole, popup, vymen, zavriPopup } from "./ui.js";
+import { h, ikona, kompaktni, menu, okno, oznam, pole, popup, vymen, zavriPopup } from "./ui.js";
 
 const DRUHY_ZDROJU = { [SOUKROME]: "soukrome", [DOVOLENE]: "dovolene", [BEZ_PROJEKTU]: "bez" };
 const kolator = new Intl.Collator("cs");
@@ -311,7 +311,8 @@ export class Kalendar {
       const den = ev.target.closest(".kal-den[data-d]");
       if (den && this._dotyk) this.vyberDen(zIso(den.dataset.d));   // myš vybírá už při puštění
     });
-    this._sledovac = new ResizeObserver(() => {
+    this._sledovac = new ResizeObserver((zaznamy) => {
+      if (zaznamy.some((z) => z.target === this.el)) this._urciBok();
       const sirka = this.obal.clientWidth;
       if (!sirka || sirka === this._sirka) return;
       const prvni = !this._sirka;
@@ -320,6 +321,7 @@ export class Kalendar {
       if (prvni) this.jdiNa(this.den, false);   // až je kalendář na stránce – otevře se na dnešním měsíci
     });
     this._sledovac.observe(this.obal);
+    this._sledovac.observe(this.el);
     this.obnov();
   }
 
@@ -771,12 +773,38 @@ export class Kalendar {
 
   // --- boční panel: přehled dne (PrehledDne) / detail termínu (DetailTerminu) / úpravy ---
 
+  // Boční panel jen tam, kde vedle něj zbude kalendáři rozumná šířka (telefon, tablet na výšku se
+  // seznamem projektů) – jinak přehled dne a detail termínu otevírá okénko.
+  _bezBoku() {
+    const sirka = this.el?.isConnected ? this.el.clientWidth : 0;
+    if (!sirka || kompaktni()) return true;   // telefon (i na šířku – málo výšky) vždy okénko
+    return sirka - (this.bok.offsetWidth || parseInt(this.bok.style.getPropertyValue("--sirka-boku"), 10) || 330) < 430;
+  }
+
+  _urciBok() {
+    const bez = this._bezBoku();
+    if (bez === this._bezBokuBylo) return;
+    this._bezBokuBylo = bez;
+    this.el.classList.toggle("bez-boku", bez);
+    if (!bez && !this.bok.childElementCount && this.boc !== "uprava") {   // panel se ukázal – naplnit
+      if (this.boc === "termin" && this._mapa?.has(this.vybranyTermin)) this._ukazTermin(this._mapa.get(this.vybranyTermin));
+      else this._ukazDen();
+    }
+  }
+
   _panel(nadpis, ...obsah) {
     const vObsahu = h("div", { class: "kal-bok-obsah" }, obsah);
-    if (window.matchMedia("(max-width: 760px)").matches) {
+    if (this._bezBoku()) {
       if (this._oknoBoku) this._oknoBoku.zavri();
-      this._oknoBoku = okno(nadpis, vObsahu, [], { bezNadpisu: true });
-      this._oknoBoku.dialog.addEventListener("close", () => { this._oknoBoku = null; });
+      const o = this._oknoBoku = okno(nadpis, vObsahu, [], { bezNadpisu: true });
+      o.dialog.addEventListener("close", () => {
+        if (this._oknoBoku !== o) return;   // nahradilo ho další okénko
+        this._oknoBoku = null;
+        // zavřené okénko se při změnách dat (kolegové) znovu neotevře
+        this.boc = "den";
+        this.vybranyTermin = null;
+        this._oznacVyber();
+      });
       return;
     }
     vymen(this.bok, vObsahu);
@@ -814,7 +842,7 @@ export class Kalendar {
   }
 
   _ukazDen(uzivatel = false) {
-    if (!uzivatel && window.matchMedia("(max-width: 760px)").matches) return;
+    if (!uzivatel && this._bezBoku()) return;
     const d = this.den;
     const dnesek = zIso(dnes());
     const dne = this.polozky.filter((p) => p.rz[0] <= d && p.rz[1] >= d);
