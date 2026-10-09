@@ -202,7 +202,7 @@ h2{font-weight:600;font-size:.95rem;letter-spacing:-.01em;margin:0}
 .vt button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .why{font-size:.95rem;line-height:1.55;color:var(--ink);margin:0;max-width:62ch}
 .hook{font-family:"DM Mono",monospace;font-size:.78rem;line-height:1.5;color:var(--ink-2);margin:0;padding-left:10px;border-left:2px solid var(--ink)}
-.bonus{display:flex;flex-direction:column;gap:14px;padding:26px 0 6px;border-bottom:1px solid var(--line)}
+.bonus{display:flex;flex-direction:column;gap:18px;padding:26px 0 6px;border-bottom:1px solid var(--line)}
 .bonus .qtext{font-size:clamp(1.05rem,2.6vw,1.2rem);font-weight:600}
 .bonus .answers .ans{padding:14px 4px;font-size:.96rem}
 .bonus .result{padding:14px 4px 0;border-bottom:0}
@@ -240,7 +240,7 @@ h2{font-weight:600;font-size:.95rem;letter-spacing:-.01em;margin:0}
     <div class="hero">
       <button class="knob" id="start">Spustit<span>test</span></button>
       <p class="lab">30 otázek · 30 minut · max. 6 chyb</p>
-      <label class="opt lab"><input type="checkbox" id="bonusopt" checked> Doplňující otázky z tématu (nepočítají se)</label>
+      <label class="opt lab"><input type="checkbox" id="bonusopt" checked> Související otázky (nepočítají se)</label>
       <a class="link" href="lidsky.html">Učit se po tématech →</a>
       <a class="link" href="tahak.html" target="_blank" rel="noopener">Tahák — shrnutí na jednu A4 →</a>
     </div>
@@ -285,11 +285,12 @@ function remember(kod, ok){
   } catch(e){}
 }
 function pickBonus(q, used){
-  const L = LID[q.kod]; if (!L || L.tm===undefined) return null;
-  const c = LD.temata[L.tm].k.filter(k=>!used.has(k) && BYK[k]);
+  const L = LID[q.kod]; if (!L || L.g===undefined || !LD.skupiny) return null;
+  const g = LD.skupiny[L.g];
+  const c = g.k.filter(k=>k!==q.kod && !used.has(k) && BYK[k]);
   if (!c.length) return null;
-  const k = c[Math.random()*c.length|0]; used.add(k);
-  return {q:BYK[k], order:shuffle([0,1,2]), pick:null, tema:LD.temata[L.tm].n};
+  c.forEach(k=>used.add(k));
+  return {p:g.p, items:c.map(k=>({q:BYK[k], order:shuffle([0,1,2]), pick:null}))};
 }
 const chyb = n => n===1 ? "chyba" : (n>=2&&n<=4 ? "chyby" : "chyb");
 
@@ -447,22 +448,28 @@ function renderNav(){
 
 function bonusHtml(){
   const b = S.bonus[S.i]; if (!b) return "";
-  const l = S.view[S.i], q = b.q;
-  const ok = b.pick!==null && !!q.odpovedi[b.pick].spravna;
+  const l = S.view[S.i];
   return `<div class="bonus" id="bonus">
-    <p class="lab">Doplňující otázka · nepočítá se · ${esc(b.tema)}</p>
-    <p class="qtext">${esc(qT(q,l))}</p>
-    <div class="answers">${b.order.map((oi,n)=>{
-      const cls = b.pick===null ? "" : (q.odpovedi[oi].spravna ? " ok" : (oi===b.pick ? " bad" : " dim"));
-      return `<button class="ans${cls}" data-bi="${oi}"${b.pick!==null?" disabled":""}><span class="n">${String.fromCharCode(97+n)}</span><span>${esc(aT(q,oi,l))}</span></button>`;
-    }).join("")}</div>
-    ${b.pick!==null?`<div class="result ${ok?"ok":"bad"}"><span class="rv">${ok?"Správně":"Chyba"}</span>${lidBox(q)}<span class="src">${q.kod} · ${esc(q.zdroj)}</span></div>`:""}
+    <p class="lab">Související ${b.items.length>1?"otázky":"otázka"} · nepočítá se do výsledku</p>
+    <p class="why" style="color:var(--ink-2)">${esc(b.p)}</p>
+    ${b.items.map((it,ii)=>{ const q = it.q, ok = it.pick!==null && !!q.odpovedi[it.pick].spravna;
+      return `<div class="col-s" data-bq="${ii}">
+      <p class="qtext">${esc(qT(q,l))}</p>
+      <div class="answers">${it.order.map((oi,n)=>{
+        const cls = it.pick===null ? "" : (q.odpovedi[oi].spravna ? " ok" : (oi===it.pick ? " bad" : " dim"));
+        return `<button class="ans${cls}" data-bi="${oi}"${it.pick!==null?" disabled":""}><span class="n">${String.fromCharCode(97+n)}</span><span>${esc(aT(q,oi,l))}</span></button>`;
+      }).join("")}</div>
+      ${it.pick!==null?`<div class="result ${ok?"ok":"bad"}"><span class="rv">${ok?"Správně":"Chyba"}</span>${lidBox(q)}<span class="src">${q.kod} · ${esc(q.zdroj)}</span></div>`:""}
+      </div>`; }).join("")}
   </div>`;
 }
 function wireBonus(){
-  const b = S.bonus[S.i]; if (!b || b.pick!==null) return;
-  $("#bonus").querySelectorAll(".ans").forEach(el=>el.onclick=()=>{
-    b.pick = +el.dataset.bi; remember(b.q.kod, !!b.q.odpovedi[b.pick].spravna); renderNav();
+  const b = S.bonus[S.i]; if (!b) return;
+  $("#bonus").querySelectorAll("[data-bq]").forEach(box=>{
+    const it = b.items[+box.dataset.bq]; if (it.pick!==null) return;
+    box.querySelectorAll(".ans").forEach(el=>el.onclick=()=>{
+      it.pick = +el.dataset.bi; remember(it.q.kod, !!it.q.odpovedi[it.pick].spravna); renderNav();
+    });
   });
 }
 
@@ -486,7 +493,7 @@ function finish(timeout){
   log.forEach(l=>{ const o=l.q.okruh; byOk[o]=byOk[o]||{ok:0,n:0}; byOk[o].n++; if(l.correct) byOk[o].ok++; });
   const missed = log.filter(l=>!l.correct);
   log.forEach(l=>{ if (l.pick!==null) remember(l.q.kod, l.correct); });
-  const bon = S.bonus.filter(b=>b && b.pick!==null), bonOk = bon.filter(b=>!!b.q.odpovedi[b.pick].spravna).length;
+  const bon = S.bonus.filter(Boolean).flatMap(b=>b.items).filter(it=>it.pick!==null), bonOk = bon.filter(it=>!!it.q.odpovedi[it.pick].spravna).length;
 
   $("#quiz").hidden = true;
   $("#results").hidden = false;
@@ -497,7 +504,7 @@ function finish(timeout){
       <div class="col-s">
         <span class="verdict ${passed?"pass":"fail"}">${passed?"Vyhověl":"Nevyhověl"}</span>
         <span class="fn" style="color:var(--ink-2)">${ok} z ${total} správně · ${total-ok} ${chyb(total-ok)} · čas ${mmss(used)}${timeout?" · odevzdáno po vypršení času":""}</span>
-        ${bon.length?`<span class="fn" style="color:var(--ink-3)">Doplňující otázky (nepočítají se): ${bonOk} z ${bon.length} správně</span>`:""}
+        ${bon.length?`<span class="fn" style="color:var(--ink-3)">Související otázky (nepočítají se): ${bonOk} z ${bon.length} správně</span>`:""}
       </div>
     </div>
 
