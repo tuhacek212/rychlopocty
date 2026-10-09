@@ -4,143 +4,138 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="description" content="Otázky ČKAIT TZS přeložené z úředničtiny do běžné češtiny – procvičování, témata a tahák.">
+<meta name="description" content="Otázky ČKAIT TZS v úředním i lidském znění – procvičování, témata a tahák.">
 <title>TZS lidsky</title>
-<style>[hidden]{display:none!important}</style>
+<style>html{color-scheme:light dark}[hidden]{display:none!important}</style>
 </head>
 <body>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: jedna úzká čtecí kolona; nahoře lišta s přepínačem Lidsky/Úředně, pod ní karta otázky. Zvýrazňovač = akcent. */
+/* Stejný jazyk jako trenažér: bílá/černá, vlasové linky, DM Mono popisky, Archivo text. */
 :root{
-  --bg:#F3F5F7; --card:#FFFFFF; --ink:#16202A; --ink-2:#4D5B68; --ink-3:#8593A0;
-  --line:#DCE2E8; --mark:#FFE14D; --mark-ink:#16202A; --accent:#1F5FBF;
-  --ok:#0B7A4B; --ok-bg:#E3F4EB; --bad:#B8322A; --bad-bg:#FBE9E7;
-  --f-disp:"Bricolage Grotesque",system-ui,sans-serif;
-  --f-body:"Literata",Georgia,serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --bg:#FFFFFF; --bg-2:#F7F7F8;
+  --ink:#0A0A0B; --ink-2:#5E6166; --ink-3:#9A9DA3;
+  --line:#E4E5E8; --line-2:#C9CBD0;
+  --accent:#1433FF;
+  --ok:#066E4A; --ok-bg:#E9F5F0;
+  --bad:#C62A1E; --bad-bg:#FCECEA;
+  --inv-bg:#0A0A0B; --inv-ink:#FFFFFF;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0E1318; --card:#161D24; --ink:#E7ECF1; --ink-2:#A3B0BC; --ink-3:#6B7884;
-  --line:#25303A; --mark:#E8C93A; --mark-ink:#11161B; --accent:#7FB0FF;
-  --ok:#53C98F; --ok-bg:#12261C; --bad:#FF8A7E; --bad-bg:#2A1513; color-scheme:dark}}
+  --bg:#08090A; --bg-2:#121315; --ink:#F5F6F7; --ink-2:#9CA0A6; --ink-3:#63676D;
+  --line:#1F2124; --line-2:#33363B; --accent:#8CA0FF;
+  --ok:#4FC38D; --ok-bg:#0E2119; --bad:#FF7A6B; --bad-bg:#24120F; --inv-bg:#F5F6F7; --inv-ink:#08090A; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0E1318; --card:#161D24; --ink:#E7ECF1; --ink-2:#A3B0BC; --ink-3:#6B7884;
-  --line:#25303A; --mark:#E8C93A; --mark-ink:#11161B; --accent:#7FB0FF;
-  --ok:#53C98F; --ok-bg:#12261C; --bad:#FF8A7E; --bad-bg:#2A1513; color-scheme:dark}
+  --bg:#08090A; --bg-2:#121315; --ink:#F5F6F7; --ink-2:#9CA0A6; --ink-3:#63676D;
+  --line:#1F2124; --line-2:#33363B; --accent:#8CA0FF;
+  --ok:#4FC38D; --ok-bg:#0E2119; --bad:#FF7A6B; --bad-bg:#24120F; --inv-bg:#F5F6F7; --inv-ink:#08090A; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;margin:0}
-button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{max-width:46rem;margin:0 auto;padding-inline:16px}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
-.hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:12px}
-.brand{font-family:var(--f-disp);font-weight:700;font-size:1.15rem;letter-spacing:-.02em;margin-right:auto}
-.brand mark{background:var(--mark);color:var(--mark-ink);padding:0 .2em}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--card)}
-.seg button{border:0;background:none;padding:6px 14px;border-radius:999px;font-family:var(--f-disp);font-weight:500;font-size:.92rem;color:var(--ink-2)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.seg.voice button[aria-pressed="true"]{background:var(--mark);color:var(--mark-ink)}
-.bar{height:3px;background:var(--line)}
-.bar>i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
-.filters{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none}
-.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:4px 9px;font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2)}
-.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--card);box-shadow:inset 0 -3px 0 var(--mark)}
-main{padding-block:20px 80px;display:flex;flex-direction:column;gap:18px}
-.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-family:var(--f-mono);font-size:.78rem;color:var(--ink-3)}
-.meta b{color:var(--ink);font-weight:500}
-.okn{font-family:var(--f-disp);font-size:.9rem;color:var(--ink-2)}
-.q{font-family:var(--f-disp);font-weight:700;font-size:clamp(1.35rem,4.5vw,1.75rem);line-height:1.2;letter-spacing:-.02em;margin:0;text-wrap:balance}
-.q.uredne{font-family:var(--f-body);font-weight:500;font-size:clamp(1.2rem,4vw,1.45rem);letter-spacing:0}
-.answers{display:flex;flex-direction:column;gap:10px}
-.ans{display:grid;grid-template-columns:2rem 1fr;gap:6px;text-align:left;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 14px 14px 10px;line-height:1.45}
-.ans:hover:not(:disabled){border-color:var(--ink-3)}
-.ans .n{font-family:var(--f-mono);font-size:.8rem;color:var(--ink-3);padding-top:3px;text-align:center}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.mono,.lab,.meta,.keys,.src,.chip,.tbtn,.modes button,.act,.vt button,summary{font-family:"DM Mono",ui-monospace,monospace}
+.lab{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0}
+.wrap{max-width:52rem;margin:0 auto;padding-inline:20px}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;gap:16px;padding-block:14px}
+.logo{font-family:"DM Mono",monospace;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbtn{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid transparent;padding-bottom:1px;text-decoration:none;white-space:nowrap}
+.tbtn:hover{color:var(--ink);border-bottom-color:var(--ink)}
+.modes{display:flex;gap:22px;overflow-x:auto;scrollbar-width:none}
+.modes button{flex:none;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);padding:4px 0 10px;border-bottom:2px solid transparent}
+.modes button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.filters{display:flex;gap:16px;overflow-x:auto;padding-block:10px 12px;scrollbar-width:none;border-top:1px solid var(--line)}
+.chip{flex:none;font-size:.7rem;letter-spacing:.06em;color:var(--ink-3);border-bottom:1px solid transparent;padding-bottom:1px;white-space:nowrap}
+.chip:hover{color:var(--ink)}
+.chip[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.bar{height:2px}
+.bar>i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s cubic-bezier(.4,0,.2,1)}
+
+main{padding-block:clamp(28px,6vw,48px) 96px;display:flex;flex-direction:column;gap:22px}
+.meta{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:baseline;justify-content:space-between;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.meta .okn{text-transform:none;letter-spacing:.02em}
+.vt{display:inline-flex;gap:12px}
+.vt button{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid transparent;padding-bottom:1px}
+.vt button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.q{font-weight:600;font-size:clamp(1.24rem,3.2vw,1.5rem);line-height:1.28;letter-spacing:-.022em;margin:0;text-wrap:pretty;max-width:44ch}
+.answers{border-top:1px solid var(--line)}
+.ans{display:grid;grid-template-columns:2.2rem 1fr;gap:4px;width:100%;text-align:left;padding:19px 4px;border-bottom:1px solid var(--line);font-size:1.04rem;line-height:1.5;transition:background .1s ease,padding-left .12s ease}
+.ans:hover:not(:disabled){background:var(--bg-2);padding-left:10px}
 .ans:disabled{cursor:default}
-.ans.ok{background:var(--ok-bg);border-color:var(--ok)}
-.ans.ok .n{color:var(--ok)}
-.ans.bad{background:var(--bad-bg);border-color:var(--bad)}
-.ans.bad .n{color:var(--bad)}
-.ans.dim{opacity:.55}
-.ans small{display:block;font-family:var(--f-mono);font-size:.72rem;color:var(--ink-3);margin-top:6px}
-.fb{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
-.verdict{font-family:var(--f-disp);font-weight:700;font-size:1.05rem}
+.ans .n{font-family:"DM Mono",monospace;font-size:.8rem;color:var(--ink-3);padding-top:2px}
+.ans.ok{background:var(--ok-bg)} .ans.ok .n{color:var(--ok)}
+.ans.bad{background:var(--bad-bg)} .ans.bad .n{color:var(--bad)}
+.ans.dim{color:var(--ink-3)}
+.ans small{display:block;font-family:"DM Mono",monospace;font-size:.72rem;color:var(--ink-3);margin-top:6px;line-height:1.5}
+.fb{display:flex;flex-direction:column;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.verdict{font-family:"DM Mono",monospace;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;font-weight:500}
 .verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
-.why{margin:0}
-.hook{margin:0;font-family:var(--f-disp);font-weight:500}
-.hook span{background:var(--mark);color:var(--mark-ink);padding:.05em .3em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.why{margin:0;max-width:62ch}
+.hook{margin:0;font-family:"DM Mono",monospace;font-size:.8rem;line-height:1.5;color:var(--ink-2);padding-left:10px;border-left:2px solid var(--ink)}
+.hook span{background:none;color:inherit;padding:0}
 details{border-top:1px solid var(--line);padding-top:10px}
-summary{font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2);cursor:pointer}
+summary{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);cursor:pointer}
 .orig{margin:.6em 0 0;font-size:.95rem;color:var(--ink-2)}
-.orig em{font-style:italic}
-.src{font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2)}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:8px;padding:11px 18px;font-family:var(--f-disp);font-weight:500}
-.btn.ghost{background:none;color:var(--ink);border-color:var(--line)}
-.keys{font-family:var(--f-mono);font-size:.72rem;color:var(--ink-3);margin:0}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.st{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
-.st b{display:block;font-family:var(--f-disp);font-size:1.5rem;font-variant-numeric:tabular-nums}
-.st span{font-family:var(--f-mono);font-size:.72rem;color:var(--ink-3)}
-/* procházení */
-.search{width:100%;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:10px 12px}
-.list{display:flex;flex-direction:column}
-.it{border-bottom:1px solid var(--line);padding-block:14px;display:flex;flex-direction:column;gap:6px}
-.it .k{font-family:var(--f-mono);font-size:.75rem;color:var(--ink-3)}
-.it .iq{font-family:var(--f-disp);font-weight:500;font-size:1.05rem;line-height:1.3}
+.src{font-size:.78rem;line-height:1.55;color:var(--ink-2);overflow-wrap:anywhere}
+.row{display:flex;gap:24px;flex-wrap:wrap}
+.btn,.act{font-family:"DM Mono",monospace;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;padding:14px 0;color:var(--ink);border-bottom:1px solid var(--line-2);min-height:44px}
+.btn:hover{border-bottom-color:var(--ink)}
+.btn.ghost{color:var(--ink-2)}
+.keys{font-size:.68rem;letter-spacing:.14em;color:var(--ink-3);margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.st{padding:14px 0}
+.st+.st{border-left:1px solid var(--line);padding-left:14px}
+.st b{display:block;font-weight:700;font-size:1.6rem;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.1}
+.st span{font-family:"DM Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.search{width:100%;border:0;border-bottom:1px solid var(--line-2);background:transparent;padding:10px 0;font-size:1rem;border-radius:0}
+.search:focus{outline:none;border-bottom-color:var(--ink)}
+.list{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.it{border-bottom:1px solid var(--line);padding-block:16px;display:flex;flex-direction:column;gap:6px}
+.it .k{font-family:"DM Mono",monospace;font-size:.72rem;color:var(--ink-3)}
+.it .iq{font-weight:600;font-size:1.04rem;line-height:1.35;letter-spacing:-.015em}
 .it .ia{margin:0}
-.it .ia mark{background:var(--mark);color:var(--mark-ink);padding:0 .15em}
+.it .ia mark{background:var(--ok-bg);color:var(--ink);padding:0 .15em}
 .it .io{margin:0;font-size:.9rem;color:var(--ink-2)}
 .more{align-self:center}
 .empty{color:var(--ink-2)}
-
-.modes{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.modes button{flex:none;border:0;background:none;padding:6px 2px;margin-right:14px;font-family:var(--f-disp);font-weight:500;color:var(--ink-2);border-bottom:2px solid transparent}
-.modes button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--mark)}
-.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--mark);border-radius:8px;padding:10px 12px;font-family:var(--f-disp);font-size:.95rem}
-.banner button{margin-left:auto;border:0;background:none;font-family:var(--f-mono);font-size:.75rem;color:var(--ink-2);text-decoration:underline}
-.stmt{font-family:var(--f-disp);font-weight:700;font-size:clamp(1.3rem,4.4vw,1.65rem);line-height:1.25;letter-spacing:-.02em;margin:0;padding:18px;background:var(--card);border:1px dashed var(--ink-3);border-radius:10px;text-wrap:balance}
-.tf{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tf .ans{grid-template-columns:1fr;text-align:center;font-family:var(--f-disp);font-weight:500}
-.step{font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2);margin:0}
-.tfres{margin:0;font-family:var(--f-disp)}
+.banner{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.banner span{font-weight:600}
+.banner button{margin-left:auto;font-family:"DM Mono",monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--line-2)}
+.stmt{font-weight:600;font-size:clamp(1.24rem,3.2vw,1.5rem);line-height:1.28;letter-spacing:-.022em;margin:0;padding:18px 0 18px 16px;border-left:3px solid var(--ink);max-width:44ch}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;border-top:1px solid var(--line)}
+.tf .ans{grid-template-columns:1fr;font-family:"DM Mono",monospace;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase}
+.step{font-family:"DM Mono",monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0}
+.tfres{margin:0}
 .tfres.ok{color:var(--ok)} .tfres.bad{color:var(--bad)}
-.facts{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:4px}
-.facts li{line-height:1.45}
-.lnk{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font:inherit}
-.topics{display:flex;flex-direction:column;gap:14px}
-.tp{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
-.tp h2{font-family:var(--f-disp);font-weight:700;font-size:1.15rem;letter-spacing:-.01em;margin:0;line-height:1.25}
+.facts{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;max-width:62ch}
+.facts li{line-height:1.5}
+.lnk{color:var(--ink);border-bottom:1px solid var(--line-2);font-family:"DM Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}
+.topics{display:flex;flex-direction:column}
+.tp{padding-block:22px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.tp h2{font-weight:600;font-size:1.2rem;letter-spacing:-.02em;margin:0;line-height:1.25}
 .tp .s{margin:0;color:var(--ink-2)}
-.tp .pr{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:.75rem;color:var(--ink-3)}
-.tp .pr i{flex:1;max-width:10rem;height:4px;background:var(--line);border-radius:2px;overflow:hidden;display:block}
-.tp .pr i b{display:block;height:100%;background:var(--ok)}
-.tp .row .btn{padding:8px 14px;font-size:.92rem}
-.okh{font-family:var(--f-disp);font-weight:700;font-size:1.3rem;letter-spacing:-.02em;margin:16px 0 0}
-.cheat{display:flex;flex-direction:column;gap:6px}
-.cheat h3{font-family:var(--f-disp);font-weight:500;font-size:1rem;margin:14px 0 2px;color:var(--ink-2)}
-.ch{display:grid;grid-template-columns:3.4rem 1fr;gap:8px;align-items:baseline;line-height:1.4}
-.ch .k{font-family:var(--f-mono);font-size:.72rem;color:var(--ink-3)}
-.ch span:last-child{background:linear-gradient(transparent 60%,var(--mark) 60%);background-size:100% 100%;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.opt{display:flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:.75rem;color:var(--ink-2)}
-.testlink{font-family:var(--f-mono);font-size:.75rem;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line)}
-.testlink:hover{color:var(--ink)}
-@media (max-width:480px){body{font-size:16px}.seg button{padding:6px 10px}}
+.tp .pr{display:flex;align-items:center;gap:12px;font-family:"DM Mono",monospace;font-size:.72rem;color:var(--ink-3)}
+.tp .pr i{flex:1;max-width:12rem;height:2px;background:var(--line);display:block}
+.tp .pr i b{display:block;height:100%;background:var(--ink)}
+.tp .row .btn{padding:8px 0}
+.okh{font-weight:700;font-size:clamp(1.6rem,6vw,2.4rem);letter-spacing:-.045em;line-height:1;margin:28px 0 4px;padding-bottom:14px;border-bottom:1px solid var(--ink);text-wrap:balance}
+.cheat{display:flex;flex-direction:column}
+.cheat h3{font-family:"DM Mono",monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--ink-3);margin:22px 0 6px}
+.ch{display:grid;grid-template-columns:3.2rem 1fr;gap:10px;align-items:baseline;padding-block:7px;border-bottom:1px solid var(--line);line-height:1.45}
+.ch .k{font-family:"DM Mono",monospace;font-size:.72rem;color:var(--ink-3)}
+.opt{display:flex;gap:8px;align-items:center;font-family:"DM Mono",monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);cursor:pointer}
+.opt input{accent-color:var(--ink);margin:0}
+@media (max-width:560px){.wrap{padding-inline:16px}.hd{gap:12px}.ans{padding:17px 2px;grid-template-columns:1.9rem 1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
-
 <header>
   <div class="wrap">
     <div class="hd">
-      <div class="brand">TZS <mark>lidsky</mark></div>
-      <a class="testlink" href="./">Test 30 otázek →</a>
-      <div class="seg voice" role="group" aria-label="Jazyk">
-        <button id="v-l" aria-pressed="true">Lidsky</button>
-        <button id="v-u" aria-pressed="false">Úředně</button>
-      </div>
+      <div class="logo">TZS — po tématech</div>
+      <a class="tbtn" href="./">Test →</a>
+      <button class="tbtn" id="theme" aria-label="Přepnout světlý a tmavý režim">Tmavě</button>
     </div>
     <nav class="modes" aria-label="Režim">
       <button data-m="learn" aria-pressed="true">Procvičit</button>
@@ -154,11 +149,15 @@ summary{font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2);cursor:poi
 </header>
 
 <div class="wrap"><main id="main"></main></div>
-
 <script src="lidsky-data.js"></script>
 <script>
 const DATA=window.TZS_LIDSKY;
-try{const th=localStorage.getItem("tzs-theme");if(th)document.documentElement.setAttribute("data-theme",th)}catch(e){}
+const root=document.documentElement;
+function applyTheme(t){ if(t) root.setAttribute("data-theme",t); else root.removeAttribute("data-theme");
+  const dark=t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches; document.querySelector("#theme").textContent=dark?"Světle":"Tmavě"; }
+let th=null; try{th=localStorage.getItem("tzs-theme")}catch(e){} applyTheme(th);
+document.querySelector("#theme").onclick=()=>{const dark=root.getAttribute("data-theme")==="dark"||(!root.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);
+  const n=dark?"light":"dark"; applyTheme(n); try{localStorage.setItem("tzs-theme",n)}catch(e){}};
 const Q=DATA.q, OK=DATA.okruhy, T=DATA.temata;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -166,7 +165,11 @@ const byK={};Q.forEach(q=>byK[q.k]=q);
 let store={};
 try{store=JSON.parse(localStorage.getItem('tzs-lidsky')||'{}')}catch(e){}
 const S=Object.assign({voice:'l',mode:'learn',okruh:'*',tema:null,tf:true,hist:{}},store);
-function save(){try{localStorage.setItem('tzs-lidsky',JSON.stringify({voice:S.voice,okruh:S.okruh,tema:S.tema,tf:S.tf,mode:S.mode,hist:S.hist}))}catch(e){}}
+try{const lv=localStorage.getItem('tzs-lid'); if(lv!==null) S.voice=lv==='1'?'l':'u'}catch(e){}
+if(location.hash==='#opakovat'){S.okruh='!';S.mode='learn';S.tema=null}
+const vt=()=>`<span class="vt"><button data-voice="u" aria-pressed="${S.voice!=='l'}">Úředně</button><button data-voice="l" aria-pressed="${S.voice==='l'}">Lidsky</button></span>`;
+function setVoice(v){S.voice=v;try{localStorage.setItem('tzs-lid',v==='l'?'1':'0')}catch(e){}save();render()}
+function save(){try{const cur=JSON.parse(localStorage.getItem('tzs-lidsky')||'{}');const h=Object.assign({},cur.hist||{},S.hist);S.hist=h;localStorage.setItem('tzs-lidsky',JSON.stringify({voice:S.voice,okruh:S.okruh,tema:S.tema,tf:S.tf,mode:S.mode,hist:h}))}catch(e){}}
 
 const isBad=k=>S.hist[k]&&S.hist[k].last===0;
 const isOk=k=>S.hist[k]&&S.hist[k].last===1;
@@ -206,7 +209,7 @@ function renderLearn(){
   if(S.tema!==null){const t=T[S.tema];html+=`<div class="banner"><span>Téma: <b>${esc(t.n)}</b> · ${t.k.length} otázek</span><button id="untema">Zpět na celý okruh</button></div>`}
   if(!cur){m.innerHTML=html+`<p class="empty">${S.okruh==='!'?'Žádná otázka teď nečeká na opakování. Dobrá práce.':'Tady zatím nic není.'}</p>`;return}
   const L=S.voice==='l', q=cur, h=S.hist[q.k], t=T[q.tm];
-  html+=`<div class="meta"><b>${q.k}</b><span class="okn">${esc(okName(q.o))} · ${esc(t.n)}</span>${h?`<span>· ${h.ok+h.bad}× (${h.ok} dobře)</span>`:''}</div>`;
+  html+=`<div class="meta"><span>${q.k} · <span class="okn">${esc(okName(q.o))} · ${esc(t.n)}</span>${h?` · ${h.ok+h.bad}× (${h.ok} dobře)`:''}</span>${vt()}</div>`;
   const tf=useTF(q);
   if(tf){
     const st=tfShow==='p'?q.tp:q.tn;
@@ -219,7 +222,7 @@ function renderLearn(){
     html+=`<p class="tfres ${tfOk?'ok':'bad'}">${tfOk?'Ano, správně.':'Kdepak.'} Tvrzení je ${tfShow==='p'?'pravdivé':'nepravdivé'}.${tfShow==='n'?' Pravdivě zní: <b>'+esc(q.tp)+'</b>':''}</p>
     <p class="step">${tfShow==='n'?'Teď to oprav: která odpověď na původní otázku platí?':'Teď přesně: která odpověď na původní otázku platí?'}</p>`;
   }
-  html+=`<h1 class="q ${L?'':'uredne'}">${esc(L?q.ql:q.q)}</h1><div class="answers">`;
+  html+=`<h1 class="q">${esc(L?q.ql:q.q)}</h1><div class="answers">`;
   const at=L?q.al:q.a;
   order.forEach((i,pos)=>{
     let cls='';
@@ -232,7 +235,7 @@ function renderLearn(){
     html+=`<section class="fb" aria-live="polite">
       <div class="verdict ${good?'ok':'bad'}">${good?'Správně.':(answered===0?'Odpověď sedí, ale pravda/nepravda ne.':'Vedle.')}</div>
       <p class="why">${esc(q.p)}</p>
-      ${q.h?`<p class="hook"><span>${esc(q.h)}</span></p>`:''}
+      ${q.h?`<p class="hook">${esc(q.h)}</p>`:''}
       <div class="src">${esc(q.s)}</div>
       <details><summary>Souvislosti: ${esc(t.n)}</summary><ul class="facts" style="margin-top:.6em">${t.b.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
         ${S.tema===null?`<p style="margin:.6em 0 0"><button class="lnk" data-tema="${q.tm}">Procvičit celé téma (${t.k.length})</button></p>`:''}</details>
@@ -269,7 +272,7 @@ function themesFiltered(){
 function renderTopics(){
   const list=themesFiltered(); let html='', last=null;
   if(!list.length){$('#main').innerHTML='<p class="empty">Žádné téma teď nemá otázky k opakování.</p>';return}
-  html+=`<p class="fine meta">${list.length} témat. Přečti si body, pak téma procvič. Otázky jsou seskupené podle souvislostí, ne podle pořadí v zadání.</p><div class="topics">`;
+  html+=`<p class="fine meta">${list.length} témat. Přečti si body, pak téma procvič. Otázky jsou seskupené podle souvislostí, ne podle pořadí v zadání.</span></p><div class="topics">`;
   for(const [t,i] of list){
     if(t.o!==last){html+=`<h2 class="okh">${t.o} · ${esc(okName(t.o))}</h2>`;last=t.o}
     const okN=t.k.filter(isOk).length, bad=t.k.filter(isBad).length;
@@ -283,7 +286,7 @@ function renderTopics(){
 
 /* ---------- tahák ---------- */
 function renderCheat(){
-  const list=themesFiltered(); let html='<p class="fine meta">Všechny pomůcky na jednom místě, seřazené podle témat. Na rychlé opakování před zkouškou.</p><div class="cheat">', last=null;
+  const list=themesFiltered(); let html='<p class="fine meta">Všechny pomůcky na jednom místě, seřazené podle témat. Na rychlé opakování před zkouškou.</span></p><div class="cheat">', last=null;
   for(const [t] of list){
     if(t.o!==last){html+=`<h2 class="okh">${t.o} · ${esc(okName(t.o))}</h2>`;last=t.o}
     const items=t.k.map(k=>byK[k]).filter(q=>q.h&&(S.okruh!=='!'||isBad(q.k)));
@@ -299,7 +302,7 @@ function renderBrowse(){
   const L=S.voice==='l', t=bq.trim().toLowerCase();
   let p=pool(); if(t) p=p.filter(q=>(q.k+' '+q.q+' '+q.ql+' '+q.a[0]+' '+q.al[0]+' '+q.s+' '+q.h).toLowerCase().includes(t));
   $('#main').innerHTML=`<input class="search" id="bs" type="search" placeholder="Hledat v otázkách, odpovědích, paragrafech…" value="${esc(bq)}" aria-label="Hledat">
-  <div class="meta">${p.length} otázek · správná odpověď zvýrazněná</div>
+  <div class="meta"><span>${p.length} otázek · správná odpověď zvýrazněná</span>${vt()}</div>
   <div class="list">${p.slice(0,limit).map(q=>`<article class="it"><span class="k">${q.k} · ${esc(q.s)}</span>
     <div class="iq">${esc(L?q.ql:q.q)}</div>
     <p class="ia"><mark>${esc(L?q.al[0]:q.a[0])}</mark></p>
@@ -312,14 +315,13 @@ function renderBrowse(){
 
 function render(){
   document.querySelectorAll('.modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.mode));
-  document.querySelectorAll('#v-l,#v-u').forEach(b=>b.setAttribute('aria-pressed',(b.id==='v-l')===(S.voice==='l')));
   renderFilters();updateBar();
   ({learn:renderLearn,topics:renderTopics,cheat:renderCheat,browse:renderBrowse})[S.mode]();
 }
 document.querySelector('.modes').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.mode=b.dataset.m;if(S.mode!=='learn')S.tema=null;cur=null;save();render();window.scrollTo({top:0})});
-$('#v-l').onclick=()=>{S.voice='l';save();render()};
-$('#v-u').onclick=()=>{S.voice='u';save();render()};
+
 $('#main').addEventListener('click',e=>{
+  const vv=e.target.closest('[data-voice]'); if(vv){setVoice(vv.dataset.voice);return}
   const tm=e.target.closest('[data-tema]'); if(tm){S.tema=+tm.dataset.tema;S.mode='learn';cur=null;save();render();window.scrollTo({top:0});return}
   if(e.target.id==='untema'){S.tema=null;cur=null;save();render();return}
   const f=e.target.closest('[data-tf]'); if(f) return answerTF(f.dataset.tf);
