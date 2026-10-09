@@ -74,6 +74,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 }
 .clock.warn{color:var(--flag)}
 .clock.crit{color:var(--bad)}
+.clock.paused{color:var(--ink-3)}
 .tbtn{
   font-family:"DM Mono",monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-3);border-bottom:1px solid transparent;padding-bottom:1px;
@@ -338,18 +339,28 @@ $("#start").onclick = ()=>{
 };
 
 $("#restart").onclick = ()=>{
-  stopTimer(); S = null;
+  stopTimer(); S = null; $("#timer").classList.remove("paused");
   $("#quiz").hidden = true; $("#results").hidden = true; $("#setup").hidden = false;
   ["counter","timer","restart"].forEach(id=>$("#"+id).hidden=true);
   $("#bar").style.width = "0";
   window.scrollTo(0,0);
 };
 
+/* ---- čas: pauza během souvisejících otázek ---- */
+function elapsed(){ return (S.pausedAt || Date.now()) - S.started - (S.pausedMs||0); }
+function setPause(p){
+  if (!S) return;
+  if (p && !S.pausedAt) S.pausedAt = Date.now();
+  else if (!p && S.pausedAt){ S.pausedMs = (S.pausedMs||0) + (Date.now()-S.pausedAt); S.pausedAt = null; }
+  const el = $("#timer"); el.classList.toggle("paused", !!S.pausedAt);
+  const left = Math.max(0, EXAM.SEC - Math.round(elapsed()/1000));
+  el.textContent = S.pausedAt ? "Pauza " + mmss(left) : mmss(left);
+}
 function startTimer(){
   const el = $("#timer");
   const tick = ()=>{
-    const left = Math.max(0, EXAM.SEC - Math.round((Date.now()-S.started)/1000));
-    el.textContent = mmss(left);
+    const left = Math.max(0, EXAM.SEC - Math.round(elapsed()/1000));
+    el.textContent = S.pausedAt ? "Pauza " + mmss(left) : mmss(left);
     el.classList.toggle("warn", left<=300 && left>60);
     el.classList.toggle("crit", left<=60);
     if (left<=0){ stopTimer(); finish(true); }
@@ -435,6 +446,7 @@ function renderNav(){
     </div>`;
 
   wireBonus();
+  setPause(pick!==null && !!S.bonus[S.i]);
   const prev = $("#prev"); if (!prev.disabled) prev.onclick = ()=>{ S.i--; render(); };
   const nx = $("#next"); if (!nx.disabled) nx.onclick = next;
   $("#submit").onclick = ()=>{
@@ -492,7 +504,8 @@ function finish(timeout){
   const total = log.length, ok = log.filter(l=>l.correct).length;
   const pct = Math.round(ok/total*100);
   const passed = ok >= EXAM.MIN_OK;
-  const used = Math.min(EXAM.SEC, Math.round((Date.now()-S.started)/1000));
+  setPause(false);
+  const used = Math.min(EXAM.SEC, Math.round(elapsed()/1000));
   const byOk = {};
   log.forEach(l=>{ const o=l.q.okruh; byOk[o]=byOk[o]||{ok:0,n:0}; byOk[o].n++; if(l.correct) byOk[o].ok++; });
   const missed = log.filter(l=>!l.correct);
