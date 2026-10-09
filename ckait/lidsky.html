@@ -72,6 +72,9 @@ main{padding-block:clamp(28px,6vw,48px) 96px;display:flex;flex-direction:column;
 .fb{display:flex;flex-direction:column;gap:12px;padding-bottom:20px;border-bottom:1px solid var(--line)}
 .verdict{font-family:"DM Mono",monospace;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;font-weight:500}
 .verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.common{margin:0;display:flex;flex-direction:column;gap:6px;max-width:62ch}
+.common .lab{font-size:.62rem}
+.common span:last-child{color:var(--ink-2)}
 .why{margin:0;max-width:62ch}
 .hook{margin:0;font-family:"DM Mono",monospace;font-size:.8rem;line-height:1.5;color:var(--ink-2);padding-left:10px;border-left:2px solid var(--ink)}
 .hook span{background:none;color:inherit;padding:0}
@@ -222,8 +225,8 @@ function renderLearn(){
     html+=`<p class="tfres ${tfOk?'ok':'bad'}">${tfOk?'Ano, správně.':'Kdepak.'} Tvrzení je ${tfShow==='p'?'pravdivé':'nepravdivé'}.${tfShow==='n'?' Pravdivě zní: <b>'+esc(q.tp)+'</b>':''}</p>
     <p class="step">${tfShow==='n'?'Teď to oprav: která odpověď na původní otázku platí?':'Teď přesně: která odpověď na původní otázku platí?'}</p>`;
   }
-  html+=`<h1 class="q">${esc(L?q.ql:q.q)}</h1><div class="answers">`;
-  const at=L?q.al:q.a;
+  html+=`<h1 class="q">${esc(L?q.ql:q.q)}</h1>${L&&q.sc?`<p class="common"><span class="lab">Společné pro všechny odpovědi</span><span>${esc(q.sc)}</span></p>`:''}<div class="answers">`;
+  const at=L?(q.ad||q.al):q.a;
   order.forEach((i,pos)=>{
     let cls='';
     if(answered!==null){cls=i===0?'ok':(i===answered?'bad':'dim')}

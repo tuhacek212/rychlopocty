@@ -200,6 +200,9 @@ h2{font-weight:600;font-size:.95rem;letter-spacing:-.01em;margin:0}
 .vt button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
 .vt button:hover{color:var(--ink)}
 .vt button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.common{margin:0;display:flex;flex-direction:column;gap:6px;padding:14px 0 2px;max-width:62ch}
+.common .lab{font-size:.62rem}
+.common span:last-child{font-size:1rem;line-height:1.5;color:var(--ink-2)}
 .why{font-size:.95rem;line-height:1.55;color:var(--ink);margin:0;max-width:62ch}
 .hook{font-family:"DM Mono",monospace;font-size:.78rem;line-height:1.5;color:var(--ink-2);margin:0;padding-left:10px;border-left:2px solid var(--ink)}
 .bonus{display:flex;flex-direction:column;gap:18px;padding:26px 0 6px;border-bottom:1px solid var(--line)}
@@ -268,7 +271,8 @@ const BYK = {};
 let lidDef = false, bonusOn = true;
 try { lidDef = localStorage.getItem("tzs-lid")==="1"; bonusOn = localStorage.getItem("tzs-bonus")!=="0"; } catch(e){}
 const qT = (q,l) => (l && LID[q.kod]) ? LID[q.kod].ql : q.otazka;
-const aT = (q,i,l) => (l && LID[q.kod]) ? LID[q.kod].al[i] : q.odpovedi[i].text;
+const aT = (q,i,l,full) => (l && LID[q.kod]) ? ((!full && LID[q.kod].ad) ? LID[q.kod].ad[i] : LID[q.kod].al[i]) : q.odpovedi[i].text;
+const commonHtml = (q,l) => (l && LID[q.kod] && LID[q.kod].sc) ? `<p class="common"><span class="lab">Společné pro všechny odpovědi</span><span>${esc(LID[q.kod].sc)}</span></p>` : "";
 const okIdx = q => q.odpovedi.findIndex(a=>a.spravna);
 const vt = (l,attr) => hasLid ? `<span class="vt">
   <button data-v="u" ${attr} aria-pressed="${!l}">Úředně</button><button data-v="l" ${attr} aria-pressed="${!!l}">Lidsky</button></span>` : "";
@@ -363,7 +367,7 @@ function render(){
   $("#quiz").innerHTML = `
     <div class="sec col">
       <div class="qhead"><p class="lab">${q.kod} / ${TYP[q.typ_otazky]}</p>${vt(S.view[S.i],'data-scope="q"')}</div>
-      <p class="qtext">${esc(qT(q,S.view[S.i]))}</p>
+      <p class="qtext">${esc(qT(q,S.view[S.i]))}</p>${commonHtml(q,S.view[S.i])}
     </div>
     <div class="answers" id="answers">
       ${order.map((oi,n)=>`<button class="ans" data-i="${oi}">
@@ -454,7 +458,7 @@ function bonusHtml(){
     <p class="why" style="color:var(--ink-2)">${esc(b.p)}</p>
     ${b.items.map((it,ii)=>{ const q = it.q, ok = it.pick!==null && !!q.odpovedi[it.pick].spravna;
       return `<div class="col-s" data-bq="${ii}">
-      <p class="qtext">${esc(qT(q,l))}</p>
+      <p class="qtext">${esc(qT(q,l))}</p>${commonHtml(q,l)}
       <div class="answers">${it.order.map((oi,n)=>{
         const cls = it.pick===null ? "" : (q.odpovedi[oi].spravna ? " ok" : (oi===it.pick ? " bad" : " dim"));
         return `<button class="ans${cls}" data-bi="${oi}"${it.pick!==null?" disabled":""}><span class="n">${String.fromCharCode(97+n)}</span><span>${esc(aT(q,oi,l))}</span></button>`;
@@ -535,8 +539,8 @@ function finish(timeout){
           return `<div class="mi" data-v="${v}">
           <div class="mh"><span class="lab">${l.q.kod}</span>${vt(v==="l",'data-scope="mi"')}</div>
           <div class="mq">${both(x=>qT(l.q,x))}</div>
-          <div class="ml good"><i>✓</i><span>${both(x=>aT(l.q,okIdx(l.q),x))}</span></div>
-          <div class="ml bad"><i>✕</i><span>${l.pick===null?"Nezodpovězeno":both(x=>aT(l.q,l.pick,x))}</span></div>
+          <div class="ml good"><i>✓</i><span>${both(x=>aT(l.q,okIdx(l.q),x,true))}</span></div>
+          <div class="ml bad"><i>✕</i><span>${l.pick===null?"Nezodpovězeno":both(x=>aT(l.q,l.pick,x,true))}</span></div>
           ${lidBox(l.q)}
           <div class="src">${esc(l.q.zdroj)}</div>
         </div>`;}).join("")}
