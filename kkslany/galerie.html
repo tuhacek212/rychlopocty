@@ -3,44 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="robots" content="noindex">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fotogalerie – KK Slaný</title>
   <meta name="description" content="Fotky ze soustředění, Slánské brusle, Mikulášské a dalších akcí KK Slaný.">
-  <meta name="theme-color" content="#12355b">
+  <meta name="theme-color" content="#15477b">
+  <link rel="icon" href="img/logo.png">
   <link rel="stylesheet" href="css/styl.css">
 </head>
-<body>
-  <header class="hlavicka">
-    <div class="hlavicka__in">
-      <a class="logo" href="index.html">
-        <span class="logo__znak" aria-hidden="true">⛸️</span>
-        <span class="logo__text"><strong>KK Slaný</strong><span>Krasobruslařský klub</span></span>
-      </a>
-      <nav class="nav-horni" aria-label="Hlavní menu">
-        <a href="index.html">Úvod</a>
-        <a href="rozpis.html">Rozpis tréninků</a>
-        <a href="galerie.html" aria-current="page">Fotogalerie</a>
-        <a href="index.html#kontakt">Kontakt</a>
-      </nav>
-    </div>
-  </header>
+<body data-stranka="galerie" data-menu="galerie">
+<div class="list">
+  <div id="rozvrzeni-hlava"></div>
 
-  <main>
-    <h1>Fotogalerie</h1>
-    <p class="podtitul">Alba se otevřou ve Fotkách Google.</p>
-    <div class="filtry" id="filtry" role="group" aria-label="Kategorie"></div>
-    <ul class="alba" id="alba"></ul>
+  <main class="obsah">
+    <div class="nadpis-stranky">
+      <h1>Fotogalerie</h1>
+      <nav class="drobecky" aria-label="Drobečková navigace"><a href="index.html">KK Slaný</a><span>»</span>Fotogalerie</nav>
+    </div>
+
+    <p class="poznamka">Alba se otevřou ve Fotkách Google.</p>
+    <div id="galerie"></div>
   </main>
 
-  <nav class="nav-spodni" aria-label="Menu">
-    <a href="index.html"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>Úvod</a>
-    <a href="rozpis.html"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Rozpis</a>
-    <a href="galerie.html" aria-current="page"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></svg>Fotky</a>
-    <a href="index.html#kontakt"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Kontakt</a>
-  </nav>
-
-  <script src="data/data.js"></script>
-  <script src="js/spolecne.js"></script>
-  <script src="js/galerie.js"></script>
+  <div id="rozvrzeni-pata"></div>
+</div>
+<script src="data/data.js"></script>
+<script src="js/spolecne.js"></script>
+<script src="js/stranky.js"></script>
 </body>
 </html>

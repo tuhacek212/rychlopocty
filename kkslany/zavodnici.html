@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Naši závodníci – KK Slaný</title>
+  <meta name="description" content="Závodníci a základna Krasobruslařského klubu Slaný.">
+  <meta name="theme-color" content="#15477b">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="css/styl.css">
+</head>
+<body data-stranka="zavodnici" data-menu="zavodnici">
+<div class="list">
+  <div id="rozvrzeni-hlava"></div>
+
+  <main class="obsah">
+    <div class="nadpis-stranky">
+      <h1>Naši závodníci</h1>
+      <nav class="drobecky" aria-label="Drobečková navigace"><a href="index.html">KK Slaný</a><span>»</span>Naši závodníci</nav>
+    </div>
+
+    <p class="poznamka">Soupiska pro sezónu <span id="sezona-zavodniku"></span>.</p>
+    <div class="filtry" id="filtry" role="group" aria-label="Filtr podle trenérky"></div>
+    <ul class="zavodnici" id="zavodnici"></ul>
+
+    <section class="zakladna" aria-labelledby="zakladna-nadpis">
+      <h2 id="zakladna-nadpis">Základna – naši nejmenší</h2>
+      <div class="mrizka-2" id="zakladna"></div>
+    </section>
+  </main>
+
+  <div id="rozvrzeni-pata"></div>
+</div>
+<script src="data/data.js"></script>
+<script src="js/spolecne.js"></script>
+<script src="js/stranky.js"></script>
+</body>
+</html>
