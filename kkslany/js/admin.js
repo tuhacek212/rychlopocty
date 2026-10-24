@@ -488,18 +488,6 @@ function htmlZimaku() {
     }).join("") + "</tbody></table></section>";
 }
 
-function htmlJakToFunguje() {
-  var platnost = KK.rozpis.platnost;
-  return '<details class="a-karta a-jak"' + (Uloziste.dej("vyjimky").length ? "" : " open") + "><summary><h2>Jak vzniká rozpis tréninků</h2></summary>" +
-    '<ol class="a-kroky">' +
-    "<li><strong>Obvyklý týden</strong><span>Co se opakuje každý týden celou sezónu (" + esc(KK.rozpis.sezona) + ", " +
-    esc(platnost ? plneDatum(platnost.od) + " – " + plneDatum(platnost.do) : "") + "). Mění ho jen správce, dole na této stránce.</span></li>" +
-    "<li><strong>+ led ze zimáku</strong><span>Časy na ledě se samy dosadí podle rozpisu VSH Slaný. Když zimák týden ještě nezveřejnil, ukáže se obvyklý čas s poznámkou „předběžně“.</span></li>" +
-    "<li><strong>+ vaše změny</strong><span>Zrušení, jiný čas, mimořádný trénink nebo volno přes prázdniny. Mají vždy přednost před vším ostatním a jdou zadat na libovolné datum dopředu.</span></li>" +
-    "<li><strong>= web a kalendář v mobilu</strong><span>Web ukazuje tento a příští týden, kalendář v telefonech rodičů 6 týdnů dopředu. Změny se v nich objeví samy.</span></li>" +
-    "</ol></details>";
-}
-
 VYKRESLENI.rozpis = function () {
   var rozpis = nahledRozpisu();
   var mistni = Uloziste.dej("vyjimky");
@@ -533,7 +521,6 @@ VYKRESLENI.rozpis = function () {
 
   return hlavicka("Rozpis tréninků", "Obvyklý týden + led ze zimáku + vaše změny = rozpis na webu.",
     tl(A_IKONY.plus + "Volno / prázdniny", "volno", "", "rozpis") + tl(A_IKONY.plus + "Mimořádný trénink", "pridat-trenink", "", "rozpis", "a-tl--hlavni")) +
-    htmlJakToFunguje() +
     '<div class="a-zalozky" role="group" aria-label="Týden">' + zalozky + "</div>" +
     '<div class="a-tydny">' + htmlTydneAdmin(tydny[vybranyTyden], vybranyTyden) + "</div>" +
     htmlZimaku() +

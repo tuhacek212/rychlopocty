@@ -272,21 +272,7 @@ body.admin { background: var(--bg); min-height: 100vh; }
 }
 .a-trenink--sucho .a-trenink__text strong::before { background: var(--teal) !important; }
 
-/* ---------- rozpis: vysvětlení, týdny, zimák ---------- */
-.a-jak summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-.a-jak summary::-webkit-details-marker { display: none; }
-.a-jak summary h2 { margin: 0; }
-.a-jak summary::after { content: "+"; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font-size: 18px; }
-.a-jak[open] summary::after { content: "–"; }
-.a-kroky { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; counter-reset: krok; }
-.a-kroky li { counter-increment: krok; padding: 14px 16px; border-radius: 12px; background: var(--zebra); font-size: 14px; line-height: 1.45; }
-.a-kroky li:last-child { background: var(--blue-soft); }
-.a-kroky strong { display: block; color: var(--navy); font-weight: 500; font-size: 15px; margin-bottom: 4px; }
-.a-kroky strong::before { content: counter(krok) ". "; color: var(--orange); }
-.a-kroky span { color: var(--grey); }
-@media (max-width: 1100px) { .a-kroky { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { .a-kroky { grid-template-columns: 1fr; } }
-
+/* ---------- rozpis: týdny, zimák ---------- */
 .a-zalozky { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
 .a-zalozka {
   min-height: 36px; padding: 6px 14px; border: 0; border-radius: 999px; cursor: pointer;
