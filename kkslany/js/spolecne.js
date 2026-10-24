@@ -13,7 +13,8 @@ var IKONY = {
   facebook: '<svg class="svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.6V21h3z"/></svg>',
   menu: '<svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   sipka: '<svg class="svg sipka" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
-  ven: '<svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
+  ven: '<svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  zamek: '<svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>'
 };
 
 var DNY = ["neděle", "pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota"];
@@ -87,7 +88,75 @@ function casTreninku(t) {
   return t.od ? bezNuly(t.od) + " – " + bezNuly(t.do) : "čas upřesníme";
 }
 
+// ---------- ukázkové změny z administrace ----------
+// Dokud administrace nemá databázi, ukládá změny jen do prohlížeče (localStorage).
+// Web je v tomtéž prohlížeči rovnou ukáže, ať je vidět, jak by změna vypadala.
+
+var ULOZISTE_ADMINU = "kkslany-admin";
+var PREPISOVANA_DATA = ["aktuality", "zavody", "galerie", "treneri", "zavodnici", "klub"];
+
+function ukazkoveZmeny() {
+  try { return JSON.parse(localStorage.getItem(ULOZISTE_ADMINU)) || null; } catch (e) { return null; }
+}
+
+function zahodUkazkoveZmeny() {
+  try { localStorage.removeItem(ULOZISTE_ADMINU); } catch (e) { /* nic */ }
+}
+
+function seradTreninky(treninky) {
+  treninky.sort(function (a, b) { return (a.od || "99:99") < (b.od || "99:99") ? -1 : 1; });
+}
+
+// Stejné pravidlo jako v nastroje/sestav.py: výjimka redaktora má vždy přednost.
+function pouzijVyjimky(rozpis, vyjimky) {
+  rozpis.tydny.forEach(function (tyden) {
+    tyden.dny.forEach(function (den) {
+      var zmeneno = false;
+      vyjimky.forEach(function (v) {
+        if (!(v.datum <= den.datum && den.datum <= (v.datumDo || v.datum))) return;
+        if (v.datumDo) { // volno na víc dní (prázdniny): zruší všechny tréninky v rozsahu
+          den.treninky.forEach(function (t) {
+            t.stav = "zruseno";
+            if (v.poznamka) t.poznamka = v.poznamka;
+          });
+          zmeneno = true;
+          return;
+        }
+        var cil = den.treninky.filter(function (t) { return t.id === v.id; })[0];
+        if (!cil) {
+          cil = { id: v.id, typ: v.typ || "led", misto: v.misto || "zs", popis: v.popis || "Trénink", od: null, do: null, novy: true };
+          den.treninky.push(cil);
+        }
+        ["od", "do", "popis", "misto", "poznamka", "poradi"].forEach(function (k) { if (k in v) cil[k] = v[k]; });
+        if (v.zruseno) cil.stav = "zruseno";
+        else if ("od" in v) { delete cil.stav; cil.zdroj = "redakce"; }
+        zmeneno = true;
+      });
+      if (zmeneno) seradTreninky(den.treninky);
+    });
+  });
+}
+
+function nactiUkazkoveZmeny() {
+  var u = ukazkoveZmeny(), zmeneno = false;
+  if (!u) return false;
+  PREPISOVANA_DATA.forEach(function (k) { if (u[k]) { KK[k] = u[k]; zmeneno = true; } });
+  if (u.vyjimky && u.vyjimky.length) { pouzijVyjimky(KK.rozpis, u.vyjimky); zmeneno = true; }
+  return zmeneno || !!u.sablona;
+}
+
 // ---------- tréninky ----------
+
+// Na webu je vždy jen stávající a následující týden (data.js jich má víc kvůli kalendáři).
+function zobrazeneTydny(rozpis) {
+  var dnes = new Date();
+  dnes.setHours(0, 0, 0, 0);
+  return (rozpis || KK.rozpis).tydny.filter(function (tyden) {
+    var nedele = datumZIso(tyden.pondeli);
+    nedele.setDate(nedele.getDate() + 6);
+    return nedele >= dnes;
+  }).slice(0, 2);
+}
 
 function vsechnyTreninky() {
   var vysledek = [];
@@ -124,16 +193,22 @@ function stitkyTreninku(t) {
   if (t.stav === "predbezne") s.push('<span class="stitek stitek--info" title="Zimní stadion rozpis na tento týden ještě nezveřejnil.">předběžně</span>');
   if (t.stav === "nenalezeno") s.push('<span class="stitek">' + IKONY.pozor + "na zimáku chybí – ověřte</span>");
   if (t.zmena && t.stav !== "zruseno") s.push('<span class="stitek">' + IKONY.pozor + "změna · " + esc(t.zmena.toLowerCase()) + "</span>");
+  if (t.zdroj === "redakce" && !t.zmena && t.stav !== "zruseno") s.push('<span class="stitek">' + IKONY.pozor + (t.novy ? "mimořádně" : "změna času") + "</span>");
   return s.join(" ");
 }
 
+// Jeden trénink na jeden až dva řádky. Led na zimáku místo neuvádí (je ve sloupci „na ledě“).
 function htmlTreninku(t) {
-  var popis = [esc(t.popis), mistoTreninku(t)];
-  if (t.poradi) popis.push(esc(textPoradi(t.poradi)));
-  return '<div class="trenink' + (t.stav === "zruseno" ? " trenink--zruseno" : "") + '">' +
-    '<div class="trenink__cas">' + esc(casTreninku(t)) + " " + stitkyTreninku(t) + "</div>" +
-    '<div class="trenink__popis">' + popis.join(" · ") + "</div>" +
-    (t.poznamka ? '<div class="trenink__pozn">' + esc(t.poznamka) + "</div>" : "") +
+  var popis = [esc(t.popis)];
+  if (!(t.typ === "led" && t.misto === "zs")) popis.push(mistoTreninku(t));
+  if (t.poradi) popis.push("první sk. " + esc(t.poradi.split("/")[0]));
+  var zruseno = t.stav === "zruseno";
+  // u zrušeného tréninku se důvod nepřeškrtává, proto stojí samostatně
+  var pozn = t.poznamka ? '<span class="trenink__pozn">' + esc(t.poznamka) + "</span>" : "";
+  if (pozn && !zruseno) popis.push(pozn);
+  return '<div class="trenink trenink--' + (t.typ === "led" ? "led" : "sucho") + (zruseno ? " trenink--zruseno" : "") + '">' +
+    '<span class="trenink__cas">' + esc(casTreninku(t)) + "</span> " + stitkyTreninku(t) +
+    '<span class="trenink__popis">' + popis.join(" · ") + "</span>" + (pozn && zruseno ? '<span class="trenink__duvod">' + pozn + "</span>" : "") +
     "</div>";
 }
 
@@ -199,16 +274,31 @@ function htmlPaticky() {
     "</div>" +
     '<div class="paticka__spodek"><ul>' + MENU.slice(1).map(function (m) {
       return '<li><a href="' + m.href + '">' + m.text + "</a></li>";
-    }).join("") + "</ul><span>© " + new Date().getFullYear() + " " + esc(klub.nazev) + "</span></div>" +
+    }).join("") + "</ul><span>© " + new Date().getFullYear() + " " + esc(klub.nazev) +
+    '<a class="prihlaseni" href="admin.html">' + IKONY.zamek + "Přihlášení</a></span></div>" +
     "</footer>";
 }
 
+function htmlListyUkazky() {
+  return '<div class="lista-ukazky" role="status">' + IKONY.info +
+    "<span>Vidíte ukázkové změny z administrace – jen v tomto prohlížeči, ostatní je nevidí.</span>" +
+    '<a href="admin.html">Do administrace</a><button type="button" id="zahodit-ukazku">Zahodit změny</button></div>';
+}
+
 (function vlozRozvrzeni() {
+  if (document.body.getAttribute("data-stranka") === "admin") return;
+  var ukazka = nactiUkazkoveZmeny();
   var aktivni = document.body.getAttribute("data-menu");
   var hlava = document.getElementById("rozvrzeni-hlava");
   var pata = document.getElementById("rozvrzeni-pata");
-  if (hlava) hlava.outerHTML = htmlHlavicky(aktivni);
+  if (hlava) hlava.outerHTML = (ukazka ? htmlListyUkazky() : "") + htmlHlavicky(aktivni);
   if (pata) pata.outerHTML = htmlPaticky();
+  if (ukazka) {
+    document.getElementById("zahodit-ukazku").addEventListener("click", function () {
+      zahodUkazkoveZmeny();
+      location.reload();
+    });
+  }
 
   var tlacitko = document.querySelector(".tl-menu");
   var menu = document.getElementById("menu");

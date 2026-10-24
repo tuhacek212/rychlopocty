@@ -20,9 +20,28 @@ STRANKY.uvod = function () {
       '<p class="nejblizsi__co">' + esc((KK.rozpis.typy[t.typ] || t.typ) + " · " + t.popis) + "</p>" +
       '<p class="nejblizsi__info">' + info.join(" · ") + "</p>" +
       (t.poznamka ? '<p class="nejblizsi__info">' + esc(t.poznamka) + "</p>" : "") +
-      (stitkyTreninku(t) ? '<div class="stitek-radek">' + stitkyTreninku(t) + "</div>" : "") +
-      (dalsi ? '<p class="nejblizsi__info">Potom: ' + esc(kdy(dalsi.datum) + " " + casTreninku(dalsi.t) + " – " + dalsi.t.popis) + "</p>" : "");
+      (stitkyTreninku(t) ? '<div class="stitek-radek">' + stitkyTreninku(t) + "</div>" : "");
   }
+
+  // další tréninky v bílém panelu – včetně zrušených, ať rodiče změnu nepřehlédnou
+  var dalsi = vsechnyTreninky().filter(function (x) { return !skoncil(x.datum, x.t); });
+  dalsi = dalsi.slice(dalsi.indexOf(dalsi.filter(function (x) { return x.t === (prvni && prvni.t); })[0]) + 1, 99).slice(0, 6);
+  document.getElementById("dalsi-treninky").innerHTML = dalsi.map(function (x) {
+    var d = datumZIso(x.datum), t = x.t;
+    return '<li class="' + (t.stav === "zruseno" ? "zruseno" : "") + '"><span class="dalsi__den">' + DNY_KRATCE[d.getDay()] + " <small>" + kratkeDatum(d) + "</small></span>" +
+      '<span class="dalsi__cas">' + esc(casTreninku(t)) + "</span>" +
+      '<span class="dalsi__co"><i class="tecka tecka--' + (t.typ === "led" ? "led" : "sucho") + '"></i>' + esc(t.popis) + " " + stitkyTreninku(t) + "</span></li>";
+  }).join("") || '<li class="prazdne">Další tréninky zatím nejsou naplánované.</li>';
+
+  document.getElementById("aktuality-uvod").innerHTML = KK.aktuality.slice(0, 3).map(function (a) {
+    var nadpis = a.odkaz ? '<a href="' + esc(a.odkaz) + '">' + esc(a.nadpis) + "</a>" : esc(a.nadpis);
+    return '<article class="novinka"><time datetime="' + esc(a.datum) + '">' + esc(plneDatum(a.datum)) + "</time><h3>" + nadpis + "</h3>" +
+      (a.text ? "<p>" + esc(a.text) + "</p>" : "") + "</article>";
+  }).join("");
+  document.getElementById("nabor-text").textContent = KK.klub.nabor;
+  document.getElementById("nabor-telefon").href = "tel:" + KK.klub.telefon.replace(/\s/g, "");
+  document.getElementById("nabor-telefon").textContent = "Zavolat " + KK.klub.telefon;
+
   var webcal = adresaKalendare();
   document.getElementById("do-kalendare").href = webcal || "rozpis.html#kalendar";
 };
@@ -37,12 +56,12 @@ STRANKY.rozpis = function () {
       "Časy na ledě jsou obvyklé a mohou se lišit.</span></p>";
   }
 
-  var html = rozpis.tydny.map(function (tyden, i) {
+  var html = zobrazeneTydny().map(function (tyden, i) {
     var od = datumZIso(tyden.pondeli), ne = datumZIso(tyden.pondeli);
     ne.setDate(ne.getDate() + 6);
-    var nadpis = tyden.tyden + ". týden <small>" + kratkeDatum(od) + " – " + kratkeDatum(ne) + " " + ne.getFullYear() + "</small>" +
-      (i === 0 ? ' <span class="stitek stitek--dnes">tento týden</span>' : "") +
-      (tyden.zimak === "nezverejneno" ? ' <span class="stitek stitek--info">led předběžně – zimák ještě nezveřejnil</span>' : "");
+    var nadpis = '<h2>' + (i === 0 ? "Tento týden" : "Příští týden") + "</h2>" +
+      '<span class="tyden__datum">' + tyden.tyden + ". týden · " + kratkeDatum(od) + " – " + kratkeDatum(ne) + "</span>" +
+      (tyden.zimak === "nezverejneno" ? '<span class="stitek stitek--info" title="Zimní stadion rozpis na tento týden ještě nezveřejnil.">led předběžně</span>' : "");
 
     var radky = tyden.dny.map(function (den) {
       var d = datumZIso(den.datum);
@@ -53,14 +72,14 @@ STRANKY.rozpis = function () {
       else if (d < dnes) tridy.push("minuly");
       if (!den.treninky.length) tridy.push("volno");
       return '<tr class="' + tridy.join(" ") + '">' +
-        '<td class="den">' + DNY_KRATCE[d.getDay()] + "<span>" + kratkeDatum(d) + "</span>" +
-        (stejnyDen(d, dnes) ? ' <span class="stitek stitek--dnes">dnes</span>' : "") + "</td>" +
-        '<td data-nadpis="Na ledě">' + naLede.map(htmlTreninku).join("") + "</td>" +
-        '<td data-nadpis="Na suchu a další">' + naSuchu.map(htmlTreninku).join("") + "</td></tr>";
+        '<th class="den" scope="row">' + DNY_KRATCE[d.getDay()] + "<span>" + kratkeDatum(d) + "</span></th>" +
+        (den.treninky.length
+          ? "<td>" + naLede.map(htmlTreninku).join("") + "</td><td>" + naSuchu.map(htmlTreninku).join("") + "</td>"
+          : '<td colspan="2" class="bez">bez tréninku</td>') + "</tr>";
     }).join("");
 
-    return '<section class="tyden" aria-label="' + tyden.tyden + '. týden"><h2>' + nadpis + "</h2>" +
-      '<table class="rozpis"><thead><tr><th>tréninky</th><th>na ledě</th><th>na suchu a další</th></tr></thead>' +
+    return '<section class="tyden" aria-label="' + (i === 0 ? "Tento" : "Příští") + ' týden"><div class="tyden__hlava">' + nadpis + "</div>" +
+      '<table class="rozpis"><thead><tr><th>den</th><th>na ledě</th><th>na suchu a další</th></tr></thead>' +
       "<tbody>" + radky + "</tbody></table></section>";
   }).join("");
   document.getElementById("tydny").innerHTML = html;

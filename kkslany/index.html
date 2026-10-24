@@ -19,23 +19,44 @@
     <section class="hero" aria-labelledby="nadpis-treninky">
       <div class="hero__text">
         <h1 id="nadpis-treninky">Naše tréninky</h1>
-        <p class="hero__uvod">Kdy, kde a v kolik hodin trénujeme. Časy na ledě se samy přebírají z rozpisu zimního stadionu.</p>
+        <p class="hero__uvod">Časy na ledě se samy přebírají z rozpisu zimního stadionu.</p>
         <div class="nejblizsi" id="nejblizsi" aria-live="polite"></div>
         <div class="tlacitka">
           <a class="tlacitko tlacitko--bile" href="rozpis.html">Celý rozpis tréninků</a>
           <a class="tlacitko tlacitko--obrys" id="do-kalendare" href="rozpis.html#kalendar">Do kalendáře v mobilu</a>
         </div>
       </div>
-      <div class="hero__foto"><img src="img/brusle-led.jpg" alt="Krasobruslařské brusle na ledě" width="635" height="347"></div>
+      <div class="hero__panel">
+        <section class="dalsi-treninky" aria-labelledby="nadpis-dalsi">
+          <h2 id="nadpis-dalsi">Další tréninky</h2>
+          <ul id="dalsi-treninky"></ul>
+          <a class="vice" href="rozpis.html">Rozpis na tento a příští týden</a>
+        </section>
+      </div>
       <svg class="hero__vlna" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path fill="#fff" d="M0 80V52C260 14 520 2 760 14c260 13 470 44 680 38v28z"/></svg>
     </section>
 
     <div class="dlazdice">
-      <a href="o-klubu.html#nabor"><img src="img/nabor.jpg" alt="" width="635" height="347" loading="lazy"><span>Nábor nových členů</span></a>
-      <a href="zavodnici.html#zakladna-nadpis"><img src="img/zakladna.jpg" alt="" width="635" height="347" loading="lazy"><span>Naši nejmenší</span></a>
-      <a href="slanska-brusle.html"><img src="img/slanska-brusle.jpg" alt="" width="635" height="347" loading="lazy"><span>Slánská brusle</span></a>
+      <a href="o-klubu.html#nabor"><img src="img/nabor.jpg" alt="" width="635" height="347" loading="lazy"><span><strong>Nábor nových členů</strong><small>Děti od 3 let, bruslit umět nemusí</small></span></a>
+      <a href="zavodnici.html#zakladna-nadpis"><img src="img/zakladna.jpg" alt="" width="635" height="347" loading="lazy"><span><strong>Naši nejmenší</strong><small>Klubová základna</small></span></a>
+      <a href="slanska-brusle.html"><img src="img/slanska-brusle.jpg" alt="" width="635" height="347" loading="lazy"><span><strong>Slánská brusle</strong><small>Náš tradiční závod od roku 1981</small></span></a>
     </div>
 
+    <div class="sekce sekce--dve">
+      <section class="novinky" aria-labelledby="nadpis-aktuality">
+        <h2 id="nadpis-aktuality"><span class="nadtitulek">Co je nového</span>Aktuality</h2>
+        <div id="aktuality-uvod"></div>
+      </section>
+      <aside class="nabor-karta" aria-labelledby="nadpis-nabor">
+        <span class="nadtitulek">Přidejte se k nám</span>
+        <h2 id="nadpis-nabor">Nábor do základny</h2>
+        <p id="nabor-text"></p>
+        <div class="tlacitka"><a class="tlacitko" id="nabor-telefon" href="tel:+420723427989">Zavolat</a><a class="tlacitko tlacitko--svetle" href="o-klubu.html#nabor">Podmínky přijetí</a></div>
+      </aside>
+    </div>
+
+    <div class="sekce sekce--boxy">
+    <div class="sekce__nadpis"><h2><span class="nadtitulek">Krasobruslení ve Slaném</span>Vše o klubu</h2></div>
     <div class="boxy">
       <section class="box">
         <div class="box__ikona i-ruzova"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h5l1 6 6.5 2.6A3.5 3.5 0 0 1 20 15v1H5z"/><path d="M5 9h3M5 12.5h4"/><path d="M3 20h17a2 2 0 0 0 2-2"/><path d="M8 16v4M16 16v4"/></svg></div>
@@ -69,6 +90,7 @@
           </ul>
         </div>
       </section>
+    </div>
     </div>
 
     <div class="oddelovac"></div>

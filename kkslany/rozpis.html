@@ -21,8 +21,10 @@
     </div>
 
     <div class="rozpis-hlava">
-      <p class="info-radek" style="text-align:left;margin:0">Každé <strong>Út a So</strong> je po tréninku na ledě ještě <strong>20 min docvičení s Radkou</strong>.<br>
-        <strong>Sobotní tréninky</strong> – skupina A jde první na led <strong>liché týdny</strong>, skupina B <strong>sudé týdny</strong>.</p>
+      <ul class="rozpis-info">
+        <li>Každé <strong>Út a So</strong> je po ledě ještě <strong>20 min docvičení s Radkou</strong>.</li>
+        <li><strong>Sobota</strong> – skupina A jde první na led <strong>liché týdny</strong>, skupina B <strong>sudé</strong>.</li>
+      </ul>
       <div class="tlacitka">
         <a class="tlacitko tlacitko--tyrkys" href="https://slany.rozpisy-ledu.cz/" target="_blank" rel="noopener">Rozpis ledů VSH Slaný</a>
         <a class="tlacitko tlacitko--svetle" href="#kalendar">Do kalendáře v mobilu</a>
@@ -30,10 +32,11 @@
     </div>
     <noscript><p class="hlaska">Pro zobrazení rozpisu je potřeba zapnout JavaScript.</p></noscript>
     <div id="upozorneni"></div>
+    <p class="legenda" aria-hidden="true"><span class="legenda__led">na ledě</span><span class="legenda__sucho">na suchu a další</span></p>
 
-    <div id="tydny"></div>
+    <div class="tydny" id="tydny"></div>
 
-    <section class="karta" id="kalendar" style="margin-top:36px" aria-labelledby="nadpis-kalendar">
+    <section class="karta" id="kalendar" style="margin-top:40px" aria-labelledby="nadpis-kalendar">
       <h2 id="nadpis-kalendar">Tréninky v mobilu</h2>
       <p>Přidejte si rozpis do kalendáře v telefonu. Když se trénink posune nebo zruší, změna se v kalendáři objeví sama.</p>
       <div id="kalendar-tlacitka"></div>

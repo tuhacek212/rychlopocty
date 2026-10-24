@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administrace – KK Slaný</title>
+  <meta name="theme-color" content="#15477b">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="css/styl.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-stranka="admin" class="admin">
+  <noscript><p class="hlaska">Administrace potřebuje zapnutý JavaScript.</p></noscript>
+  <div id="admin"></div>
+
+  <dialog class="okno" id="okno" aria-labelledby="okno-nadpis">
+    <form id="okno-formular">
+      <h2 id="okno-nadpis"></h2>
+      <p class="okno__uvod" id="okno-uvod"></p>
+      <div class="okno__pole" id="okno-pole"></div>
+      <p class="okno__chyba" id="okno-chyba" role="alert"></p>
+      <div class="okno__tlacitka">
+        <button type="button" class="a-tl a-tl--jemne" data-zavrit>Zpět</button>
+        <button type="submit" class="a-tl a-tl--hlavni" id="okno-ok">Uložit</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="oznameni" id="oznameni" role="status" aria-live="polite"></div>
+
+<script src="data/data.js"></script>
+<script src="js/spolecne.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

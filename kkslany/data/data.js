@@ -21,12 +21,118 @@ window.KK = {
    "sucho": "Suchá příprava",
    "pohyb": "Pohybovka"
   },
+  "sablona": [
+   {
+    "id": "po-led",
+    "den": 1,
+    "typ": "led",
+    "misto": "zs",
+    "od": "17:00",
+    "do": "18:30",
+    "popis": "Rozdělený trénink",
+    "poradi": "A/B"
+   },
+   {
+    "id": "po-bios",
+    "den": 1,
+    "typ": "sucho",
+    "misto": "bios",
+    "od": "19:00",
+    "do": "20:00",
+    "popis": "Suchá příprava"
+   },
+   {
+    "id": "ut-led",
+    "den": 2,
+    "typ": "led",
+    "misto": "zs",
+    "od": "17:00",
+    "do": "18:45",
+    "popis": "Rozdělený trénink",
+    "poradi": "A/B",
+    "poznamka": "Po tréninku ještě 20 min docvičení s Radkou."
+   },
+   {
+    "id": "ct-led",
+    "den": 4,
+    "typ": "led",
+    "misto": "zs",
+    "od": "06:00",
+    "do": "07:00",
+    "popis": "Sloučený trénink"
+   },
+   {
+    "id": "ct-pohyb1",
+    "den": 4,
+    "typ": "pohyb",
+    "misto": "haje",
+    "od": "17:00",
+    "do": "18:15",
+    "popis": "Pohybovka s Radkou – 1. skupina a základna"
+   },
+   {
+    "id": "ct-pohyb2",
+    "den": 4,
+    "typ": "pohyb",
+    "misto": "haje",
+    "od": "18:00",
+    "do": "19:30",
+    "popis": "Pohybovka s Radkou – 2. skupina"
+   },
+   {
+    "id": "so-led",
+    "den": 6,
+    "typ": "led",
+    "misto": "zs",
+    "popis": "Rozdělený trénink",
+    "stridani": {
+     "liche": "A/B",
+     "sude": "B/A"
+    },
+    "poznamka": "Po tréninku ještě 20 min docvičení s Radkou."
+   }
+  ],
+  "vyjimky": [
+   {
+    "datum": "2026-10-26",
+    "id": "po-bios",
+    "zruseno": true,
+    "poznamka": "Podzimní prázdniny – suchá příprava není."
+   }
+  ],
+  "platnost": {
+   "od": "2026-08-01",
+   "do": "2027-03-31"
+  },
   "zimakOk": true,
+  "aktualizovano": "2026-10-24T08:30+02:00",
   "tydny": [
    {
     "tyden": 43,
     "pondeli": "2026-10-19",
     "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-10-19",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-10-20",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-10-22",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-10-24",
+      "od": "06:45",
+      "do": "08:15"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-10-19",
@@ -131,6 +237,28 @@ window.KK = {
     "tyden": 44,
     "pondeli": "2026-10-26",
     "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-10-26",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-10-27",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-10-29",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-10-31",
+      "od": "07:00",
+      "do": "08:30"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-10-26",
@@ -237,6 +365,28 @@ window.KK = {
     "tyden": 45,
     "pondeli": "2026-11-02",
     "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-11-02",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-11-03",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-11-05",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-11-07",
+      "od": "07:00",
+      "do": "08:30"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-11-02",
@@ -341,6 +491,28 @@ window.KK = {
     "tyden": 46,
     "pondeli": "2026-11-09",
     "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-11-09",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-11-10",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-11-12",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-11-14",
+      "od": "07:30",
+      "do": "09:00"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-11-09",
@@ -445,6 +617,28 @@ window.KK = {
     "tyden": 47,
     "pondeli": "2026-11-16",
     "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-11-16",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-11-17",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-11-19",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-11-21",
+      "od": "07:00",
+      "do": "22:00"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-11-16",
@@ -549,6 +743,28 @@ window.KK = {
     "tyden": 48,
     "pondeli": "2026-11-23",
     "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-11-23",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-11-24",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-11-26",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-11-28",
+      "od": "07:00",
+      "do": "08:30"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-11-23",
