@@ -130,7 +130,9 @@ export class RychlopoctyApp {
         
         const content = '<div id="tab-content" class="tab-content">' + this.getTrainingContent() + '</div>';
         
-        const footer = '<div style="text-align: center; padding: 20px 0; margin-top: 30px;"><div style="font-size: 11px; color: #475569;">Made by JT</div></div>';
+        const projekty = [['ILD', '/ild/'], ['KK Slaný', '/kkslany/'], ['AgroMonitor', '/agromonitor/'], ['PC Monitor', '/pcmonitor/']];
+        const odkazy = '<nav class="footer-links" aria-label="Další projekty">' + projekty.map(([nazev, url]) => '<a href="' + url + '">' + nazev + '</a>').join('') + '</nav>';
+        const footer = '<div style="text-align: center; padding: 20px 0; margin-top: 30px;">' + odkazy + '<div style="font-size: 11px; color: #475569;">Made by JT</div></div>';
         
         app.innerHTML = header + tabs + content + footer;
 

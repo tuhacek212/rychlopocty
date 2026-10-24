@@ -1102,3 +1102,29 @@ html {
 .toast.toast-error {
     border-left: 4px solid #ef4444;
 }
+
+
+/* Odkazy na další projekty v patičce */
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.footer-links a {
+    font-size: 13px;
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid #1e293b;
+    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.footer-links a:hover {
+    color: #f1f5f9;
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
