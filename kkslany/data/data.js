@@ -105,134 +105,8 @@ window.KK = {
    "do": "2027-03-31"
   },
   "zimakOk": true,
-  "aktualizovano": "2026-10-25T21:56+01:00",
+  "aktualizovano": "2026-10-26T00:19+01:00",
   "tydny": [
-   {
-    "tyden": 43,
-    "pondeli": "2026-10-19",
-    "zimak": "zverejneno",
-    "led": [
-     {
-      "datum": "2026-10-19",
-      "od": "17:00",
-      "do": "18:30"
-     },
-     {
-      "datum": "2026-10-20",
-      "od": "17:00",
-      "do": "18:45"
-     },
-     {
-      "datum": "2026-10-22",
-      "od": "06:00",
-      "do": "07:00"
-     },
-     {
-      "datum": "2026-10-24",
-      "od": "06:45",
-      "do": "08:15"
-     }
-    ],
-    "dny": [
-     {
-      "datum": "2026-10-19",
-      "treninky": [
-       {
-        "id": "po-led",
-        "typ": "led",
-        "misto": "zs",
-        "popis": "Rozdělený trénink",
-        "od": "17:00",
-        "do": "18:30",
-        "poradi": "A/B",
-        "zdroj": "zimak"
-       },
-       {
-        "id": "po-bios",
-        "typ": "sucho",
-        "misto": "bios",
-        "popis": "Suchá příprava",
-        "od": "19:00",
-        "do": "20:00"
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-20",
-      "treninky": [
-       {
-        "id": "ut-led",
-        "typ": "led",
-        "misto": "zs",
-        "popis": "Rozdělený trénink",
-        "od": "17:00",
-        "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
-        "zdroj": "zimak"
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-21",
-      "treninky": []
-     },
-     {
-      "datum": "2026-10-22",
-      "treninky": [
-       {
-        "id": "ct-led",
-        "typ": "led",
-        "misto": "zs",
-        "popis": "Sloučený trénink",
-        "od": "06:00",
-        "do": "07:00",
-        "zdroj": "zimak"
-       },
-       {
-        "id": "ct-pohyb1",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
-        "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-23",
-      "treninky": []
-     },
-     {
-      "datum": "2026-10-24",
-      "treninky": [
-       {
-        "id": "so-led",
-        "typ": "led",
-        "misto": "zs",
-        "popis": "Rozdělený trénink",
-        "od": "06:45",
-        "do": "08:15",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
-        "zdroj": "zimak"
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-25",
-      "treninky": []
-     }
-    ]
-   },
    {
     "tyden": 44,
     "pondeli": "2026-10-26",
@@ -861,6 +735,111 @@ window.KK = {
      },
      {
       "datum": "2026-11-29",
+      "treninky": []
+     }
+    ]
+   },
+   {
+    "tyden": 49,
+    "pondeli": "2026-11-30",
+    "zimak": "nezverejneno",
+    "led": null,
+    "dny": [
+     {
+      "datum": "2026-11-30",
+      "treninky": [
+       {
+        "id": "po-led",
+        "typ": "led",
+        "misto": "zs",
+        "popis": "Rozdělený trénink",
+        "od": "17:00",
+        "do": "18:30",
+        "poradi": "A/B",
+        "stav": "predbezne"
+       },
+       {
+        "id": "po-bios",
+        "typ": "sucho",
+        "misto": "bios",
+        "popis": "Suchá příprava",
+        "od": "19:00",
+        "do": "20:00"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-01",
+      "treninky": [
+       {
+        "id": "ut-led",
+        "typ": "led",
+        "misto": "zs",
+        "popis": "Rozdělený trénink",
+        "od": "17:00",
+        "do": "18:45",
+        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
+        "poradi": "A/B",
+        "stav": "predbezne"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-02",
+      "treninky": []
+     },
+     {
+      "datum": "2026-12-03",
+      "treninky": [
+       {
+        "id": "ct-led",
+        "typ": "led",
+        "misto": "zs",
+        "popis": "Sloučený trénink",
+        "od": "06:00",
+        "do": "07:00",
+        "stav": "predbezne"
+       },
+       {
+        "id": "ct-pohyb1",
+        "typ": "pohyb",
+        "misto": "haje",
+        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "od": "17:00",
+        "do": "18:15"
+       },
+       {
+        "id": "ct-pohyb2",
+        "typ": "pohyb",
+        "misto": "haje",
+        "popis": "Pohybovka s Radkou – 2. skupina",
+        "od": "18:00",
+        "do": "19:30"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-04",
+      "treninky": []
+     },
+     {
+      "datum": "2026-12-05",
+      "treninky": [
+       {
+        "id": "so-led",
+        "typ": "led",
+        "misto": "zs",
+        "popis": "Rozdělený trénink",
+        "od": null,
+        "do": null,
+        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
+        "poradi": "A/B",
+        "stav": "predbezne"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-06",
       "treninky": []
      }
     ]
