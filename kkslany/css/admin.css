@@ -359,3 +359,63 @@ table.a-rozpis { font-size: 14.5px; }
   .a-rozpis tbody th { grid-row: span 2; padding-left: 14px; }
   .a-rozpis td { padding: 8px 12px 4px 0; }
 }
+
+/* ---------- další role, soustředění, obvyklý týden od data ---------- */
+.role--trener { background: var(--orange-soft); color: #8a4a00; }
+.role--rodic { background: var(--rose-soft); color: var(--rose); }
+.a-tyden > .a-karta__hlava, .a-tyden > .a-zalozky { padding: 0 20px; }
+.a-tyden > .a-karta__hlava h2 { margin: 6px 0 4px; }
+.a-soustr { display: block; font-style: normal; font-size: 11px; font-weight: 500; color: var(--rose); text-transform: uppercase; letter-spacing: .06em; }
+.a-soustredeni { display: flex; flex-direction: column; }
+.a-soustredeni .soustredeni { flex: 1; box-shadow: none; }
+
+/* ---------- přihlášky na závody ---------- */
+.p-akce__hlava { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px 20px; }
+.p-akce__nazev { min-width: 0; flex: 1 1 320px; }
+.p-akce__hlava h2 { font-size: 20px; margin: 6px 0 2px; }
+.p-akce__hlava .a-pozn { margin: 0; }
+.p-akce__pozn { margin: 6px 0 0; font-size: 14.5px; color: var(--grey); }
+.p-akce__pata { margin: 12px 0 0; }
+.p-druh { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; background: var(--blue-soft); color: var(--blue); }
+.p-druh--soustredeni { background: var(--rose-soft); color: var(--rose); }
+.p-uzaverka { margin-left: 8px; font-size: 13px; color: #8a4a00; }
+.p-uzaverka strong { font-weight: 700; }
+.p-uzaverka--po { color: var(--muted); }
+
+.p-deti { list-style: none; margin: 16px 0 0; padding: 0; }
+.p-deti li { display: grid; grid-template-columns: minmax(150px, 1.2fr) auto minmax(120px, 1fr); gap: 6px 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.p-dite strong { display: block; font-weight: 500; }
+.p-volba { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--zebra); gap: 3px; }
+.p-tl { min-height: 40px; padding: 6px 16px; border: 0; border-radius: 9px; cursor: pointer; font: 500 14.5px var(--font); background: transparent; color: var(--grey); }
+.p-tl:hover:not(:disabled) { background: #fff; color: var(--text); }
+.p-tl--ano[aria-pressed="true"] { background: #1f9d55; color: #fff; }
+.p-tl--ne[aria-pressed="true"] { background: #fff; color: var(--red); box-shadow: inset 0 0 0 1px #f2c4bf; }
+.p-tl:disabled { cursor: not-allowed; opacity: .55; }
+.p-tl:disabled[aria-pressed="true"] { opacity: .8; }
+.p-poznamka { grid-column: 1 / -1; font-size: 13.5px; color: var(--grey); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.p-poznamka:empty { display: none; }
+.p-poznamka .a-tl--odkaz { font-size: 13.5px; color: var(--blue); font-weight: 400; }
+.p-soukromi { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); font-size: 13.5px; margin: 4px 0 0; }
+.p-soukromi .svg { width: 15px; height: 15px; flex: none; margin-top: 2px; }
+
+.p-souhrn { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 14px 0 6px; font-size: 14px; color: var(--grey); }
+.p-souhrn strong { color: var(--text); font-weight: 700; }
+.p-souhrn--ano strong { color: #1f9d55; }
+.p-souhrn--prihlaseno strong { color: var(--blue); }
+.p-tabulka .p-kdo { display: block; font-size: 12.5px; }
+.p-tabulka__stav { white-space: nowrap; }
+.p-tabulka__stav .a-tl, .p-tabulka__stav .stitek { margin: 2px 6px 2px 0; }
+.p-tabulka tr.p-nejede td:first-child strong { color: var(--muted); }
+.p-odpoved { font-weight: 500; }
+.p-odpoved--ano { color: #1f9d55; }
+.p-odpoved--ne { color: var(--red); }
+.p-probehle summary { cursor: pointer; font-weight: 500; }
+.p-probehle[open] summary { margin-bottom: 12px; }
+@media (max-width: 600px) {
+  .p-deti li { grid-template-columns: 1fr; }
+  .p-volba { justify-self: start; }
+  .p-tabulka thead { display: none; }
+  .p-tabulka tr { display: block; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+  .p-tabulka td { display: block; padding: 2px 0; border: 0; }
+  .p-tabulka__stav { white-space: normal; }
+}

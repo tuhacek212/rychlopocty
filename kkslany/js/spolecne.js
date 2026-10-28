@@ -96,6 +96,8 @@ function casTreninku(t) {
 var ULOZISTE_ADMINU = "kkslany-admin";
 var PREPISOVANA_DATA = ["aktuality", "zavody", "galerie", "treneri", "zavodnici", "klub"];
 
+function kopie(x) { return JSON.parse(JSON.stringify(x)); }
+
 function ukazkoveZmeny() {
   try { return JSON.parse(localStorage.getItem(ULOZISTE_ADMINU)) || null; } catch (e) { return null; }
 }
@@ -179,12 +181,109 @@ function pouzijVyjimky(rozpis, vyjimky) {
   });
 }
 
+// ---------- obvyklý týden a soustředění ----------
+// Obvyklých týdnů může být víc: každý platí od svého data do začátku dalšího (dlouhodobá změna rozpisu).
+
+function sablonaProDen(sablony, iso) {
+  var serazene = sablony.slice().sort(function (a, b) { return a.od < b.od ? -1 : 1; });
+  var platne = serazene.filter(function (s) { return s.od <= iso; });
+  return (platne.length ? platne[platne.length - 1] : serazene[0]).treninky;
+}
+
+// Soustředění, při kterém se běžné tréninky ruší, je pro rozpis jako volno (stejně jako vyjimky_soustredeni v sestav.py).
+function vyjimkySoustredeni(soustredeni) {
+  return (soustredeni || []).filter(function (s) { return s.rusiTreninky; }).map(function (s) {
+    return { datum: s.od, datumDo: s.do, id: "soustredeni-" + s.id, zruseno: true, poznamka: "Soustředění – " + s.nazev };
+  });
+}
+
+function soustredeniVeDni(iso, soustredeni) {
+  return (soustredeni || KK.rozpis.soustredeni || []).filter(function (s) { return s.od <= iso && iso <= s.do; });
+}
+
+function minutyCasu(cas) {
+  var c = cas.split(":");
+  return +c[0] * 60 + +c[1];
+}
+
+function posunCas(cas, oMinut) {
+  var m = minutyCasu(cas) + oMinut;
+  return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+}
+
+// Stejné jako sestav_den v nastroje/sestav.py (bez výjimek – ty přidá pouzijVyjimky).
+// Web ho potřebuje, jen když se v administraci změní obvyklý týden nebo soustředění.
+function sestavDen(iso, sablona, sloty, cisloTydne) {
+  var den = datumZIso(iso).getDay() || 7, volne = (sloty || []).slice(), treninky = [];
+  sablona.forEach(function (s) {
+    if (s.den !== den) return;
+    var t = { id: s.id, typ: s.typ, misto: s.misto, od: s.od || null, do: s.do || null };
+    ["popis", "poznamka", "navazuje"].forEach(function (k) { if (s[k]) t[k] = s[k]; });
+    if (s.casti && s.casti.length) {
+      t.casti = kopie(s.casti);
+      if (s.stridani && cisloTydne % 2 === 0) t.casti.reverse(); // v sudém týdnu jde první druhá skupina
+      dopocitejCas(t);
+    }
+    if (s.typ === "led") {
+      var obvykleOd = t.od, obvykleDo = t.do;
+      if (!sloty) t.stav = "predbezne";
+      else if (volne.length) {
+        // vezmi led nejblíž obvyklému času
+        var slot = volne.reduce(function (nej, v) {
+          return obvykleOd && Math.abs(minutyCasu(v.od) - minutyCasu(obvykleOd)) < Math.abs(minutyCasu(nej.od) - minutyCasu(obvykleOd)) ? v : nej;
+        });
+        volne.splice(volne.indexOf(slot), 1);
+        if (obvykleOd && (slot.od !== obvykleOd || slot.do !== obvykleDo)) {
+          t.zmena = "Obvykle " + obvykleOd + "–" + obvykleDo;
+          var oMinut = minutyCasu(slot.od) - minutyCasu(obvykleOd);
+          (t.casti || []).forEach(function (c) { // skupiny s vlastním časem se posunou s ledem
+            if (c.od) { c.od = posunCas(c.od, oMinut); c.do = posunCas(c.do, oMinut); }
+          });
+        }
+        t.od = slot.od; t.do = slot.do; t.zdroj = "zimak";
+      } else t.stav = "nenalezeno";
+    }
+    treninky.push(t);
+  });
+  volne.forEach(function (slot, i) {
+    treninky.push({ id: "led-navic-" + (i + 1), typ: "led", misto: "zs", popis: "Trénink na ledě", od: slot.od, do: slot.do,
+      zdroj: "zimak", zmena: "Navíc oproti obvyklému rozpisu" });
+  });
+  seradTreninky(treninky);
+  return treninky;
+}
+
+// Přestaví celý rozpis z obvyklých týdnů, ledu ze zimáku (tyden.led) a výjimek.
+function prestavRozpis(rozpis, sablony, vyjimky) {
+  var platnost = rozpis.platnost || {};
+  rozpis.tydny.forEach(function (tyden) {
+    tyden.dny.forEach(function (den) {
+      if ((platnost.od && den.datum < platnost.od) || (platnost.do && den.datum > platnost.do)) { den.treninky = []; return; }
+      var sloty = tyden.led ? tyden.led.filter(function (s) { return s.datum === den.datum; }) : null;
+      den.treninky = sestavDen(den.datum, sablonaProDen(sablony, den.datum), sloty, tyden.tyden);
+    });
+  });
+  pouzijVyjimky(rozpis, vyjimky);
+}
+
+// z = změny z administrace {sablony, soustredeni, vyjimky}; vrací true, když se rozpis změnil
+function pouzijZmenyRozpisu(rozpis, z) {
+  var zmeneno = false;
+  if (z.sablony || z.soustredeni) {
+    if (z.sablony) rozpis.sablony = z.sablony;
+    if (z.soustredeni) rozpis.soustredeni = z.soustredeni;
+    prestavRozpis(rozpis, rozpis.sablony, rozpis.vyjimky.concat(vyjimkySoustredeni(rozpis.soustredeni)));
+    zmeneno = true;
+  }
+  if (z.vyjimky && z.vyjimky.length) { pouzijVyjimky(rozpis, z.vyjimky); zmeneno = true; }
+  return zmeneno;
+}
+
 function nactiUkazkoveZmeny() {
   var u = ukazkoveZmeny(), zmeneno = false;
   if (!u) return false;
   PREPISOVANA_DATA.forEach(function (k) { if (u[k]) { KK[k] = u[k]; zmeneno = true; } });
-  if (u.vyjimky && u.vyjimky.length) { pouzijVyjimky(KK.rozpis, u.vyjimky); zmeneno = true; }
-  return zmeneno || !!u.sablona;
+  return pouzijZmenyRozpisu(KK.rozpis, u) || zmeneno;
 }
 
 // ---------- tréninky ----------
@@ -200,11 +299,28 @@ function zobrazeneTydny(rozpis) {
   }).slice(0, 2);
 }
 
-function vsechnyTreninky() {
+// Trénink, který jen pokračuje předchozím (suchá příprava hned po ledu), se v přehledech ukazuje jako jeden:
+// kopie hlavního tréninku dostane t.pak = [pokračování] a konec celého bloku. Zrušený hlavní trénink se nespojuje.
+function spojNavazujici(treninky) {
   var vysledek = [];
-  KK.rozpis.tydny.forEach(function (tyden) {
+  treninky.forEach(function (t) {
+    var hlavni = t.navazuje && vysledek.filter(function (h) { return h.id === t.navazuje; })[0];
+    if (hlavni && hlavni.stav !== "zruseno" && forma(hlavni) !== "skupiny") {
+      hlavni.pak.push(t);
+      if (t.stav !== "zruseno" && t.do) hlavni.do = t.do;
+    } else {
+      vysledek.push(Object.assign({}, t, { pak: [] }));
+    }
+  });
+  return vysledek;
+}
+
+// spojit = navazující tréninky jako jeden (úvod, patička); v tabulce rozpisu zůstávají zvlášť
+function vsechnyTreninky(spojit, rozpis) {
+  var vysledek = [];
+  (rozpis || KK.rozpis).tydny.forEach(function (tyden) {
     tyden.dny.forEach(function (den) {
-      den.treninky.forEach(function (t) { vysledek.push({ datum: den.datum, t: t }); });
+      (spojit ? spojNavazujici(den.treninky) : den.treninky).forEach(function (t) { vysledek.push({ datum: den.datum, t: t }); });
     });
   });
   return vysledek;
@@ -217,7 +333,7 @@ function skoncil(datum, t) {
 }
 
 function budouciTreninky() {
-  return vsechnyTreninky().filter(function (x) { return x.t.stav !== "zruseno" && !skoncil(x.datum, x.t); });
+  return vsechnyTreninky(true).filter(function (x) { return x.t.stav !== "zruseno" && !skoncil(x.datum, x.t); });
 }
 
 function mistoTreninku(t) {
@@ -237,9 +353,15 @@ function nazevTreninku(t) {
 function kratkyPopis(t) {
   var f = forma(t), nazev = nazevTreninku(t);
   if (t.typ === "led" && !t.popis) nazev = "Led – " + nazev.toLowerCase();
-  if (f === "rozdeleny") return nazev + " " + t.casti.map(function (c) { return c.skupina; }).join(" → ");
-  if (f === "skupiny") return nazev + " (" + t.casti.map(function (c) { return c.skupina + " od " + bezNuly(c.od); }).join(", ") + ")";
-  return nazev;
+  if (f === "rozdeleny") nazev += " " + t.casti.map(function (c) { return c.skupina; }).join(" → ");
+  if (f === "skupiny") nazev += " (" + t.casti.map(function (c) { return c.skupina + " od " + bezNuly(c.od); }).join(", ") + ")";
+  return nazev + (t.pak || []).map(function (p) { return ", pak " + popisPokracovani(p); }).join("");
+}
+
+// „suchá příprava od 19:00“ / „suchá příprava – zrušeno“
+function popisPokracovani(p) {
+  var n = p.popis || KK.rozpis.typy[p.typ] || p.typ;
+  return n.charAt(0).toLowerCase() + n.slice(1) + (p.stav === "zruseno" ? " – zrušeno" : p.od ? " od " + bezNuly(p.od) : "");
 }
 
 // Pořadí skupin u rozděleného tréninku: A → B; zrušená skupina je přeškrtnutá.
@@ -289,8 +411,32 @@ function htmlTreninku(t) {
   }
   // u zrušeného tréninku se důvod nepřeškrtává, proto stojí samostatně
   var pozn = t.poznamka ? '<span class="' + (zruseno ? "trenink__duvod" : "trenink__pozn") + '">' + esc(t.poznamka) + "</span>" : "";
+  if (t.navazuje && !zruseno) pozn = '<span class="trenink__navazuje">navazuje na předchozí trénink</span>' + pozn;
   return '<div class="trenink trenink--' + (t.typ === "led" ? "led" : "sucho") + (zruseno ? " trenink--zruseno" : "") + '">' +
     hlava + skupiny + htmlZrusenychSkupin(t) + pozn + "</div>";
+}
+
+// ---------- soustředění ----------
+
+function terminSoustredeni(s) {
+  var od = datumZIso(s.od), konec = datumZIso(s.do);
+  var text = DNY_KRATCE[od.getDay()] + " " + kratkeDatum(od);
+  return s.od === s.do ? text : text + " – " + DNY_KRATCE[konec.getDay()] + " " + kratkeDatum(konec);
+}
+
+function htmlSoustredeni(s) {
+  var info = [s.misto ? IKONY.misto + esc(s.misto) : "", s.pro ? "jede: " + esc(s.pro) : ""].filter(Boolean).join(" · ");
+  return '<article class="soustredeni"><p class="soustredeni__kdy">' + esc(terminSoustredeni(s) + " " + datumZIso(s.do).getFullYear()) + "</p>" +
+    "<h3>" + esc(s.nazev) + "</h3>" + (info ? '<p class="soustredeni__info">' + info + "</p>" : "") +
+    (s.poznamka ? '<p class="soustredeni__pozn">' + esc(s.poznamka).replace(/\n/g, "<br>") + "</p>" : "") +
+    (s.rusiTreninky ? '<p class="soustredeni__rusi">Běžné tréninky v těchto dnech nejsou.</p>' : "") + "</article>";
+}
+
+function budouciSoustredeni(soustredeni) {
+  var d = new Date();
+  var dnes = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return (soustredeni || KK.rozpis.soustredeni || []).filter(function (s) { return s.do >= dnes; })
+    .sort(function (a, b) { return a.od < b.od ? -1 : 1; });
 }
 
 // Adresa kalendáře k odběru (funguje jen na webu, ne při otevření souboru z disku)

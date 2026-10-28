@@ -5,7 +5,9 @@ var STRANKY = {};
 // ---------- úvod: nejbližší trénink v modrém panelu ----------
 STRANKY.uvod = function () {
   var box = document.getElementById("nejblizsi");
-  var budouci = budouciTreninky();
+  // navazující tréninky (led a hned po něm suchá příprava) jsou jeden řádek
+  var nadchazejici = vsechnyTreninky(true).filter(function (x) { return !skoncil(x.datum, x.t); });
+  var budouci = nadchazejici.filter(function (x) { return x.t.stav !== "zruseno"; });
   var prvni = budouci[0];
   if (!prvni) {
     box.innerHTML = '<p class="nejblizsi__co">V nejbližších týdnech nejsou naplánované žádné tréninky.</p>';
@@ -23,15 +25,31 @@ STRANKY.uvod = function () {
       '<p class="nejblizsi__co">' + co + "</p>" + skupiny +
       '<p class="nejblizsi__info">' + mistoTreninku(t) + "</p>" +
       (t.poznamka ? '<p class="nejblizsi__info">' + esc(t.poznamka) + "</p>" : "") +
+      t.pak.map(function (p) {
+        if (p.stav === "zruseno") return '<span class="trenink__duvod">' + esc(velke(popisPokracovani(p))) + (p.poznamka ? " (" + esc(p.poznamka) + ")" : "") + "</span>";
+        return '<p class="nejblizsi__pak">Pak <strong>' + esc(casTreninku(p)) + "</strong> " + esc(popisPokracovani(p).replace(/ od .*$/, "")) + " · " + mistoTreninku(p) + "</p>";
+      }).join("") +
       htmlZrusenychSkupin(t) +
       (stitkyTreninku(t) ? '<div class="stitek-radek">' + stitkyTreninku(t) + "</div>" : "");
   }
 
   // další tréninky v bílém panelu – včetně zrušených, ať rodiče změnu nepřehlédnou
-  var dalsi = vsechnyTreninky().filter(function (x) { return !skoncil(x.datum, x.t); });
-  dalsi = dalsi.slice(dalsi.indexOf(dalsi.filter(function (x) { return x.t === (prvni && prvni.t); })[0]) + 1, 99).slice(0, 6);
+  var dalsi = nadchazejici.slice(nadchazejici.indexOf(prvni) + 1).slice(0, 6);
+  // soustředění, která začínají do posledního ukázaného dne nebo do 14 dnů (i ta, která právě probíhají), se zařadí mezi tréninky
+  var posledni = dalsi.length ? dalsi[dalsi.length - 1].datum : "", zaDvaTydny = new Date();
+  zaDvaTydny.setDate(zaDvaTydny.getDate() + 14);
+  budouciSoustredeni().forEach(function (s) {
+    if (s.od <= posledni || datumZIso(s.od) <= zaDvaTydny) dalsi.push({ datum: s.od, soustredeni: s });
+  });
+  dalsi.sort(function (a, b) { return a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : (a.soustredeni ? -1 : 1); });
   document.getElementById("dalsi-treninky").innerHTML = dalsi.map(function (x) {
-    var d = datumZIso(x.datum), t = x.t;
+    var d = datumZIso(x.datum), t = x.t, s = x.soustredeni;
+    if (s) {
+      var konec = datumZIso(s.do);
+      return '<li class="soustredeni-radek"><span class="dalsi__den">' + DNY_KRATCE[d.getDay()] + " <small>" + kratkeDatum(d) + "</small></span>" +
+        '<span class="dalsi__cas">' + (s.od === s.do ? "celý den" : "do " + DNY_KRATCE[konec.getDay()] + " " + kratkeDatum(konec)) + "</span>" +
+        '<span class="dalsi__co"><i class="tecka tecka--soustredeni"></i><span class="dalsi__text">Soustředění – ' + esc(s.nazev) + (s.misto ? ", " + esc(s.misto) : "") + "</span></span></li>";
+    }
     return '<li class="' + (t.stav === "zruseno" ? "zruseno" : "") + '"><span class="dalsi__den">' + DNY_KRATCE[d.getDay()] + " <small>" + kratkeDatum(d) + "</small></span>" +
       '<span class="dalsi__cas">' + esc(casTreninku(t)) + "</span>" +
       '<span class="dalsi__co"><i class="tecka tecka--' + (t.typ === "led" ? "led" : "sucho") + '"></i><span class="dalsi__text">' + esc(kratkyPopis(t)) + "</span> " + stitkyTreninku(t) + "</span></li>";
@@ -58,26 +76,48 @@ STRANKY.rozpis = function () {
       "Časy na ledě jsou obvyklé a mohou se lišit.</span></p>";
   }
 
-  var html = zobrazeneTydny().map(function (tyden, i) {
+  // soustředění (plánují se dopředu, proto všechna nadcházející, ne jen na dva týdny)
+  var soustredeni = budouciSoustredeni();
+  document.getElementById("soustredeni").innerHTML = soustredeni.length
+    ? '<section class="soustredeni-blok" aria-labelledby="nadpis-soustredeni"><h2 id="nadpis-soustredeni">' + "Soustředění" + "</h2>" +
+      '<div class="soustredeni-seznam">' + soustredeni.map(htmlSoustredeni).join("") + "</div></section>"
+    : "";
+
+  var tydny = zobrazeneTydny();
+  // dlouhodobá změna obvyklého týdne, která začne po zobrazených týdnech
+  var konecZobrazenych = tydny.length ? tydny[tydny.length - 1].dny[6].datum : "";
+  var zmenaSablony = (rozpis.sablony || []).filter(function (s) { return s.od > konecZobrazenych; })
+    .sort(function (a, b) { return a.od < b.od ? -1 : 1; })[0];
+  if (zmenaSablony) {
+    document.getElementById("upozorneni").innerHTML += '<p class="hlaska hlaska--info">' + IKONY.info +
+      "<span>Od <strong>" + esc(plneDatum(zmenaSablony.od)) + "</strong> se mění obvyklý rozpis tréninků.</span></p>";
+  }
+
+  var html = tydny.map(function (tyden, i) {
     var od = datumZIso(tyden.pondeli), ne = datumZIso(tyden.pondeli);
     ne.setDate(ne.getDate() + 6);
+    var vTydnu = (rozpis.soustredeni || []).filter(function (s) { return s.od <= tyden.dny[6].datum && s.do >= tyden.pondeli; });
     var nadpis = '<h2>' + (i === 0 ? "Tento týden" : "Příští týden") + "</h2>" +
       '<span class="tyden__datum">' + tyden.tyden + ". týden · " + kratkeDatum(od) + " – " + kratkeDatum(ne) + "</span>" +
-      (tyden.zimak === "nezverejneno" ? '<span class="stitek stitek--info" title="Zimní stadion rozpis na tento týden ještě nezveřejnil.">led předběžně</span>' : "");
+      (tyden.zimak === "nezverejneno" ? '<span class="stitek stitek--info" title="Zimní stadion rozpis na tento týden ještě nezveřejnil.">led předběžně</span>' : "") +
+      vTydnu.map(function (s) {
+        return '<p class="tyden__soustredeni">Soustředění – ' + esc(s.nazev) + " · " + esc(terminSoustredeni(s)) + (s.misto ? " · " + esc(s.misto) : "") + "</p>";
+      }).join("");
 
     var radky = tyden.dny.map(function (den) {
       var d = datumZIso(den.datum);
       var naLede = den.treninky.filter(function (t) { return t.typ === "led"; });
       var naSuchu = den.treninky.filter(function (t) { return t.typ !== "led"; });
-      var tridy = [];
+      var tridy = [], vDni = soustredeniVeDni(den.datum);
       if (stejnyDen(d, dnes)) tridy.push("dnes");
       else if (d < dnes) tridy.push("minuly");
       if (!den.treninky.length) tridy.push("volno");
+      if (vDni.length) tridy.push("na-soustredeni");
       return '<tr class="' + tridy.join(" ") + '">' +
         '<th class="den" scope="row">' + DNY_KRATCE[d.getDay()] + "<span>" + kratkeDatum(d) + "</span></th>" +
         (den.treninky.length
           ? "<td>" + naLede.map(htmlTreninku).join("") + "</td><td>" + naSuchu.map(htmlTreninku).join("") + "</td>"
-          : '<td colspan="2" class="bez">bez tréninku</td>') + "</tr>";
+          : '<td colspan="2" class="bez">' + (vDni.length ? "soustředění – " + esc(vDni[0].nazev) : "bez tréninku") + "</td>") + "</tr>";
     }).join("");
 
     return '<section class="tyden" aria-label="' + (i === 0 ? "Tento" : "Příští") + ' týden"><div class="tyden__hlava">' + nadpis + "</div>" +

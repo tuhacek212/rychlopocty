@@ -31,16 +31,8 @@ DTSTART;TZID=Europe/Prague:20261026T170000
 DTEND;TZID=Europe/Prague:20261026T183000
 SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-END:VEVENT
-BEGIN:VEVENT
-UID:2026-10-26-po-bios@kkslany.cz
-DTSTAMP:20261026T000000Z
-DTSTART;TZID=Europe/Prague:20261026T190000
-DTEND;TZID=Europe/Prague:20261026T200000
-SUMMARY:ZRUŠENO – Suchá příprava
-LOCATION:Hala BIOS Slaný
-DESCRIPTION:Podzimní prázdniny – suchá příprava není.
-STATUS:CANCELLED
+DESCRIPTION:Led 17:00–18:30 (ZS Slaný)\, pak suchá příprava zrušeno 
+ (Podzimní prázdniny – suchá příprava není).
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-10-27-ut-led@kkslany.cz
@@ -88,17 +80,11 @@ BEGIN:VEVENT
 UID:2026-11-02-po-led@kkslany.cz
 DTSTAMP:20261102T000000Z
 DTSTART;TZID=Europe/Prague:20261102T170000
-DTEND;TZID=Europe/Prague:20261102T183000
-SUMMARY:Led – rozdělený (A → B)
-LOCATION:ZS Slaný
-END:VEVENT
-BEGIN:VEVENT
-UID:2026-11-02-po-bios@kkslany.cz
-DTSTAMP:20261102T000000Z
-DTSTART;TZID=Europe/Prague:20261102T190000
 DTEND;TZID=Europe/Prague:20261102T200000
-SUMMARY:Suchá příprava
-LOCATION:Hala BIOS Slaný
+SUMMARY:Led – rozdělený (A → B) + suchá příprava
+LOCATION:ZS Slaný
+DESCRIPTION:Led 17:00–18:30 (ZS Slaný)\, pak suchá příprava 19:00–2
+ 0:00 (Hala BIOS Slaný).
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-03-ut-led@kkslany.cz
@@ -146,17 +132,11 @@ BEGIN:VEVENT
 UID:2026-11-09-po-led@kkslany.cz
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=Europe/Prague:20261109T170000
-DTEND;TZID=Europe/Prague:20261109T183000
-SUMMARY:Led – rozdělený (A → B)
-LOCATION:ZS Slaný
-END:VEVENT
-BEGIN:VEVENT
-UID:2026-11-09-po-bios@kkslany.cz
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=Europe/Prague:20261109T190000
 DTEND;TZID=Europe/Prague:20261109T200000
-SUMMARY:Suchá příprava
-LOCATION:Hala BIOS Slaný
+SUMMARY:Led – rozdělený (A → B) + suchá příprava
+LOCATION:ZS Slaný
+DESCRIPTION:Led 17:00–18:30 (ZS Slaný)\, pak suchá příprava 19:00–2
+ 0:00 (Hala BIOS Slaný).
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-10-ut-led@kkslany.cz
@@ -204,17 +184,11 @@ BEGIN:VEVENT
 UID:2026-11-16-po-led@kkslany.cz
 DTSTAMP:20261116T000000Z
 DTSTART;TZID=Europe/Prague:20261116T170000
-DTEND;TZID=Europe/Prague:20261116T183000
-SUMMARY:Led – rozdělený (A → B)
-LOCATION:ZS Slaný
-END:VEVENT
-BEGIN:VEVENT
-UID:2026-11-16-po-bios@kkslany.cz
-DTSTAMP:20261116T000000Z
-DTSTART;TZID=Europe/Prague:20261116T190000
 DTEND;TZID=Europe/Prague:20261116T200000
-SUMMARY:Suchá příprava
-LOCATION:Hala BIOS Slaný
+SUMMARY:Led – rozdělený (A → B) + suchá příprava
+LOCATION:ZS Slaný
+DESCRIPTION:Led 17:00–18:30 (ZS Slaný)\, pak suchá příprava 19:00–2
+ 0:00 (Hala BIOS Slaný).
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-17-ut-led@kkslany.cz
@@ -262,17 +236,11 @@ BEGIN:VEVENT
 UID:2026-11-23-po-led@kkslany.cz
 DTSTAMP:20261123T000000Z
 DTSTART;TZID=Europe/Prague:20261123T170000
-DTEND;TZID=Europe/Prague:20261123T183000
-SUMMARY:Led – rozdělený (A → B)
-LOCATION:ZS Slaný
-END:VEVENT
-BEGIN:VEVENT
-UID:2026-11-23-po-bios@kkslany.cz
-DTSTAMP:20261123T000000Z
-DTSTART;TZID=Europe/Prague:20261123T190000
 DTEND;TZID=Europe/Prague:20261123T200000
-SUMMARY:Suchá příprava
-LOCATION:Hala BIOS Slaný
+SUMMARY:Led – rozdělený (A → B) + suchá příprava
+LOCATION:ZS Slaný
+DESCRIPTION:Led 17:00–18:30 (ZS Slaný)\, pak suchá příprava 19:00–2
+ 0:00 (Hala BIOS Slaný).
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-24-ut-led@kkslany.cz
@@ -320,18 +288,12 @@ BEGIN:VEVENT
 UID:2026-11-30-po-led@kkslany.cz
 DTSTAMP:20261130T000000Z
 DTSTART;TZID=Europe/Prague:20261130T170000
-DTEND;TZID=Europe/Prague:20261130T183000
-SUMMARY:Led – rozdělený (A → B)
-LOCATION:ZS Slaný
-DESCRIPTION:Předběžný čas – zimák rozpis zatím nezveřejnil.
-END:VEVENT
-BEGIN:VEVENT
-UID:2026-11-30-po-bios@kkslany.cz
-DTSTAMP:20261130T000000Z
-DTSTART;TZID=Europe/Prague:20261130T190000
 DTEND;TZID=Europe/Prague:20261130T200000
-SUMMARY:Suchá příprava
-LOCATION:Hala BIOS Slaný
+SUMMARY:Led – rozdělený (A → B) + suchá příprava
+LOCATION:ZS Slaný
+DESCRIPTION:Led 17:00–18:30 (ZS Slaný)\, pak suchá příprava 19:00–2
+ 0:00 (Hala BIOS Slaný). Předběžný čas – zimák rozpis zatím nezve
+ řejnil.
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-01-ut-led@kkslany.cz

@@ -25,92 +25,99 @@ window.KK = {
    "A",
    "B"
   ],
-  "sablona": [
+  "sablony": [
    {
-    "id": "po-led",
-    "den": 1,
-    "typ": "led",
-    "misto": "zs",
-    "od": "17:00",
-    "do": "18:30",
-    "casti": [
+    "od": "2026-08-01",
+    "treninky": [
      {
-      "skupina": "A"
-     },
-     {
-      "skupina": "B"
-     }
-    ]
-   },
-   {
-    "id": "po-bios",
-    "den": 1,
-    "typ": "sucho",
-    "misto": "bios",
-    "od": "19:00",
-    "do": "20:00"
-   },
-   {
-    "id": "ut-led",
-    "den": 2,
-    "typ": "led",
-    "misto": "zs",
-    "od": "17:00",
-    "do": "18:45",
-    "casti": [
-     {
-      "skupina": "A"
-     },
-     {
-      "skupina": "B"
-     }
-    ],
-    "poznamka": "+ 20 min docvičení s Radkou"
-   },
-   {
-    "id": "ct-led",
-    "den": 4,
-    "typ": "led",
-    "misto": "zs",
-    "od": "06:00",
-    "do": "07:00"
-   },
-   {
-    "id": "ct-pohyb",
-    "den": 4,
-    "typ": "pohyb",
-    "misto": "haje",
-    "popis": "Pohybovka s Radkou",
-    "casti": [
-     {
-      "skupina": "1. sk. + základna",
+      "id": "po-led",
+      "den": 1,
+      "typ": "led",
+      "misto": "zs",
       "od": "17:00",
-      "do": "18:15"
+      "do": "18:30",
+      "casti": [
+       {
+        "skupina": "A"
+       },
+       {
+        "skupina": "B"
+       }
+      ]
      },
      {
-      "skupina": "2. sk.",
-      "od": "18:00",
-      "do": "19:30"
+      "id": "po-bios",
+      "den": 1,
+      "typ": "sucho",
+      "misto": "bios",
+      "od": "19:00",
+      "do": "20:00",
+      "navazuje": "po-led"
+     },
+     {
+      "id": "ut-led",
+      "den": 2,
+      "typ": "led",
+      "misto": "zs",
+      "od": "17:00",
+      "do": "18:45",
+      "casti": [
+       {
+        "skupina": "A"
+       },
+       {
+        "skupina": "B"
+       }
+      ],
+      "poznamka": "+ 20 min docvičení s Radkou"
+     },
+     {
+      "id": "ct-led",
+      "den": 4,
+      "typ": "led",
+      "misto": "zs",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "id": "ct-pohyb",
+      "den": 4,
+      "typ": "pohyb",
+      "misto": "haje",
+      "popis": "Pohybovka s Radkou",
+      "casti": [
+       {
+        "skupina": "1. sk. + základna",
+        "od": "17:00",
+        "do": "18:15"
+       },
+       {
+        "skupina": "2. sk.",
+        "od": "18:00",
+        "do": "19:30"
+       }
+      ]
+     },
+     {
+      "id": "so-led",
+      "den": 6,
+      "typ": "led",
+      "misto": "zs",
+      "casti": [
+       {
+        "skupina": "A"
+       },
+       {
+        "skupina": "B"
+       }
+      ],
+      "stridani": true,
+      "poznamka": "+ 20 min docvičení s Radkou"
      }
     ]
-   },
-   {
-    "id": "so-led",
-    "den": 6,
-    "typ": "led",
-    "misto": "zs",
-    "casti": [
-     {
-      "skupina": "A"
-     },
-     {
-      "skupina": "B"
-     }
-    ],
-    "stridani": true,
-    "poznamka": "+ 20 min docvičení s Radkou"
    }
   ],
+  "soustredeni": [],
   "vyjimky": [
    {
     "datum": "2026-10-26",
@@ -124,7 +131,7 @@ window.KK = {
    "do": "2027-03-31"
   },
   "zimakOk": true,
-  "aktualizovano": "2026-10-28T14:06+01:00",
+  "aktualizovano": "2026-10-28T19:14+01:00",
   "tydny": [
    {
     "tyden": 44,
@@ -176,6 +183,7 @@ window.KK = {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
+        "navazuje": "po-led",
         "od": "19:00",
         "do": "20:00",
         "poznamka": "Podzimní prázdniny – suchá příprava není.",
@@ -324,6 +332,7 @@ window.KK = {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
+        "navazuje": "po-led",
         "od": "19:00",
         "do": "20:00"
        }
@@ -470,6 +479,7 @@ window.KK = {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
+        "navazuje": "po-led",
         "od": "19:00",
         "do": "20:00"
        }
@@ -616,6 +626,7 @@ window.KK = {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
+        "navazuje": "po-led",
         "od": "19:00",
         "do": "20:00"
        }
@@ -762,6 +773,7 @@ window.KK = {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
+        "navazuje": "po-led",
         "od": "19:00",
         "do": "20:00"
        }
@@ -887,6 +899,7 @@ window.KK = {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
+        "navazuje": "po-led",
         "od": "19:00",
         "do": "20:00"
        }

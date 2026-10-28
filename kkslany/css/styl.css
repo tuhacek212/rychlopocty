@@ -28,6 +28,8 @@
   --bg: #eef2f6;
   --red: #c62828;
   --red-soft: #fdecea;
+  --rose: #b8326f;          /* soustředění – růžová stužka z loga */
+  --rose-soft: #fbeef4;
   --footer: #172029;
   --footer-2: #10171d;
   --radius: 16px;
@@ -200,6 +202,9 @@ p { margin: 0 0 1em; }
 .dalsi-treninky .prazdne { display: block; color: var(--muted); }
 .tecka { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--blue); }
 .tecka--sucho { background: var(--teal); }
+.tecka--soustredeni { background: var(--rose); border-radius: 2px; }
+.dalsi-treninky li.soustredeni-radek .dalsi__text { color: var(--rose); font-weight: 500; }
+.nejblizsi__pak { margin: 6px 0 0; font-size: 14.5px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, .25); }
 
 .tlacitka { display: flex; flex-wrap: wrap; gap: 10px; }
 .tlacitko {
@@ -419,6 +424,21 @@ table.rozpis { width: 100%; border-collapse: collapse; font-size: 14.5px; table-
 .rozpis tr.dnes > * { background: var(--orange-soft); }
 .rozpis tr.dnes .den { box-shadow: inset 3px 0 0 var(--orange); color: #8a4a00; }
 .rozpis tr.dnes .den span { color: #b0682a; }
+.rozpis tr.na-soustredeni .den { box-shadow: inset 3px 0 0 var(--rose); }
+.rozpis tr.na-soustredeni td.bez { color: var(--rose); font-weight: 500; }
+.tyden__soustredeni { flex-basis: 100%; margin: 4px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--rose-soft); color: var(--rose); font-size: 14px; font-weight: 500; }
+
+/* soustředění pod rozpisem */
+.soustredeni-blok { margin-top: 40px; }
+.soustredeni-blok h2 { font-size: 24px; margin: 0 0 14px; }
+.soustredeni-seznam { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.soustredeni { background: #fff; border: 1px solid var(--line); border-top: 4px solid var(--rose); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; }
+.soustredeni__kdy { margin: 0; color: var(--rose); font-weight: 500; font-size: 14px; }
+.soustredeni h3 { margin: 2px 0 6px; font-size: 19px; color: var(--navy); }
+.soustredeni__info { margin: 0 0 6px; color: var(--grey); font-size: 14.5px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.soustredeni__info .svg { width: 15px; height: 15px; }
+.soustredeni__pozn { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; }
+.soustredeni__rusi { margin: 0; font-size: 13.5px; color: var(--red); }
 /* proběhlé dny jen ztlumené – nesmí vypadat jako zrušené */
 .rozpis tr.minuly > * { opacity: .6; }
 .rozpis tr.minuly .trenink__cas { font-weight: 500; }
@@ -431,6 +451,8 @@ table.rozpis { width: 100%; border-collapse: collapse; font-size: 14.5px; table-
 .trenink__popis--hlava .trenink__nazev { font-weight: 700; }
 .trenink__pozn { display: block; color: var(--navy); font-size: 13px; line-height: 1.4; }
 .trenink__duvod { display: block; font-size: 13px; line-height: 1.4; color: var(--red); }
+.trenink__navazuje { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.trenink__navazuje::before { content: "↳ "; }
 .trenink--zruseno .trenink__cas, .trenink--zruseno .trenink__popis, .trenink--zruseno .trenink__skupiny { text-decoration: line-through; color: var(--muted); }
 .trenink--zruseno .trenink__nazev { color: var(--muted); }
 .trenink__skupiny { list-style: none; margin: 3px 0 0; padding: 0; font-size: 13.5px; line-height: 1.45; color: var(--grey); }

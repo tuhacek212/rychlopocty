@@ -1,13 +1,17 @@
 // Administrace webu KK Slaný.
-// Dva druhy účtů – oba vidí totéž, liší se tím, co smí měnit:
+// Účty pro správu webu – všechny vidí totéž, liší se tím, co smí měnit:
 //   redaktor – rozpis (zrušení, jiný čas, mimořádný trénink), přidávání a úpravy aktualit, výsledků a fotoalb
+//   trenér   – jako redaktor a navíc přihlášky na závody (vidí všechny děti)
 //   správce  – navíc mazání, obvyklý týden, trenéři, závodníci, údaje klubu a uživatelé
+// Rodič vidí jen Přihlášky a v nich jen své děti (js/prihlasky.js).
 // Zatím běží jako ukázka: přihlášení i změny jsou jen v tomto prohlížeči (localStorage).
 // Ostré ukládání přibude s databází – vymění se jen objekt Uloziste a funkce prihlas().
 
 var ROLE = {
-  redaktor: { nazev: "Redaktor", prava: ["rozpis", "pridat", "upravit"] },
-  spravce: { nazev: "Správce", prava: ["rozpis", "pridat", "upravit", "smazat", "sablona", "lide", "klub", "uzivatele"] }
+  redaktor: { nazev: "Redaktor", prava: ["web", "rozpis", "pridat", "upravit"] },
+  trener: { nazev: "Trenér", prava: ["web", "rozpis", "pridat", "upravit", "prihlasky"] },
+  spravce: { nazev: "Správce", prava: ["web", "rozpis", "pridat", "upravit", "smazat", "sablona", "lide", "klub", "uzivatele", "prihlasky"] },
+  rodic: { nazev: "Rodič", prava: ["prihlaska"] }
 };
 
 var POPIS_PRAV = [
@@ -18,17 +22,17 @@ var POPIS_PRAV = [
   ["sablona", "Měnit obvyklý týden tréninků"],
   ["lide", "Spravovat trenéry a závodníky"],
   ["klub", "Měnit kontakty a údaje klubu"],
-  ["uzivatele", "Přidávat a odebírat uživatele administrace"]
+  ["uzivatele", "Přidávat a odebírat uživatele administrace"],
+  ["prihlasky", "Přihlášky na závody a soustředění – vidět všechny děti a přihlašovat je"]
 ];
 
 var UKAZKOVE_HESLO = "ukazka";
 var PRIHLASENI = "kkslany-prihlaseni";
 
-function kopie(x) { return JSON.parse(JSON.stringify(x)); }
-
 var VYCHOZI = {
   vyjimky: function () { return []; },
-  sablona: function () { return KK.rozpis.sablona; },
+  sablony: function () { return KK.rozpis.sablony; },
+  soustredeni: function () { return KK.rozpis.soustredeni || []; },
   aktuality: function () { return KK.aktuality; },
   zavody: function () { return KK.zavody; },
   galerie: function () { return KK.galerie; },
@@ -38,7 +42,10 @@ var VYCHOZI = {
   uzivatele: function () {
     return [
       { email: "spravce@kkslany.cz", jmeno: "Správce webu", role: "spravce" },
-      { email: "redaktor@kkslany.cz", jmeno: "Redaktor rozpisu", role: "redaktor" }
+      { email: "redaktor@kkslany.cz", jmeno: "Redaktor rozpisu", role: "redaktor" },
+      { email: "trenerka@kkslany.cz", jmeno: "Hana Ukázková", role: "trener" },
+      { email: "rodic@kkslany.cz", jmeno: "Jana Nováková", role: "rodic" },
+      { email: "rodic2@kkslany.cz", jmeno: "Petr Dvořák", role: "rodic" }
     ];
   },
   historie: function () { return []; }
@@ -49,8 +56,12 @@ var VYCHOZI = {
 var Uloziste = {
   data: (function () {
     var data = ukazkoveZmeny() || {};
-    // obvyklý týden uložený ve starém tvaru (poradi „A/B“ místo skupin) se zahodí
-    if (data.sablona && data.sablona.some(function (s) { return s.poradi || (s.stridani && typeof s.stridani === "object"); })) delete data.sablona;
+    // obvyklý týden ve starém tvaru (jediný, bez data platnosti) se zahodí
+    delete data.sablona;
+    // účty trenérky a rodičů přibyly později – doplní se i do dříve uloženého seznamu
+    if (data.uzivatele && !data.uzivatele.some(function (u) { return u.role === "rodic"; })) {
+      data.uzivatele = data.uzivatele.concat(VYCHOZI.uzivatele().filter(function (u) { return u.role === "trener" || u.role === "rodic"; }));
+    }
     return data;
   })(),
   dej: function (klic) {
@@ -68,8 +79,9 @@ var Uloziste = {
       oznam("Změnu se nepodařilo uložit – prohlížeč nepovoluje ukládání.");
     }
   },
+  // změnil se web? (přihlášky a uživatelé na webu vidět nejsou)
   zmeneno: function () {
-    return Object.keys(this.data).some(function (k) { return k !== "historie" && k !== "uzivatele"; });
+    return Object.keys(this.data).some(function (k) { return ["historie", "uzivatele", "deti", "akce", "prihlasky"].indexOf(k) < 0; });
   },
   zahod: function () {
     var uzivatele = this.data.uzivatele;
@@ -108,6 +120,11 @@ function smi(pravo) {
   return !!prihlaseny && ROLE[prihlaseny.role].prava.indexOf(pravo) >= 0;
 }
 
+// sekci vidí, kdo má aspoň jedno z jejích práv „vidi“ (bez něj stačí správa webu)
+function viditelna(sekce) {
+  return (sekce.vidi || ["web"]).some(smi);
+}
+
 // ---------- drobné stavební kameny ----------
 
 var A_IKONY = {
@@ -128,6 +145,7 @@ var A_IKONY = {
 var SEKCE = [
   { id: "prehled", nazev: "Přehled", ikona: A_IKONY.prehled },
   { id: "rozpis", nazev: "Rozpis tréninků", ikona: IKONY.kalendar },
+  { id: "prihlasky", nazev: "Přihlášky na závody", ikona: '<svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6"/></svg>', vidi: ["prihlasky", "prihlaska"] },
   { id: "aktuality", nazev: "Aktuality", ikona: A_IKONY.aktuality },
   { id: "zavody", nazev: "Výsledky závodů", ikona: A_IKONY.pohar },
   { id: "galerie", nazev: "Fotogalerie", ikona: A_IKONY.foto },
@@ -246,17 +264,18 @@ document.querySelector("#okno [data-zavrit]").addEventListener("click", function
 function htmlPrihlaseni() {
   return '<div class="a-prihlaseni"><div class="a-prihlaseni__karta">' +
     '<a class="a-prihlaseni__znak" href="index.html"><img src="img/brusle.svg" alt="" width="96" height="96"><span>KK Slaný</span></a>' +
-    "<h1>Přihlášení do administrace</h1>" +
+    "<h1>Přihlášení</h1>" +
     '<form id="prihlaseni" class="a-prihlaseni__formular">' +
     '<label class="pole"><span>E-mail</span><input type="email" name="email" autocomplete="username" required></label>' +
     '<label class="pole"><span>Heslo</span><input type="password" name="heslo" autocomplete="current-password" required></label>' +
     '<p class="okno__chyba" id="chyba-prihlaseni" role="alert"></p>' +
     '<button class="a-tl a-tl--hlavni a-tl--velke" type="submit">Přihlásit se</button></form>' +
-    '<div class="a-ukazka"><p><strong>Ukázka administrace.</strong> Ostré účty přibudou s databází. Zatím si můžete vyzkoušet obě role:</p>' +
-    '<div class="a-ukazka__ucty">' +
-    '<button type="button" class="a-ucet" data-ucet="redaktor@kkslany.cz">' + stitekRole("redaktor") + "<span>redaktor@kkslany.cz</span></button>" +
-    '<button type="button" class="a-ucet" data-ucet="spravce@kkslany.cz">' + stitekRole("spravce") + "<span>spravce@kkslany.cz</span></button>" +
-    "</div><p class=\"a-ukazka__heslo\">Heslo k oběma: <code>" + UKAZKOVE_HESLO + "</code></p></div>" +
+    '<div class="a-ukazka"><p><strong>Ukázka.</strong> Ostré účty přibudou s databází. Zatím si můžete vyzkoušet všechny role:</p>' +
+    '<div class="a-ukazka__ucty">' + ["redaktor@kkslany.cz", "trenerka@kkslany.cz", "spravce@kkslany.cz", "rodic@kkslany.cz"].map(function (email) {
+      var u = VYCHOZI.uzivatele().filter(function (x) { return x.email === email; })[0];
+      return '<button type="button" class="a-ucet" data-ucet="' + email + '">' + stitekRole(u.role) + "<span>" + email + "</span></button>";
+    }).join("") +
+    "</div><p class=\"a-ukazka__heslo\">Heslo ke všem: <code>" + UKAZKOVE_HESLO + "</code> · druhý rodič: rodic2@kkslany.cz</p></div>" +
     '<a class="a-zpet" href="index.html">← Zpět na web</a>' +
     "</div></div>";
 }
@@ -285,11 +304,12 @@ function zapojPrihlaseni() {
 
 function aktualniSekce() {
   var id = location.hash.replace("#", "");
-  return SEKCE.filter(function (s) { return s.id === id; })[0] || SEKCE[0];
+  var viditelne = SEKCE.filter(viditelna);
+  return viditelne.filter(function (s) { return s.id === id; })[0] || viditelne[0];
 }
 
 function htmlRozvrzeni(sekce) {
-  var odkazy = SEKCE.map(function (s) {
+  var odkazy = SEKCE.filter(viditelna).map(function (s) {
     return '<a href="#' + s.id + '"' + (s.id === sekce.id ? ' aria-current="page"' : "") + ">" + s.ikona + "<span>" + s.nazev + "</span>" +
       (s.pravo && !smi(s.pravo) ? '<i class="a-menu__zamek" title="Jen pro čtení">' + IKONY.zamek + "</i>" : "") + "</a>";
   }).join("");
@@ -323,9 +343,14 @@ function vykresli() {
 var VYKRESLENI = {};
 var AKCE = {};
 
+// rozpis tak, jak by vypadal se změnami z administrace (obvyklý týden, soustředění, výjimky)
 function nahledRozpisu() {
   var rozpis = kopie(KK.rozpis);
-  pouzijVyjimky(rozpis, Uloziste.dej("vyjimky"));
+  pouzijZmenyRozpisu(rozpis, {
+    sablony: "sablony" in Uloziste.data ? Uloziste.dej("sablony") : null,
+    soustredeni: "soustredeni" in Uloziste.data ? Uloziste.dej("soustredeni") : null,
+    vyjimky: Uloziste.dej("vyjimky")
+  });
   return rozpis;
 }
 
@@ -335,7 +360,7 @@ VYKRESLENI.prehled = function () {
   var dalsi = null, dnes = new Date();
   zobrazeneTydny(rozpis).some(function (tyden) {
     return tyden.dny.some(function (den) {
-      return den.treninky.some(function (t) {
+      return spojNavazujici(den.treninky).some(function (t) {
         if (t.stav === "zruseno" || skoncil(den.datum, t)) return false;
         dalsi = { datum: den.datum, t: t };
         return true;
@@ -363,7 +388,7 @@ VYKRESLENI.prehled = function () {
     "</div></section>" +
     '<section class="a-karta"><h2>Co můžete dělat</h2><ul class="a-prava">' + POPIS_PRAV.map(function (p) {
       var ma = role.prava.indexOf(p[0]) >= 0;
-      return '<li class="' + (ma ? "ano" : "ne") + '">' + (ma ? A_IKONY.ok : IKONY.zamek) + "<span>" + p[1] + (ma ? "" : " <em>– jen správce</em>") + "</span></li>";
+      return '<li class="' + (ma ? "ano" : "ne") + '">' + (ma ? A_IKONY.ok : IKONY.zamek) + "<span>" + p[1] + (ma ? "" : p[0] === "prihlasky" ? " <em>– jen trenér a správce</em>" : " <em>– jen správce</em>") + "</span></li>";
     }).join("") + "</ul></section></div>";
 };
 
@@ -546,18 +571,19 @@ function tlPridat(druh, akce, arg, pravo) {
   return tl(A_IKONY.plus + (druh === "led" ? "led" : "na suchu"), akce, arg, pravo, "a-pridat a-pridat--" + druh);
 }
 
-function htmlTydneAdmin(tyden) {
+function htmlTydneAdmin(tyden, soustredeni) {
   var dnes = new Date();
   dnes = new Date(dnes.getFullYear(), dnes.getMonth(), dnes.getDate());
   return '<section class="a-karta a-tyden">' + htmlTabulkyAdmin(tyden.dny.map(function (den) {
-    var d = datumZIso(den.datum), minuly = d < dnes;
+    var d = datumZIso(den.datum), minuly = d < dnes, vDni = soustredeniVeDni(den.datum, soustredeni);
     function sloupec(druh) {
       return den.treninky.filter(function (t) { return (t.typ === "led") === (druh === "led"); })
         .map(function (t) { return htmlTreninkuAdmin(den, t, minuly); }).join("") +
         (minuly ? "" : tlPridat(druh, "pridat-trenink", den.datum + "|" + druh, "rozpis"));
     }
-    return { nazev: DNY_KRATCE[d.getDay()], datum: kratkeDatum(d), led: sloupec("led"), sucho: sloupec("sucho"),
-      tridy: (minuly ? "minuly" : "") + (stejnyDen(d, dnes) ? " dnes" : "") };
+    return { nazev: DNY_KRATCE[d.getDay()], datum: kratkeDatum(d) + (vDni.length ? '<i class="a-soustr" title="' + esc(vDni[0].nazev) + '">soustředění</i>' : ""),
+      led: sloupec("led"), sucho: sloupec("sucho"),
+      tridy: (minuly ? "minuly" : "") + (stejnyDen(d, dnes) ? " dnes" : "") + (vDni.length ? " na-soustredeni" : "") };
   })) + "</section>";
 }
 
@@ -631,11 +657,11 @@ function popisZmeny(v) {
 }
 
 function htmlZmen() {
-  var sablona = Uloziste.dej("sablona"), zmeny = seznamZmen();
+  var sablony = Uloziste.dej("sablony"), zmeny = seznamZmen();
   return '<section class="a-karta"><h2>Naplánované změny</h2>' +
     (zmeny.length ? '<table class="a-tabulka"><thead><tr><th>Kdy</th><th>Trénink</th><th>Změna</th><th>Poznámka</th><th></th></tr></thead><tbody>' +
       zmeny.map(function (z) {
-        var v = z.v, sab = sablona.filter(function (s) { return s.id === v.id; })[0];
+        var v = z.v, sab = sablonaProDen(sablony, v.datum).filter(function (s) { return s.id === v.id; })[0];
         var co = v.datumDo ? "vše" : v.popis || (sab ? sab.popis || velke(kratkyPopis(sab)) : "Trénink");
         return "<tr><td>" + esc(denADatum(v.datum)) + (v.datumDo ? " – " + esc(denADatum(v.datumDo)) : "") + "</td><td>" + esc(co) + "</td><td>" + esc(popisZmeny(v)) + "</td>" +
           "<td>" + esc(v.poznamka || "") + '</td><td class="a-tabulka__akce">' +
@@ -643,9 +669,41 @@ function htmlZmen() {
       }).join("") + "</tbody></table>" : '<p class="a-pozn">Žádné změny – platí obvyklý týden a led ze zimáku.</p>') + "</section>";
 }
 
+// ---------- obvyklý týden: může se natrvalo změnit od určitého dne ----------
+// Každá verze {od, treninky} platí od svého data do začátku další. Starší verze, než ta dnešní, se nezobrazují.
+
+var vybranaSablona = null; // datum „od“ vybrané verze
+
+function seznamSablon() {
+  return Uloziste.dej("sablony").sort(function (a, b) { return a.od < b.od ? -1 : 1; });
+}
+
+function indexPlatneSablony(sablony, iso) {
+  var i = 0;
+  sablony.forEach(function (s, j) { if (s.od <= iso) i = j; });
+  return i;
+}
+
+function indexVybraneSablony(sablony) {
+  var platna = indexPlatneSablony(sablony, dnesIso());
+  var i = sablony.map(function (s) { return s.od; }).indexOf(vybranaSablona);
+  return i >= platna ? i : platna;
+}
+
+function predchoziDen(iso) {
+  var d = datumZIso(iso);
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function nazevVerze(sablony, i) {
+  return i === indexPlatneSablony(sablony, dnesIso()) ? "obvyklý týden" : "obvyklý týden od " + plneDatum(sablony[i].od);
+}
+
 // obvyklý týden vykreslený stejně jako rozpis na webu
 function htmlSablony() {
-  var sablona = Uloziste.dej("sablona");
+  var sablony = seznamSablon(), platna = indexPlatneSablony(sablony, dnesIso()), vybrana = indexVybraneSablony(sablony);
+  var verze = sablony[vybrana], sablona = verze.treninky, dalsi = sablony[vybrana + 1];
   var radky = [1, 2, 3, 4, 5, 6, 7].map(function (cislo) {
     function sloupec(druh) {
       return sablona.filter(function (s) { return s.den === cislo && (s.typ === "led") === (druh === "led"); })
@@ -660,11 +718,125 @@ function htmlSablony() {
     }
     return { nazev: velke(DNY_KRATCE[cislo % 7]), led: sloupec("led"), sucho: sloupec("sucho"), tridy: "" };
   });
+  var zalozky = sablony.map(function (s, j) {
+    if (j < platna) return "";
+    return '<button type="button" class="a-zalozka" data-akce="sablona-verze" data-arg="' + esc(s.od) + '" aria-pressed="' + (j === vybrana) + '">' +
+      (j === platna ? "Platí teď" : "Od " + plneDatum(s.od)) + "</button>";
+  }).join("");
+  var popis = vybrana === platna
+    ? (dalsi ? "Platí do " + plneDatum(predchoziDen(dalsi.od)) + ". " : "Opakuje se každý týden sezóny. ") +
+      "Úprava tady platí hned. Když se rozpis mění natrvalo až od určitého dne, použijte „Změna od data“."
+    : "Platí od " + plneDatum(verze.od) + (dalsi ? " do " + plneDatum(predchoziDen(dalsi.od)) : "") + ". Do té doby zůstává obvyklý týden, který platí teď.";
+  var akce = smi("sablona") ? (vybrana !== platna ? tl("Změnit datum", "sablona-datum", verze.od, "sablona", "a-tl--male") +
+    tl("Zrušit tuto změnu", "sablona-zrusit-verzi", verze.od, "sablona", "a-tl--male a-tl--cervene") : "") +
+    tl(A_IKONY.plus + "Změna od data…", "sablona-naplanovat", "", "sablona", "a-tl--male a-tl--hlavni") : "";
   return (smi("sablona") ? "" : zamceno("Obvyklý týden mění jen správce. Jednotlivé tréninky ale můžete zrušit nebo upravit v rozpisu po týdnech.")) +
-    '<section class="a-karta a-tyden"><h2>Obvyklý týden</h2>' +
-    '<p class="a-pozn">Opakuje se každý týden sezóny. Čas ledu se bere ze zimáku. Změna se na webu projeví při dalším sestavení rozpisu.</p>' +
+    '<section class="a-karta a-tyden"><div class="a-karta__hlava"><h2>Obvyklý týden</h2><div class="a-polozka__akce">' + akce + "</div></div>" +
+    (sablony.length - platna > 1 ? '<div class="a-zalozky">' + zalozky + "</div>" : "") +
+    '<p class="a-pozn">' + popis + " Čas ledu se bere ze zimáku.</p>" +
     htmlTabulkyAdmin(radky) + "</section>";
 }
+
+AKCE["sablona-verze"] = function (od) {
+  vybranaSablona = od;
+  vykresli();
+};
+
+// datum začátku nové verze: nejdřív zítra, v sezóně, a ne stejné jako jiná verze
+function kontrolaDataVerze(od, sablony, puvodni) {
+  var platnost = KK.rozpis.platnost || {};
+  if (od <= dnesIso()) return "Změna může začít nejdřív zítra. Co platí od dneška, upravte přímo v obvyklém týdnu, který platí teď.";
+  if (platnost.do && od > platnost.do) return "Sezóna končí " + plneDatum(platnost.do) + ".";
+  if (sablony.some(function (s) { return s.od === od && s.od !== puvodni; })) return "Od tohoto dne už změna naplánovaná je.";
+  return null;
+}
+
+AKCE["sablona-naplanovat"] = function () {
+  if (!smi("sablona")) return;
+  var sablony = seznamSablon();
+  otevriFormular({
+    nadpis: "Změna obvyklého týdne od data",
+    uvod: "Od zvoleného dne bude platit nový obvyklý týden. Na začátku je stejný jako ten současný – pak v něm upravíte, co se mění. Do té doby platí beze změny ten současný.",
+    pole: [{ k: "od", nazev: "Platí od", typ: "date", povinne: true, pul: true, napoveda: "Obvykle pondělí, kdy nový rozpis začíná." }],
+    ulozit: function (h) {
+      var chyba = kontrolaDataVerze(h.od, sablony);
+      if (chyba) return chyba;
+      sablony.push({ od: h.od, treninky: kopie(sablonaProDen(sablony, h.od)) });
+      vybranaSablona = h.od;
+      Uloziste.uloz("sablony", sablony, "Naplánována změna obvyklého týdne od " + plneDatum(h.od));
+    }
+  });
+};
+
+AKCE["sablona-datum"] = function (od) {
+  if (!smi("sablona")) return;
+  var sablony = seznamSablon(), verze = sablony.filter(function (s) { return s.od === od; })[0];
+  otevriFormular({
+    nadpis: "Od kdy změna platí", hodnoty: { od: od },
+    pole: [{ k: "od", nazev: "Platí od", typ: "date", povinne: true, pul: true }],
+    ulozit: function (h) {
+      var chyba = kontrolaDataVerze(h.od, sablony, od);
+      if (chyba) return chyba;
+      verze.od = h.od;
+      vybranaSablona = h.od;
+      Uloziste.uloz("sablony", sablony, "Změna obvyklého týdne přesunuta z " + plneDatum(od) + " na " + plneDatum(h.od));
+    }
+  });
+};
+
+AKCE["sablona-zrusit-verzi"] = function (od) {
+  if (!smi("sablona")) return;
+  potvrd("Zrušit změnu od " + plneDatum(od) + "?", "I potom bude platit obvyklý týden, který platí teď.", "Zrušit změnu", function () {
+    vybranaSablona = null;
+    Uloziste.uloz("sablony", seznamSablon().filter(function (s) { return s.od !== od; }), "Zrušena změna obvyklého týdne od " + plneDatum(od));
+  });
+};
+
+// ---------- soustředění ----------
+
+function htmlSoustredeniAdmin() {
+  var seznam = budouciSoustredeni(Uloziste.dej("soustredeni"));
+  return '<section class="a-karta"><div class="a-karta__hlava"><h2>Soustředění</h2>' + tl(A_IKONY.plus + "Přidat soustředění", "soustredeni", "", "rozpis", "a-tl--male a-tl--hlavni") + "</div>" +
+    (seznam.length ? '<div class="soustredeni-seznam">' + seznam.map(function (s) {
+      return '<div class="a-soustredeni">' + htmlSoustredeni(s) + '<div class="a-blok__akce">' +
+        tl("Upravit", "soustredeni", s.id, "rozpis", "a-tl--male") + tl("Smazat", "soustredeni-smazat", s.id, "rozpis", "a-tl--male a-tl--cervene") + "</div></div>";
+    }).join("") + "</div>" : '<p class="a-pozn">Žádné soustředění není naplánované.</p>') + "</section>";
+}
+
+AKCE.soustredeni = function (id) {
+  var seznam = Uloziste.dej("soustredeni"), s = seznam.filter(function (x) { return x.id === id; })[0];
+  otevriFormular({
+    nadpis: s ? "Upravit soustředění" : "Nové soustředění",
+    uvod: "Ukáže se v rozpisu tréninků, na úvodní stránce a v kalendáři v mobilu.",
+    hodnoty: s ? Object.assign({}, s, { rusiTreninky: s.rusiTreninky ? "ano" : "ne" }) : { od: dnesIso(), rusiTreninky: "ano" },
+    pole: [
+      { k: "nazev", nazev: "Název", povinne: true, napoveda: "Např. „Zimní soustředění“" },
+      { k: "od", nazev: "Od", typ: "date", povinne: true, pul: true },
+      { k: "do", nazev: "Do (včetně)", typ: "date", povinne: true, pul: true },
+      { k: "misto", nazev: "Kde", pul: true, napoveda: "Např. Mělník, zimní stadion" },
+      { k: "pro", nazev: "Kdo jede", pul: true, napoveda: "Např. závodníci, 1. skupina" },
+      { k: "rusiTreninky", nazev: "Běžné tréninky v těchto dnech", typ: "select",
+        moznosti: [["ano", "Ruší se – trenéři jsou na soustředění"], ["ne", "Platí dál"]] },
+      { k: "poznamka", nazev: "Informace pro rodiče", typ: "textarea", radky: 4, napoveda: "Sraz, program, co s sebou, cena…" }
+    ],
+    ulozit: function (h) {
+      if (h.do < h.od) return "Konec musí být stejný nebo pozdější den než začátek.";
+      var cil = s || { id: "s" + Date.now().toString(36) };
+      ["nazev", "od", "do", "misto", "pro", "poznamka"].forEach(function (k) { if (h[k]) cil[k] = h[k]; else delete cil[k]; });
+      if (h.rusiTreninky === "ano") cil.rusiTreninky = true; else delete cil.rusiTreninky;
+      if (!s) seznam.push(cil);
+      Uloziste.uloz("soustredeni", seznam, (s ? "Upraveno" : "Přidáno") + " soustředění " + cil.nazev + " (" + terminSoustredeni(cil) + ")");
+    }
+  });
+};
+
+AKCE["soustredeni-smazat"] = function (id) {
+  var seznam = Uloziste.dej("soustredeni"), s = seznam.filter(function (x) { return x.id === id; })[0];
+  potvrd("Smazat soustředění?", "<strong>" + esc(s.nazev + " · " + terminSoustredeni(s)) + "</strong>" +
+    (s.rusiTreninky ? "<br>Běžné tréninky v těchto dnech se zase obnoví." : ""), "Smazat", function () {
+    Uloziste.uloz("soustredeni", seznam.filter(function (x) { return x.id !== id; }), "Smazáno soustředění " + s.nazev);
+  });
+};
 
 VYKRESLENI.rozpis = function () {
   var rozpis = nahledRozpisu();
@@ -682,12 +854,14 @@ VYKRESLENI.rozpis = function () {
     ["tydny", "Rozpis po týdnech", ""],
     ["sablona", "Obvyklý týden", ""],
     ["zmeny", "Změny a volno", seznamZmen().length ? '<span class="a-pocet">' + seznamZmen().length + "</span>" : ""],
+    ["soustredeni", "Soustředění", budouciSoustredeni(rozpis.soustredeni).length ? '<span class="a-pocet">' + budouciSoustredeni(rozpis.soustredeni).length + "</span>" : ""],
     ["zimak", "Zimák", zimakVPoradku ? '<i class="a-ok">' + A_IKONY.ok + "</i>" : '<i class="a-pozor">' + IKONY.pozor + "</i>"]
   ];
   var obsah;
   if (pohledRozpisu === "sablona") obsah = htmlSablony();
   else if (pohledRozpisu === "zmeny") obsah = htmlZmen();
   else if (pohledRozpisu === "zimak") obsah = htmlZimaku();
+  else if (pohledRozpisu === "soustredeni") obsah = htmlSoustredeniAdmin();
   else {
     var p = porovnaniSeZimakem(tyden);
     obsah = '<div class="a-tydny-hlava"><div class="a-zalozky" role="group" aria-label="Týden">' + tydny.map(function (t, i) {
@@ -697,11 +871,12 @@ VYKRESLENI.rozpis = function () {
         (i === 0 ? "Tento týden" : i === 1 ? "Příští týden" : kratkeDatum(od) + "–" + kratkeDatum(ne)) + "</button>";
     }).join("") + "</div>" +
       '<p class="a-porovnani a-porovnani--' + p.stav + '">' + tyden.tyden + ". týden · zimák: " + (p.stav === "ok" ? A_IKONY.ok : p.stav === "info" ? "" : IKONY.pozor) + esc(p.text) + "</p></div>" +
-      htmlTydneAdmin(tyden);
+      htmlTydneAdmin(tyden, rozpis.soustredeni);
   }
 
   return hlavicka("Rozpis tréninků", "Obvyklý týden + led ze zimáku + vaše změny = rozpis na webu.",
-    tl(A_IKONY.plus + "Volno / prázdniny", "volno", "", "rozpis") + tl(A_IKONY.plus + "Mimořádný trénink", "pridat-trenink", "", "rozpis", "a-tl--hlavni")) +
+    tl(A_IKONY.plus + "Volno / prázdniny", "volno", "", "rozpis") + tl(A_IKONY.plus + "Soustředění", "soustredeni", "", "rozpis") +
+    tl(A_IKONY.plus + "Mimořádný trénink", "pridat-trenink", "", "rozpis", "a-tl--hlavni")) +
     '<nav class="a-pohledy" aria-label="Části rozpisu">' + pohledy.map(function (p) {
       return '<button type="button" data-akce="pohled" data-arg="' + p[0] + '" aria-pressed="' + (pohledRozpisu === p[0]) + '">' + p[1] + p[2] + "</button>";
     }).join("") + "</nav>" + obsah;
@@ -852,8 +1027,16 @@ AKCE["pridat-trenink"] = function (arg) {
   });
 };
 
-function polaSablony(druh) {
+function polaSablony(druh, sablona, s) {
   var typy = typyProDruh(druh);
+  // na co může trénink navazovat: jiný obvyklý trénink (ve stejný den – hlídá se při uložení)
+  var navazuje = [["", "Ne – samostatný trénink"]].concat(sablona.filter(function (x) { return x !== s; }).sort(function (a, b) {
+    return a.den - b.den || ((a.od || "") < (b.od || "") ? -1 : 1);
+  }).map(function (x) {
+    var t = kopie(x);
+    dopocitejCas(t);
+    return [x.id, velke(DNY_KRATCE[x.den % 7]) + " " + (t.od ? bezNuly(t.od) + " " : "") + "– " + kratkyPopis(x)];
+  }));
   return [{ k: "den", nazev: "Den", typ: "select", moznosti: [1, 2, 3, 4, 5, 6, 7].map(function (d) { return [String(d), velke(DNY[d % 7])]; }), pul: true }]
     .concat(typy.length > 1 ? [{ k: "typ", nazev: "Druh", typ: "select", moznosti: typy, pul: true }] : [], [
       { k: "forma", typ: "forma", stridani: true },
@@ -861,35 +1044,41 @@ function polaSablony(druh) {
       { k: "do", nazev: "Konec", typ: "time", pul: true, cas: true },
       { k: "misto", nazev: "Kde", typ: "select", moznosti: moznostiMist() },
       { k: "popis", nazev: "Název (nepovinné)", napoveda: "Např. „Pohybovka s Radkou“. Prázdné = „Sloučený“, „Rozdělený“ nebo druh tréninku." },
-      { k: "poznamka", nazev: "Poznámka", napoveda: "Např. „+ 20 min docvičení s Radkou“" }
+      { k: "poznamka", nazev: "Poznámka", napoveda: "Např. „+ 20 min docvičení s Radkou“" },
+      { k: "navazuje", nazev: "Navazuje na", typ: "select", moznosti: navazuje,
+        napoveda: "Např. suchá příprava hned po ledu – na úvodní stránce a v kalendáři se ukáže jako jeden trénink." }
     ]);
 }
 
 // id = upravovaný obvyklý trénink; nový dostane predvolba "den|led" nebo "den|sucho" z tlačítka ve sloupci
 function upravSablonu(id, predvolba) {
   if (!smi("sablona")) return;
-  var sablona = Uloziste.dej("sablona");
+  var sablony = seznamSablon(), vybrana = indexVybraneSablony(sablony), sablona = sablony[vybrana].treninky;
+  var kde = vybrana === indexPlatneSablony(sablony, dnesIso()) ? "" : " (změna od " + plneDatum(sablony[vybrana].od) + ")";
   var s = sablona.filter(function (x) { return x.id === id; })[0];
   var casti = (predvolba || "").split("|");
   var druh = s ? (s.typ === "led" ? "led" : "sucho") : casti[1] || "led";
   var typy = typyProDruh(druh);
   otevriFormular({
     nadpis: (s ? "Upravit obvyklý trénink" : "Nový obvyklý trénink") + (druh === "led" ? " na ledě" : " na suchu"),
+    uvod: kde ? "Platí pro obvyklý týden od " + esc(plneDatum(sablony[vybrana].od)) + "." : "",
     hodnoty: s ? Object.assign({}, s, { den: String(s.den) }) : { den: casti[0] || "1", typ: typy[0][0], misto: vychoziMisto(druh) },
-    pole: polaSablony(druh),
+    pole: polaSablony(druh, sablona, s),
     ulozit: function (h) {
       var fm = h.forma, typ = h.typ || typy[0][0];
       var chyba = kontrolaFormy(fm) || (fm.forma !== "skupiny" && kontrolaCasu(h));
       if (chyba) return chyba;
       if (fm.forma !== "skupiny" && !h.od && typ !== "led") return "Vyplňte čas – podle zimáku se řídí jen led.";
+      var predchozi = sablona.filter(function (x) { return x.id === h.navazuje; })[0];
+      if (predchozi && predchozi.den !== Number(h.den)) return "Navazovat jde jen na trénink ve stejný den.";
       var cil = s || { id: "sab-" + Date.now().toString(36) };
       cil.den = Number(h.den); cil.typ = typ; cil.misto = h.misto;
       if (h.od && fm.forma !== "skupiny") { cil.od = h.od; cil.do = h.do; } else { delete cil.od; delete cil.do; }
       if (fm.casti.length) cil.casti = fm.casti; else delete cil.casti;
       if (fm.stridani) cil.stridani = true; else delete cil.stridani;
-      ["popis", "poznamka"].forEach(function (k) { if (h[k]) cil[k] = h[k]; else delete cil[k]; });
+      ["popis", "poznamka", "navazuje"].forEach(function (k) { if (h[k]) cil[k] = h[k]; else delete cil[k]; });
       if (!s) sablona.push(cil);
-      Uloziste.uloz("sablona", sablona, (s ? "Upraven" : "Přidán") + " obvyklý trénink: " + velke(DNY[cil.den % 7]) + " – " + kratkyPopis(cil));
+      Uloziste.uloz("sablony", sablony, (s ? "Upraven" : "Přidán") + " obvyklý trénink" + kde + ": " + velke(DNY[cil.den % 7]) + " – " + kratkyPopis(cil));
     }
   });
 }
@@ -898,9 +1087,12 @@ AKCE["sablona-nova"] = function (predvolba) { upravSablonu(null, predvolba); };
 AKCE["sablona-upravit"] = function (id) { upravSablonu(id); };
 AKCE["sablona-smazat"] = function (id) {
   if (!smi("sablona")) return;
-  var sablona = Uloziste.dej("sablona"), s = sablona.filter(function (x) { return x.id === id; })[0];
-  potvrd("Smazat obvyklý trénink?", esc(velke(DNY[s.den % 7]) + " – " + kratkyPopis(s)) + " zmizí ze všech budoucích týdnů.", "Smazat", function () {
-    Uloziste.uloz("sablona", sablona.filter(function (x) { return x.id !== id; }), "Smazán obvyklý trénink: " + velke(DNY[s.den % 7]) + " – " + kratkyPopis(s));
+  var sablony = seznamSablon(), vybrana = indexVybraneSablony(sablony), verze = sablony[vybrana];
+  var s = verze.treninky.filter(function (x) { return x.id === id; })[0];
+  potvrd("Smazat obvyklý trénink?", esc(velke(DNY[s.den % 7]) + " – " + kratkyPopis(s)) + " zmizí z " + esc(nazevVerze(sablony, vybrana)) + ".", "Smazat", function () {
+    verze.treninky = verze.treninky.filter(function (x) { return x.id !== id; });
+    verze.treninky.forEach(function (x) { if (x.navazuje === id) delete x.navazuje; });
+    Uloziste.uloz("sablony", sablony, "Smazán obvyklý trénink (" + nazevVerze(sablony, vybrana) + "): " + velke(DNY[s.den % 7]) + " – " + kratkyPopis(s));
   });
 };
 
@@ -1237,7 +1429,9 @@ function upravUzivatele(index) {
     pole: [
       { k: "jmeno", nazev: "Jméno", povinne: true },
       { k: "email", nazev: "E-mail", typ: "email", povinne: true },
-      { k: "role", nazev: "Role", typ: "select", moznosti: [["redaktor", "Redaktor – rozpis, aktuality, výsledky, fotky"], ["spravce", "Správce – vše včetně uživatelů"]] }
+      { k: "role", nazev: "Role", typ: "select", moznosti: [["redaktor", "Redaktor – rozpis, aktuality, výsledky, fotky"],
+        ["trener", "Trenér – jako redaktor a navíc přihlášky na závody"], ["spravce", "Správce – vše včetně uživatelů"],
+        ["rodic", "Rodič – jen přihlášky svých dětí"]] }
     ],
     ulozit: function (h) {
       var email = h.email.toLowerCase();
@@ -1272,9 +1466,10 @@ VYKRESLENI.uzivatele = function () {
       return "<tr><td><strong>" + esc(u.jmeno) + "</strong>" + (u.email === prihlaseny.email ? ' <span class="a-pozn">(vy)</span>' : "") + "</td><td>" + esc(u.email) + "</td><td>" + stitekRole(u.role) + "</td>" +
         '<td class="a-tabulka__akce">' + tl("Upravit", "uzivatel-upravit", i, "uzivatele", "a-tl--male") + tl("Odebrat", "uzivatel-smazat", i, "uzivatele", "a-tl--male a-tl--cervene") + "</td></tr>";
     }).join("") + "</tbody></table></section>" +
-    '<section class="a-karta"><h2>Rozdíl mezi rolemi</h2><table class="a-tabulka a-tabulka--prava"><thead><tr><th></th><th>Redaktor</th><th>Správce</th></tr></thead><tbody>' +
-    POPIS_PRAV.map(function (p) {
-      return "<tr><td>" + p[1] + "</td>" + ["redaktor", "spravce"].map(function (r) {
+    '<section class="a-karta"><h2>Rozdíl mezi rolemi</h2><table class="a-tabulka a-tabulka--prava"><thead><tr><th></th>' +
+    Object.keys(ROLE).map(function (r) { return "<th>" + ROLE[r].nazev + "</th>"; }).join("") + "</tr></thead><tbody>" +
+    POPIS_PRAV.concat([["prihlaska", "Přihlašovat své dítě na závody a soustředění"]]).map(function (p) {
+      return "<tr><td>" + p[1] + "</td>" + Object.keys(ROLE).map(function (r) {
         return '<td class="' + (ROLE[r].prava.indexOf(p[0]) >= 0 ? "ano" : "ne") + '">' + (ROLE[r].prava.indexOf(p[0]) >= 0 ? A_IKONY.ok : "–") + "</td>";
       }).join("") + "</tr>";
     }).join("") + "</tbody></table></section>";
@@ -1312,4 +1507,5 @@ window.addEventListener("hashchange", function () {
   window.scrollTo(0, 0);
 });
 
-vykresli();
+// až po načtení všech skriptů (přihlášky jsou v js/prihlasky.js)
+document.addEventListener("DOMContentLoaded", vykresli);
