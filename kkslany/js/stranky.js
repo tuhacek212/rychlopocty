@@ -12,14 +12,18 @@ STRANKY.uvod = function () {
   } else {
     var t = prvni.t, dalsi = budouci[1];
     var probiha = t.od && datumSCasem(prvni.datum, t.od) <= new Date();
-    var info = [mistoTreninku(t)];
-    if (t.poradi) info.push(esc(textPoradi(t.poradi)));
+    var f = forma(t);
+    var co = esc(t.typ === "led" && !t.popis ? "Led · " + nazevTreninku(t).toLowerCase() : nazevTreninku(t)) + (f === "rozdeleny" ? " " + htmlPoradi(t) : "");
+    var skupiny = f === "skupiny" ? '<ul class="nejblizsi__skupiny">' + t.casti.filter(function (c) { return c.stav !== "zruseno"; }).map(function (c) {
+      return "<li><strong>" + esc(bezNuly(c.od) + " – " + bezNuly(c.do)) + "</strong> " + esc(c.skupina) + "</li>";
+    }).join("") + "</ul>" : "";
     box.innerHTML =
       '<p class="nejblizsi__stitek">' + (probiha ? "Právě probíhá" : "Nejbližší trénink") + "</p>" +
       '<p class="nejblizsi__kdy">' + esc(kdy(prvni.datum) + " " + casTreninku(t)) + "</p>" +
-      '<p class="nejblizsi__co">' + esc((KK.rozpis.typy[t.typ] || t.typ) + " · " + t.popis) + "</p>" +
-      '<p class="nejblizsi__info">' + info.join(" · ") + "</p>" +
+      '<p class="nejblizsi__co">' + co + "</p>" + skupiny +
+      '<p class="nejblizsi__info">' + mistoTreninku(t) + "</p>" +
       (t.poznamka ? '<p class="nejblizsi__info">' + esc(t.poznamka) + "</p>" : "") +
+      htmlZrusenychSkupin(t) +
       (stitkyTreninku(t) ? '<div class="stitek-radek">' + stitkyTreninku(t) + "</div>" : "");
   }
 
@@ -30,7 +34,7 @@ STRANKY.uvod = function () {
     var d = datumZIso(x.datum), t = x.t;
     return '<li class="' + (t.stav === "zruseno" ? "zruseno" : "") + '"><span class="dalsi__den">' + DNY_KRATCE[d.getDay()] + " <small>" + kratkeDatum(d) + "</small></span>" +
       '<span class="dalsi__cas">' + esc(casTreninku(t)) + "</span>" +
-      '<span class="dalsi__co"><i class="tecka tecka--' + (t.typ === "led" ? "led" : "sucho") + '"></i>' + esc(t.popis) + " " + stitkyTreninku(t) + "</span></li>";
+      '<span class="dalsi__co"><i class="tecka tecka--' + (t.typ === "led" ? "led" : "sucho") + '"></i><span class="dalsi__text">' + esc(kratkyPopis(t)) + "</span> " + stitkyTreninku(t) + "</span></li>";
   }).join("") || '<li class="prazdne">Další tréninky zatím nejsou naplánované.</li>';
 
   document.getElementById("aktuality-uvod").innerHTML = KK.aktuality.slice(0, 3).map(function (a) {
@@ -42,8 +46,6 @@ STRANKY.uvod = function () {
   document.getElementById("nabor-telefon").href = "tel:" + KK.klub.telefon.replace(/\s/g, "");
   document.getElementById("nabor-telefon").textContent = "Zavolat " + KK.klub.telefon;
 
-  var webcal = adresaKalendare();
-  document.getElementById("do-kalendare").href = webcal || "rozpis.html#kalendar";
 };
 
 // ---------- rozpis tréninků: týdny jako tabulka ----------

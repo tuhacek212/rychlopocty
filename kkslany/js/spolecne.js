@@ -85,6 +85,7 @@ function bezNuly(cas) {
 }
 
 function casTreninku(t) {
+  if (!t.od && t.podleZimaku) return "čas podle zimáku";
   return t.od ? bezNuly(t.od) + " – " + bezNuly(t.do) : "čas upřesníme";
 }
 
@@ -107,29 +108,70 @@ function seradTreninky(treninky) {
   treninky.sort(function (a, b) { return (a.od || "99:99") < (b.od || "99:99") ? -1 : 1; });
 }
 
-// Stejné pravidlo jako v nastroje/sestav.py: výjimka redaktora má vždy přednost.
+// ---------- skupiny v tréninku ----------
+// Trénink může mít části pro skupiny (t.casti):
+//   žádné části                      = sloučený trénink, všichni spolu
+//   části bez času   [A, B]          = rozdělený trénink, skupiny se v tomto pořadí střídají
+//   části s časem    [1. sk. 17:00…] = každá skupina má svůj čas (např. pohybovka)
+
+function nazevSkupiny(s) {
+  return s.length <= 2 ? "sk. " + s : s;
+}
+
+function forma(t) {
+  if (!t.casti || !t.casti.length) return "slouceny";
+  return t.casti[0].od ? "skupiny" : "rozdeleny";
+}
+
+function dopocitejCas(t) {
+  var sCasem = (t.casti || []).filter(function (c) { return c.od; });
+  if (!sCasem.length) return;
+  var platne = sCasem.filter(function (c) { return c.stav !== "zruseno"; });
+  if (!platne.length) platne = sCasem;
+  t.od = platne.map(function (c) { return c.od; }).sort()[0];
+  t.do = platne.map(function (c) { return c.do; }).sort().pop();
+}
+
+// Stejné pravidlo jako pouzij_vyjimku v nastroje/sestav.py: výjimka redaktora má vždy přednost.
+function pouzijVyjimku(treninky, v) {
+  var cil = treninky.filter(function (t) { return t.id === v.id; })[0];
+  if (!cil) {
+    if (v.skupina) return;
+    cil = { id: v.id, typ: v.typ || "led", misto: v.misto || "zs", od: null, do: null, novy: true };
+    treninky.push(cil);
+  }
+  if (v.skupina) { // jen jedna skupina – ostatní trénují normálně
+    var cast = (cil.casti || []).filter(function (c) { return c.skupina === v.skupina; })[0];
+    if (!cast) return;
+    if (v.poznamka) cast.poznamka = v.poznamka;
+    if (v.zruseno) cast.stav = "zruseno";
+    if (cil.casti.every(function (c) { return c.stav === "zruseno"; })) cil.stav = "zruseno";
+    dopocitejCas(cil);
+    return;
+  }
+  ["od", "do", "popis", "misto", "poznamka", "casti"].forEach(function (k) { if (k in v) cil[k] = JSON.parse(JSON.stringify(v[k])); });
+  if (!cil.casti || !cil.casti.length) delete cil.casti;
+  if (!cil.popis) delete cil.popis;
+  if (v.zruseno) cil.stav = "zruseno";
+  else if ("od" in v || "casti" in v) { delete cil.stav; cil.zdroj = "redakce"; }
+  dopocitejCas(cil);
+}
+
 function pouzijVyjimky(rozpis, vyjimky) {
   rozpis.tydny.forEach(function (tyden) {
     tyden.dny.forEach(function (den) {
       var zmeneno = false;
-      vyjimky.forEach(function (v) {
+      // nejdřív změny celých tréninků, pak jednotlivých skupin (jinak by nové skupiny zrušení přepsaly)
+      vyjimky.filter(function (v) { return !v.skupina; }).concat(vyjimky.filter(function (v) { return v.skupina; })).forEach(function (v) {
         if (!(v.datum <= den.datum && den.datum <= (v.datumDo || v.datum))) return;
         if (v.datumDo) { // volno na víc dní (prázdniny): zruší všechny tréninky v rozsahu
           den.treninky.forEach(function (t) {
             t.stav = "zruseno";
             if (v.poznamka) t.poznamka = v.poznamka;
           });
-          zmeneno = true;
-          return;
+        } else {
+          pouzijVyjimku(den.treninky, v);
         }
-        var cil = den.treninky.filter(function (t) { return t.id === v.id; })[0];
-        if (!cil) {
-          cil = { id: v.id, typ: v.typ || "led", misto: v.misto || "zs", popis: v.popis || "Trénink", od: null, do: null, novy: true };
-          den.treninky.push(cil);
-        }
-        ["od", "do", "popis", "misto", "poznamka", "poradi"].forEach(function (k) { if (k in v) cil[k] = v[k]; });
-        if (v.zruseno) cil.stav = "zruseno";
-        else if ("od" in v) { delete cil.stav; cil.zdroj = "redakce"; }
         zmeneno = true;
       });
       if (zmeneno) seradTreninky(den.treninky);
@@ -183,8 +225,37 @@ function mistoTreninku(t) {
   return m.mapa ? '<a href="' + esc(m.mapa) + '" target="_blank" rel="noopener">' + esc(m.nazev) + "</a>" : esc(m.nazev);
 }
 
-function textPoradi(poradi) {
-  return "první na led sk. " + poradi.split("/")[0];
+// Název bez opakování: na ledě stačí sloučený/rozdělený (sloupec už říká „na ledě“), jinde vlastní popis nebo druh.
+function nazevTreninku(t) {
+  if (t.popis) return t.popis;
+  if (forma(t) === "rozdeleny") return "Rozdělený";
+  if (t.typ === "led") return "Sloučený";
+  return KK.rozpis.typy[t.typ] || t.typ;
+}
+
+// Jednořádkový popis bez HTML (kalendář, přehledy), např. „Led – rozdělený A → B“.
+function kratkyPopis(t) {
+  var f = forma(t), nazev = nazevTreninku(t);
+  if (t.typ === "led" && !t.popis) nazev = "Led – " + nazev.toLowerCase();
+  if (f === "rozdeleny") return nazev + " " + t.casti.map(function (c) { return c.skupina; }).join(" → ");
+  if (f === "skupiny") return nazev + " (" + t.casti.map(function (c) { return c.skupina + " od " + bezNuly(c.od); }).join(", ") + ")";
+  return nazev;
+}
+
+// Pořadí skupin u rozděleného tréninku: A → B; zrušená skupina je přeškrtnutá.
+function htmlPoradi(t) {
+  return '<span class="poradi" title="Skupiny se na ledě střídají – první jde sk. ' + esc(t.casti[0].skupina) + '.">' +
+    t.casti.map(function (c) {
+      return '<span class="sk' + (c.stav === "zruseno" ? " sk--zruseno" : "") + '">' + esc(c.skupina) + "</span>";
+    }).join('<span class="poradi__sipka" aria-label="pak">→</span>') + "</span>";
+}
+
+// Zrušené skupiny (u rozděleného tréninku nemají vlastní řádek, proto zvlášť)
+function htmlZrusenychSkupin(t) {
+  if (t.stav === "zruseno" || forma(t) !== "rozdeleny") return "";
+  return t.casti.filter(function (c) { return c.stav === "zruseno"; }).map(function (c) {
+    return '<span class="trenink__duvod">' + esc(velke(nazevSkupiny(c.skupina))) + " zrušeno" + (c.poznamka ? " – " + esc(c.poznamka) : "") + "</span>";
+  }).join("");
 }
 
 function stitkyTreninku(t) {
@@ -193,23 +264,33 @@ function stitkyTreninku(t) {
   if (t.stav === "predbezne") s.push('<span class="stitek stitek--info" title="Zimní stadion rozpis na tento týden ještě nezveřejnil.">předběžně</span>');
   if (t.stav === "nenalezeno") s.push('<span class="stitek">' + IKONY.pozor + "na zimáku chybí – ověřte</span>");
   if (t.zmena && t.stav !== "zruseno") s.push('<span class="stitek">' + IKONY.pozor + "změna · " + esc(t.zmena.toLowerCase()) + "</span>");
-  if (t.zdroj === "redakce" && !t.zmena && t.stav !== "zruseno") s.push('<span class="stitek">' + IKONY.pozor + (t.novy ? "mimořádně" : "změna času") + "</span>");
+  if (t.zdroj === "redakce" && !t.zmena && t.stav !== "zruseno") s.push('<span class="stitek">' + IKONY.pozor + (t.novy ? "mimořádně" : "změna") + "</span>");
   return s.join(" ");
 }
 
-// Jeden trénink na jeden až dva řádky. Led na zimáku místo neuvádí (je ve sloupci „na ledě“).
+// Jeden trénink = jeden blok, i když v něm trénují skupiny zvlášť.
+// Led na zimáku místo neuvádí (je ve sloupci „na ledě“). Zrušená skupina se přeškrtne jen sama.
 function htmlTreninku(t) {
-  var popis = [esc(t.popis)];
-  if (!(t.typ === "led" && t.misto === "zs")) popis.push(mistoTreninku(t));
-  if (t.poradi) popis.push("první sk. " + esc(t.poradi.split("/")[0]));
-  var zruseno = t.stav === "zruseno";
+  var f = forma(t), zruseno = t.stav === "zruseno";
+  var co = '<span class="trenink__nazev">' + esc(nazevTreninku(t)) + "</span>" + (f === "rozdeleny" ? " " + htmlPoradi(t) : "");
+  if (!(t.typ === "led" && t.misto === "zs")) co += " · " + mistoTreninku(t);
+  var hlava, skupiny = "";
+  if (f === "skupiny") {
+    hlava = '<span class="trenink__popis trenink__popis--hlava">' + co + "</span> " + stitkyTreninku(t);
+    skupiny = '<ul class="trenink__skupiny">' + t.casti.map(function (c) {
+      var pryc = c.stav === "zruseno" && !zruseno;
+      return '<li class="' + (pryc ? "zrusena" : "") + '"><span class="trenink__cas">' + esc(bezNuly(c.od) + " – " + bezNuly(c.do)) + "</span>" +
+        "<span>" + esc(c.skupina) + "</span>" + (pryc ? ' <span class="stitek stitek--zruseno">zrušeno</span>' : "") +
+        (pryc && c.poznamka ? '<span class="trenink__duvod">' + esc(c.poznamka) + "</span>" : "") + "</li>";
+    }).join("") + "</ul>";
+  } else {
+    hlava = '<span class="trenink__cas">' + esc(casTreninku(t)) + "</span> " + stitkyTreninku(t) +
+      '<span class="trenink__popis">' + co + "</span>";
+  }
   // u zrušeného tréninku se důvod nepřeškrtává, proto stojí samostatně
-  var pozn = t.poznamka ? '<span class="trenink__pozn">' + esc(t.poznamka) + "</span>" : "";
-  if (pozn && !zruseno) popis.push(pozn);
+  var pozn = t.poznamka ? '<span class="' + (zruseno ? "trenink__duvod" : "trenink__pozn") + '">' + esc(t.poznamka) + "</span>" : "";
   return '<div class="trenink trenink--' + (t.typ === "led" ? "led" : "sucho") + (zruseno ? " trenink--zruseno" : "") + '">' +
-    '<span class="trenink__cas">' + esc(casTreninku(t)) + "</span> " + stitkyTreninku(t) +
-    '<span class="trenink__popis">' + popis.join(" · ") + "</span>" + (pozn && zruseno ? '<span class="trenink__duvod">' + pozn + "</span>" : "") +
-    "</div>";
+    hlava + skupiny + htmlZrusenychSkupin(t) + pozn + "</div>";
 }
 
 // Adresa kalendáře k odběru (funguje jen na webu, ne při otevření souboru z disku)
@@ -241,7 +322,7 @@ function htmlHlavicky(aktivni) {
     return "<li" + (je ? ' class="aktivni"' : "") + ">" + odkaz + pod + "</li>";
   }).join("");
   return '<header class="hlavicka">' +
-    '<a class="znak" href="index.html"><img src="img/logo-velke.png" alt="" width="82" height="56">' +
+    '<a class="znak" href="index.html"><img src="img/brusle.svg" alt="" width="76" height="76">' +
     '<span class="znak__nazev"><strong>Krasobruslařský klub</strong><span>Královského města Slaného</span></span></a>' +
     '<div class="hlavicka__akce">' +
     '<a href="tel:' + esc(klub.telefon.replace(/\s/g, "")) + '">' + IKONY.telefon + esc(klub.telefon) + "</a>" +
@@ -265,7 +346,7 @@ function htmlPaticky() {
     '<section><h2>Aktuality</h2><ul class="aktuality">' + aktuality + "</ul></section>" +
     "<section><h2>Tréninky v mobilu</h2>" +
     (dalsi ? "<p>Nejbližší trénink: <strong style=\"color:#fff\">" + esc(kdy(dalsi.datum) + " " + casTreninku(dalsi.t)) + "</strong></p>" : "") +
-    "<p>Přidejte si rozpis do kalendáře v telefonu, změny se v něm objeví samy.</p>" + tlacitkaKalendare() + "</section>" +
+    '<p>Rozpis si můžete <a href="rozpis.html#kalendar">přidat do kalendáře v telefonu</a>, změny se v něm objeví samy.</p></section>' +
     '<section><h2>Kontakt</h2><ul class="kontakty">' +
     "<li>" + IKONY.misto + "<span>" + esc(klub.nazev) + "<br>" + esc(klub.adresa) + "</span></li>" +
     "<li>" + IKONY.telefon + '<a href="tel:' + esc(klub.telefon.replace(/\s/g, "")) + '">' + esc(klub.telefon) + "</a></li>" +

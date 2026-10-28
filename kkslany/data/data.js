@@ -21,6 +21,10 @@ window.KK = {
    "sucho": "Suchá příprava",
    "pohyb": "Pohybovka"
   },
+  "skupiny": [
+   "A",
+   "B"
+  ],
   "sablona": [
    {
     "id": "po-led",
@@ -29,8 +33,14 @@ window.KK = {
     "misto": "zs",
     "od": "17:00",
     "do": "18:30",
-    "popis": "Rozdělený trénink",
-    "poradi": "A/B"
+    "casti": [
+     {
+      "skupina": "A"
+     },
+     {
+      "skupina": "B"
+     }
+    ]
    },
    {
     "id": "po-bios",
@@ -38,8 +48,7 @@ window.KK = {
     "typ": "sucho",
     "misto": "bios",
     "od": "19:00",
-    "do": "20:00",
-    "popis": "Suchá příprava"
+    "do": "20:00"
    },
    {
     "id": "ut-led",
@@ -48,9 +57,15 @@ window.KK = {
     "misto": "zs",
     "od": "17:00",
     "do": "18:45",
-    "popis": "Rozdělený trénink",
-    "poradi": "A/B",
-    "poznamka": "Po tréninku ještě 20 min docvičení s Radkou."
+    "casti": [
+     {
+      "skupina": "A"
+     },
+     {
+      "skupina": "B"
+     }
+    ],
+    "poznamka": "+ 20 min docvičení s Radkou"
    },
    {
     "id": "ct-led",
@@ -58,38 +73,42 @@ window.KK = {
     "typ": "led",
     "misto": "zs",
     "od": "06:00",
-    "do": "07:00",
-    "popis": "Sloučený trénink"
+    "do": "07:00"
    },
    {
-    "id": "ct-pohyb1",
+    "id": "ct-pohyb",
     "den": 4,
     "typ": "pohyb",
     "misto": "haje",
-    "od": "17:00",
-    "do": "18:15",
-    "popis": "Pohybovka s Radkou – 1. skupina a základna"
-   },
-   {
-    "id": "ct-pohyb2",
-    "den": 4,
-    "typ": "pohyb",
-    "misto": "haje",
-    "od": "18:00",
-    "do": "19:30",
-    "popis": "Pohybovka s Radkou – 2. skupina"
+    "popis": "Pohybovka s Radkou",
+    "casti": [
+     {
+      "skupina": "1. sk. + základna",
+      "od": "17:00",
+      "do": "18:15"
+     },
+     {
+      "skupina": "2. sk.",
+      "od": "18:00",
+      "do": "19:30"
+     }
+    ]
    },
    {
     "id": "so-led",
     "den": 6,
     "typ": "led",
     "misto": "zs",
-    "popis": "Rozdělený trénink",
-    "stridani": {
-     "liche": "A/B",
-     "sude": "B/A"
-    },
-    "poznamka": "Po tréninku ještě 20 min docvičení s Radkou."
+    "casti": [
+     {
+      "skupina": "A"
+     },
+     {
+      "skupina": "B"
+     }
+    ],
+    "stridani": true,
+    "poznamka": "+ 20 min docvičení s Radkou"
    }
   ],
   "vyjimky": [
@@ -105,7 +124,7 @@ window.KK = {
    "do": "2027-03-31"
   },
   "zimakOk": true,
-  "aktualizovano": "2026-10-28T06:51+01:00",
+  "aktualizovano": "2026-10-28T09:09+01:00",
   "tydny": [
    {
     "tyden": 44,
@@ -141,17 +160,22 @@ window.KK = {
         "id": "po-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
         "od": "17:00",
         "do": "18:30",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        },
        {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
-        "popis": "Suchá příprava",
         "od": "19:00",
         "do": "20:00",
         "poznamka": "Podzimní prázdniny – suchá příprava není.",
@@ -166,11 +190,17 @@ window.KK = {
         "id": "ut-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "17:00",
         "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -186,26 +216,29 @@ window.KK = {
         "id": "ct-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Sloučený trénink",
         "od": "06:00",
         "do": "07:00",
         "zdroj": "zimak"
        },
        {
-        "id": "ct-pohyb1",
+        "id": "ct-pohyb",
         "typ": "pohyb",
         "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "popis": "Pohybovka s Radkou",
         "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
        }
       ]
      },
@@ -220,11 +253,17 @@ window.KK = {
         "id": "so-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "07:00",
         "do": "08:30",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "B/A",
+        "casti": [
+         {
+          "skupina": "B"
+         },
+         {
+          "skupina": "A"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -269,17 +308,22 @@ window.KK = {
         "id": "po-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
         "od": "17:00",
         "do": "18:30",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        },
        {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
-        "popis": "Suchá příprava",
         "od": "19:00",
         "do": "20:00"
        }
@@ -292,11 +336,17 @@ window.KK = {
         "id": "ut-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "17:00",
         "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -312,26 +362,29 @@ window.KK = {
         "id": "ct-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Sloučený trénink",
         "od": "06:00",
         "do": "07:00",
         "zdroj": "zimak"
        },
        {
-        "id": "ct-pohyb1",
+        "id": "ct-pohyb",
         "typ": "pohyb",
         "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "popis": "Pohybovka s Radkou",
         "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
        }
       ]
      },
@@ -346,11 +399,17 @@ window.KK = {
         "id": "so-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "07:00",
         "do": "08:30",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -395,17 +454,22 @@ window.KK = {
         "id": "po-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
         "od": "17:00",
         "do": "18:30",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        },
        {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
-        "popis": "Suchá příprava",
         "od": "19:00",
         "do": "20:00"
        }
@@ -418,11 +482,17 @@ window.KK = {
         "id": "ut-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "17:00",
         "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -438,26 +508,29 @@ window.KK = {
         "id": "ct-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Sloučený trénink",
         "od": "06:00",
         "do": "07:00",
         "zdroj": "zimak"
        },
        {
-        "id": "ct-pohyb1",
+        "id": "ct-pohyb",
         "typ": "pohyb",
         "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "popis": "Pohybovka s Radkou",
         "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
        }
       ]
      },
@@ -472,11 +545,17 @@ window.KK = {
         "id": "so-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "07:30",
         "do": "09:00",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "B/A",
+        "casti": [
+         {
+          "skupina": "B"
+         },
+         {
+          "skupina": "A"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -521,17 +600,22 @@ window.KK = {
         "id": "po-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
         "od": "17:00",
         "do": "18:30",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        },
        {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
-        "popis": "Suchá příprava",
         "od": "19:00",
         "do": "20:00"
        }
@@ -544,11 +628,17 @@ window.KK = {
         "id": "ut-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "17:00",
         "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -564,26 +654,29 @@ window.KK = {
         "id": "ct-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Sloučený trénink",
         "od": "06:00",
         "do": "07:00",
         "zdroj": "zimak"
        },
        {
-        "id": "ct-pohyb1",
+        "id": "ct-pohyb",
         "typ": "pohyb",
         "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "popis": "Pohybovka s Radkou",
         "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
        }
       ]
      },
@@ -598,11 +691,17 @@ window.KK = {
         "id": "so-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "07:00",
         "do": "22:00",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -647,17 +746,22 @@ window.KK = {
         "id": "po-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
         "od": "17:00",
         "do": "18:30",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        },
        {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
-        "popis": "Suchá příprava",
         "od": "19:00",
         "do": "20:00"
        }
@@ -670,11 +774,17 @@ window.KK = {
         "id": "ut-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "17:00",
         "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -690,26 +800,29 @@ window.KK = {
         "id": "ct-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Sloučený trénink",
         "od": "06:00",
         "do": "07:00",
         "zdroj": "zimak"
        },
        {
-        "id": "ct-pohyb1",
+        "id": "ct-pohyb",
         "typ": "pohyb",
         "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "popis": "Pohybovka s Radkou",
         "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
        }
       ]
      },
@@ -724,11 +837,17 @@ window.KK = {
         "id": "so-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "07:00",
         "do": "08:30",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "B/A",
+        "casti": [
+         {
+          "skupina": "B"
+         },
+         {
+          "skupina": "A"
+         }
+        ],
         "zdroj": "zimak"
        }
       ]
@@ -752,17 +871,22 @@ window.KK = {
         "id": "po-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
         "od": "17:00",
         "do": "18:30",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "stav": "predbezne"
        },
        {
         "id": "po-bios",
         "typ": "sucho",
         "misto": "bios",
-        "popis": "Suchá příprava",
         "od": "19:00",
         "do": "20:00"
        }
@@ -775,11 +899,17 @@ window.KK = {
         "id": "ut-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": "17:00",
         "do": "18:45",
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "stav": "predbezne"
        }
       ]
@@ -795,26 +925,29 @@ window.KK = {
         "id": "ct-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Sloučený trénink",
         "od": "06:00",
         "do": "07:00",
         "stav": "predbezne"
        },
        {
-        "id": "ct-pohyb1",
+        "id": "ct-pohyb",
         "typ": "pohyb",
         "misto": "haje",
-        "popis": "Pohybovka s Radkou – 1. skupina a základna",
+        "popis": "Pohybovka s Radkou",
         "od": "17:00",
-        "do": "18:15"
-       },
-       {
-        "id": "ct-pohyb2",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou – 2. skupina",
-        "od": "18:00",
-        "do": "19:30"
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
        }
       ]
      },
@@ -829,11 +962,17 @@ window.KK = {
         "id": "so-led",
         "typ": "led",
         "misto": "zs",
-        "popis": "Rozdělený trénink",
+        "poznamka": "+ 20 min docvičení s Radkou",
         "od": null,
         "do": null,
-        "poznamka": "Po tréninku ještě 20 min docvičení s Radkou.",
-        "poradi": "A/B",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
         "stav": "predbezne"
        }
       ]

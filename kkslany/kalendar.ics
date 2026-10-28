@@ -29,7 +29,7 @@ UID:2026-10-26-po-led@kkslany.cz
 DTSTAMP:20261026T000000Z
 DTSTART;TZID=Europe/Prague:20261026T170000
 DTEND;TZID=Europe/Prague:20261026T183000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -37,7 +37,7 @@ UID:2026-10-26-po-bios@kkslany.cz
 DTSTAMP:20261026T000000Z
 DTSTART;TZID=Europe/Prague:20261026T190000
 DTEND;TZID=Europe/Prague:20261026T200000
-SUMMARY:ZRUŠENO – Suchá příprava: Suchá příprava
+SUMMARY:ZRUŠENO – Suchá příprava
 LOCATION:Hala BIOS Slaný
 DESCRIPTION:Podzimní prázdniny – suchá příprava není.
 STATUS:CANCELLED
@@ -47,32 +47,32 @@ UID:2026-10-27-ut-led@kkslany.cz
 DTSTAMP:20261027T000000Z
 DTSTART;TZID=Europe/Prague:20261027T170000
 DTEND;TZID=Europe/Prague:20261027T184500
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-10-29-ct-led@kkslany.cz
 DTSTAMP:20261029T000000Z
 DTSTART;TZID=Europe/Prague:20261029T060000
 DTEND;TZID=Europe/Prague:20261029T070000
-SUMMARY:Led: Sloučený trénink
+SUMMARY:Led – sloučený
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-10-29-ct-pohyb1@kkslany.cz
+UID:2026-10-29-ct-pohyb-1.sk.+základna@kkslany.cz
 DTSTAMP:20261029T000000Z
 DTSTART;TZID=Europe/Prague:20261029T170000
 DTEND;TZID=Europe/Prague:20261029T181500
-SUMMARY:Pohybovka: Pohybovka s Radkou – 1. skupina a základna
+SUMMARY:Pohybovka s Radkou – 1. sk. + základna
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-10-29-ct-pohyb2@kkslany.cz
+UID:2026-10-29-ct-pohyb-2.sk.@kkslany.cz
 DTSTAMP:20261029T000000Z
 DTSTART;TZID=Europe/Prague:20261029T180000
 DTEND;TZID=Europe/Prague:20261029T193000
-SUMMARY:Pohybovka: Pohybovka s Radkou – 2. skupina
+SUMMARY:Pohybovka s Radkou – 2. sk.
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
@@ -80,16 +80,16 @@ UID:2026-10-31-so-led@kkslany.cz
 DTSTAMP:20261031T000000Z
 DTSTART;TZID=Europe/Prague:20261031T070000
 DTEND;TZID=Europe/Prague:20261031T083000
-SUMMARY:Led: Rozdělený trénink (B/A)
+SUMMARY:Led – rozdělený (B → A)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-02-po-led@kkslany.cz
 DTSTAMP:20261102T000000Z
 DTSTART;TZID=Europe/Prague:20261102T170000
 DTEND;TZID=Europe/Prague:20261102T183000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -97,7 +97,7 @@ UID:2026-11-02-po-bios@kkslany.cz
 DTSTAMP:20261102T000000Z
 DTSTART;TZID=Europe/Prague:20261102T190000
 DTEND;TZID=Europe/Prague:20261102T200000
-SUMMARY:Suchá příprava: Suchá příprava
+SUMMARY:Suchá příprava
 LOCATION:Hala BIOS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -105,32 +105,32 @@ UID:2026-11-03-ut-led@kkslany.cz
 DTSTAMP:20261103T000000Z
 DTSTART;TZID=Europe/Prague:20261103T170000
 DTEND;TZID=Europe/Prague:20261103T184500
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-05-ct-led@kkslany.cz
 DTSTAMP:20261105T000000Z
 DTSTART;TZID=Europe/Prague:20261105T060000
 DTEND;TZID=Europe/Prague:20261105T070000
-SUMMARY:Led: Sloučený trénink
+SUMMARY:Led – sloučený
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-05-ct-pohyb1@kkslany.cz
+UID:2026-11-05-ct-pohyb-1.sk.+základna@kkslany.cz
 DTSTAMP:20261105T000000Z
 DTSTART;TZID=Europe/Prague:20261105T170000
 DTEND;TZID=Europe/Prague:20261105T181500
-SUMMARY:Pohybovka: Pohybovka s Radkou – 1. skupina a základna
+SUMMARY:Pohybovka s Radkou – 1. sk. + základna
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-05-ct-pohyb2@kkslany.cz
+UID:2026-11-05-ct-pohyb-2.sk.@kkslany.cz
 DTSTAMP:20261105T000000Z
 DTSTART;TZID=Europe/Prague:20261105T180000
 DTEND;TZID=Europe/Prague:20261105T193000
-SUMMARY:Pohybovka: Pohybovka s Radkou – 2. skupina
+SUMMARY:Pohybovka s Radkou – 2. sk.
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
@@ -138,16 +138,16 @@ UID:2026-11-07-so-led@kkslany.cz
 DTSTAMP:20261107T000000Z
 DTSTART;TZID=Europe/Prague:20261107T070000
 DTEND;TZID=Europe/Prague:20261107T083000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-09-po-led@kkslany.cz
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=Europe/Prague:20261109T170000
 DTEND;TZID=Europe/Prague:20261109T183000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -155,7 +155,7 @@ UID:2026-11-09-po-bios@kkslany.cz
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=Europe/Prague:20261109T190000
 DTEND;TZID=Europe/Prague:20261109T200000
-SUMMARY:Suchá příprava: Suchá příprava
+SUMMARY:Suchá příprava
 LOCATION:Hala BIOS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -163,32 +163,32 @@ UID:2026-11-10-ut-led@kkslany.cz
 DTSTAMP:20261110T000000Z
 DTSTART;TZID=Europe/Prague:20261110T170000
 DTEND;TZID=Europe/Prague:20261110T184500
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-12-ct-led@kkslany.cz
 DTSTAMP:20261112T000000Z
 DTSTART;TZID=Europe/Prague:20261112T060000
 DTEND;TZID=Europe/Prague:20261112T070000
-SUMMARY:Led: Sloučený trénink
+SUMMARY:Led – sloučený
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-12-ct-pohyb1@kkslany.cz
+UID:2026-11-12-ct-pohyb-1.sk.+základna@kkslany.cz
 DTSTAMP:20261112T000000Z
 DTSTART;TZID=Europe/Prague:20261112T170000
 DTEND;TZID=Europe/Prague:20261112T181500
-SUMMARY:Pohybovka: Pohybovka s Radkou – 1. skupina a základna
+SUMMARY:Pohybovka s Radkou – 1. sk. + základna
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-12-ct-pohyb2@kkslany.cz
+UID:2026-11-12-ct-pohyb-2.sk.@kkslany.cz
 DTSTAMP:20261112T000000Z
 DTSTART;TZID=Europe/Prague:20261112T180000
 DTEND;TZID=Europe/Prague:20261112T193000
-SUMMARY:Pohybovka: Pohybovka s Radkou – 2. skupina
+SUMMARY:Pohybovka s Radkou – 2. sk.
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
@@ -196,16 +196,16 @@ UID:2026-11-14-so-led@kkslany.cz
 DTSTAMP:20261114T000000Z
 DTSTART;TZID=Europe/Prague:20261114T073000
 DTEND;TZID=Europe/Prague:20261114T090000
-SUMMARY:Led: Rozdělený trénink (B/A)
+SUMMARY:Led – rozdělený (B → A)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-16-po-led@kkslany.cz
 DTSTAMP:20261116T000000Z
 DTSTART;TZID=Europe/Prague:20261116T170000
 DTEND;TZID=Europe/Prague:20261116T183000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -213,7 +213,7 @@ UID:2026-11-16-po-bios@kkslany.cz
 DTSTAMP:20261116T000000Z
 DTSTART;TZID=Europe/Prague:20261116T190000
 DTEND;TZID=Europe/Prague:20261116T200000
-SUMMARY:Suchá příprava: Suchá příprava
+SUMMARY:Suchá příprava
 LOCATION:Hala BIOS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -221,32 +221,32 @@ UID:2026-11-17-ut-led@kkslany.cz
 DTSTAMP:20261117T000000Z
 DTSTART;TZID=Europe/Prague:20261117T170000
 DTEND;TZID=Europe/Prague:20261117T184500
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-19-ct-led@kkslany.cz
 DTSTAMP:20261119T000000Z
 DTSTART;TZID=Europe/Prague:20261119T060000
 DTEND;TZID=Europe/Prague:20261119T070000
-SUMMARY:Led: Sloučený trénink
+SUMMARY:Led – sloučený
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-19-ct-pohyb1@kkslany.cz
+UID:2026-11-19-ct-pohyb-1.sk.+základna@kkslany.cz
 DTSTAMP:20261119T000000Z
 DTSTART;TZID=Europe/Prague:20261119T170000
 DTEND;TZID=Europe/Prague:20261119T181500
-SUMMARY:Pohybovka: Pohybovka s Radkou – 1. skupina a základna
+SUMMARY:Pohybovka s Radkou – 1. sk. + základna
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-19-ct-pohyb2@kkslany.cz
+UID:2026-11-19-ct-pohyb-2.sk.@kkslany.cz
 DTSTAMP:20261119T000000Z
 DTSTART;TZID=Europe/Prague:20261119T180000
 DTEND;TZID=Europe/Prague:20261119T193000
-SUMMARY:Pohybovka: Pohybovka s Radkou – 2. skupina
+SUMMARY:Pohybovka s Radkou – 2. sk.
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
@@ -254,16 +254,16 @@ UID:2026-11-21-so-led@kkslany.cz
 DTSTAMP:20261121T000000Z
 DTSTART;TZID=Europe/Prague:20261121T070000
 DTEND;TZID=Europe/Prague:20261121T220000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-23-po-led@kkslany.cz
 DTSTAMP:20261123T000000Z
 DTSTART;TZID=Europe/Prague:20261123T170000
 DTEND;TZID=Europe/Prague:20261123T183000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -271,7 +271,7 @@ UID:2026-11-23-po-bios@kkslany.cz
 DTSTAMP:20261123T000000Z
 DTSTART;TZID=Europe/Prague:20261123T190000
 DTEND;TZID=Europe/Prague:20261123T200000
-SUMMARY:Suchá příprava: Suchá příprava
+SUMMARY:Suchá příprava
 LOCATION:Hala BIOS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -279,32 +279,32 @@ UID:2026-11-24-ut-led@kkslany.cz
 DTSTAMP:20261124T000000Z
 DTSTART;TZID=Europe/Prague:20261124T170000
 DTEND;TZID=Europe/Prague:20261124T184500
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-26-ct-led@kkslany.cz
 DTSTAMP:20261126T000000Z
 DTSTART;TZID=Europe/Prague:20261126T060000
 DTEND;TZID=Europe/Prague:20261126T070000
-SUMMARY:Led: Sloučený trénink
+SUMMARY:Led – sloučený
 LOCATION:ZS Slaný
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-26-ct-pohyb1@kkslany.cz
+UID:2026-11-26-ct-pohyb-1.sk.+základna@kkslany.cz
 DTSTAMP:20261126T000000Z
 DTSTART;TZID=Europe/Prague:20261126T170000
 DTEND;TZID=Europe/Prague:20261126T181500
-SUMMARY:Pohybovka: Pohybovka s Radkou – 1. skupina a základna
+SUMMARY:Pohybovka s Radkou – 1. sk. + základna
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-11-26-ct-pohyb2@kkslany.cz
+UID:2026-11-26-ct-pohyb-2.sk.@kkslany.cz
 DTSTAMP:20261126T000000Z
 DTSTART;TZID=Europe/Prague:20261126T180000
 DTEND;TZID=Europe/Prague:20261126T193000
-SUMMARY:Pohybovka: Pohybovka s Radkou – 2. skupina
+SUMMARY:Pohybovka s Radkou – 2. sk.
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
@@ -312,16 +312,16 @@ UID:2026-11-28-so-led@kkslany.cz
 DTSTAMP:20261128T000000Z
 DTSTART;TZID=Europe/Prague:20261128T070000
 DTEND;TZID=Europe/Prague:20261128T083000
-SUMMARY:Led: Rozdělený trénink (B/A)
+SUMMARY:Led – rozdělený (B → A)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou.
+DESCRIPTION:+ 20 min docvičení s Radkou
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-30-po-led@kkslany.cz
 DTSTAMP:20261130T000000Z
 DTSTART;TZID=Europe/Prague:20261130T170000
 DTEND;TZID=Europe/Prague:20261130T183000
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
 DESCRIPTION:Předběžný čas – zimák rozpis zatím nezveřejnil.
 END:VEVENT
@@ -330,7 +330,7 @@ UID:2026-11-30-po-bios@kkslany.cz
 DTSTAMP:20261130T000000Z
 DTSTART;TZID=Europe/Prague:20261130T190000
 DTEND;TZID=Europe/Prague:20261130T200000
-SUMMARY:Suchá příprava: Suchá příprava
+SUMMARY:Suchá příprava
 LOCATION:Hala BIOS Slaný
 END:VEVENT
 BEGIN:VEVENT
@@ -338,34 +338,34 @@ UID:2026-12-01-ut-led@kkslany.cz
 DTSTAMP:20261201T000000Z
 DTSTART;TZID=Europe/Prague:20261201T170000
 DTEND;TZID=Europe/Prague:20261201T184500
-SUMMARY:Led: Rozdělený trénink (A/B)
+SUMMARY:Led – rozdělený (A → B)
 LOCATION:ZS Slaný
-DESCRIPTION:Po tréninku ještě 20 min docvičení s Radkou. Předběžný
-  čas – zimák rozpis zatím nezveřejnil.
+DESCRIPTION:+ 20 min docvičení s Radkou Předběžný čas – zimák roz
+ pis zatím nezveřejnil.
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-03-ct-led@kkslany.cz
 DTSTAMP:20261203T000000Z
 DTSTART;TZID=Europe/Prague:20261203T060000
 DTEND;TZID=Europe/Prague:20261203T070000
-SUMMARY:Led: Sloučený trénink
+SUMMARY:Led – sloučený
 LOCATION:ZS Slaný
 DESCRIPTION:Předběžný čas – zimák rozpis zatím nezveřejnil.
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-12-03-ct-pohyb1@kkslany.cz
+UID:2026-12-03-ct-pohyb-1.sk.+základna@kkslany.cz
 DTSTAMP:20261203T000000Z
 DTSTART;TZID=Europe/Prague:20261203T170000
 DTEND;TZID=Europe/Prague:20261203T181500
-SUMMARY:Pohybovka: Pohybovka s Radkou – 1. skupina a základna
+SUMMARY:Pohybovka s Radkou – 1. sk. + základna
 LOCATION:ZŠ Háje
 END:VEVENT
 BEGIN:VEVENT
-UID:2026-12-03-ct-pohyb2@kkslany.cz
+UID:2026-12-03-ct-pohyb-2.sk.@kkslany.cz
 DTSTAMP:20261203T000000Z
 DTSTART;TZID=Europe/Prague:20261203T180000
 DTEND;TZID=Europe/Prague:20261203T193000
-SUMMARY:Pohybovka: Pohybovka s Radkou – 2. skupina
+SUMMARY:Pohybovka s Radkou – 2. sk.
 LOCATION:ZŠ Háje
 END:VEVENT
 END:VCALENDAR

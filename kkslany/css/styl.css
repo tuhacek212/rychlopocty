@@ -76,7 +76,8 @@ p { margin: 0 0 1em; }
 /* ---------- hlavička ---------- */
 .hlavicka { display: flex; align-items: center; gap: 20px; padding: 18px var(--okraj); }
 .znak { display: flex; align-items: center; gap: 16px; text-decoration: none; color: inherit; }
-.znak img { width: 68px; height: auto; border-radius: 10px; }
+.znak img { width: 76px; height: 76px; margin: -6px -2px -6px -8px; filter: drop-shadow(0 3px 6px rgba(200, 23, 93, .12)); transition: transform .3s ease; }
+.znak:hover img { transform: rotate(-6deg) scale(1.04); }
 .znak__nazev { display: flex; flex-direction: column; line-height: 1.1; }
 .znak__nazev strong { font-size: 26px; font-weight: 500; text-transform: uppercase; color: #161a1d; letter-spacing: .02em; }
 .znak__nazev span { font-size: 13.5px; color: var(--grey); letter-spacing: .4em; margin-top: 6px; }
@@ -97,7 +98,7 @@ p { margin: 0 0 1em; }
 @media (max-width: 900px) {
   .hlavicka { padding: 14px var(--okraj); }
   .znak { gap: 12px; }
-  .znak img { width: 54px; border-radius: 8px; }
+  .znak img { width: 56px; height: 56px; margin: -4px -2px -4px -6px; }
   .znak__nazev strong { font-size: 17px; }
   .znak__nazev span { font-size: 11px; letter-spacing: .22em; margin-top: 4px; }
   .hlavicka__akce { display: none; }
@@ -173,6 +174,11 @@ p { margin: 0 0 1em; }
 .nejblizsi__co { margin: 0; font-size: 15.5px; }
 .nejblizsi__info { margin: 4px 0 0; font-size: 14px; opacity: .88; }
 .nejblizsi a { color: #fff; }
+.nejblizsi .sk { background: rgba(255, 255, 255, .9); color: var(--blue-dark); }
+.nejblizsi .poradi__sipka { color: rgba(255, 255, 255, .75); }
+.nejblizsi .trenink__duvod { color: #ffd2d2; font-size: 14px; margin-top: 4px; }
+.nejblizsi__skupiny { list-style: none; margin: 4px 0 0; padding: 0; font-size: 15px; }
+.nejblizsi__skupiny strong { display: inline-block; min-width: 112px; font-variant-numeric: tabular-nums; }
 .stitek-radek { margin-top: 8px; }
 
 .dalsi-treninky {
@@ -190,7 +196,7 @@ p { margin: 0 0 1em; }
 .dalsi__den small { font-weight: 400; color: var(--muted); font-size: 12.5px; }
 .dalsi__cas { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dalsi__co { color: var(--grey); }
-.dalsi-treninky li.zruseno .dalsi__cas, .dalsi-treninky li.zruseno .dalsi__den { text-decoration: line-through; color: var(--muted); }
+.dalsi-treninky li.zruseno .dalsi__cas, .dalsi-treninky li.zruseno .dalsi__text { text-decoration: line-through; color: var(--muted); }
 .dalsi-treninky .prazdne { display: block; color: var(--muted); }
 .tecka { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--blue); }
 .tecka--sucho { background: var(--teal); }
@@ -320,8 +326,14 @@ p { margin: 0 0 1em; }
 
 /* ---------- tmavá patička ---------- */
 .paticka {
+  position: relative; isolation: isolate; overflow: hidden;
   color: #aeb8c2; font-size: 15px;
   background: radial-gradient(ellipse at 15% 0, rgba(60, 130, 210, .18), transparent 55%), var(--footer);
+}
+/* velká brusle jako vodoznak */
+.paticka::before {
+  content: ""; position: absolute; z-index: -1; right: -40px; top: -30px; width: 340px; height: 340px;
+  background: url(../img/brusle.svg) center / contain no-repeat; opacity: .05; filter: grayscale(1) brightness(3); transform: rotate(8deg);
 }
 .paticka__sloupce { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 48px; padding: 56px var(--okraj) 44px; }
 .paticka h2 { color: #fff; font-size: 20px; font-weight: 500; margin-bottom: 18px; }
@@ -375,9 +387,7 @@ p { margin: 0 0 1em; }
 
 /* ---------- rozpis tréninků ---------- */
 .rozpis-hlava { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-bottom: 24px; }
-.rozpis-info { list-style: none; margin: 0; padding: 0; color: var(--grey); font-size: 15px; line-height: 1.5; }
-.rozpis-info li { position: relative; padding-left: 16px; }
-.rozpis-info li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--orange); }
+.rozpis-info { margin: 0; color: var(--grey); font-size: 15px; line-height: 1.6; max-width: 560px; }
 .rozpis-info strong { color: var(--text); font-weight: 500; }
 .info-radek { text-align: center; color: var(--grey); font-size: 15px; margin: 8px auto 4px; max-width: 720px; }
 .info-radek strong { color: var(--text); }
@@ -409,14 +419,33 @@ table.rozpis { width: 100%; border-collapse: collapse; font-size: 14.5px; table-
 .rozpis tr.dnes > * { background: var(--orange-soft); }
 .rozpis tr.dnes .den { box-shadow: inset 3px 0 0 var(--orange); color: #8a4a00; }
 .rozpis tr.dnes .den span { color: #b0682a; }
-.rozpis tr.minuly > * { opacity: .42; }
-.trenink + .trenink { margin-top: 8px; }
+/* proběhlé dny jen ztlumené – nesmí vypadat jako zrušené */
+.rozpis tr.minuly > * { opacity: .6; }
+.rozpis tr.minuly .trenink__cas { font-weight: 500; }
+.trenink + .trenink { margin-top: 10px; }
 .trenink__cas { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.trenink__popis { display: block; color: var(--grey); font-size: 13.5px; line-height: 1.4; }
+.trenink__popis { display: block; color: var(--grey); font-size: 13.5px; line-height: 1.45; }
+.trenink__popis--hlava { display: inline; }
 .trenink__popis a { color: inherit; }
-.trenink__pozn { color: var(--navy); }
-.trenink__duvod { display: block; font-size: 13.5px; line-height: 1.4; }
-.trenink--zruseno .trenink__cas, .trenink--zruseno .trenink__popis { text-decoration: line-through; color: var(--muted); }
+.trenink__nazev { color: var(--text); }
+.trenink__popis--hlava .trenink__nazev { font-weight: 700; }
+.trenink__pozn { display: block; color: var(--navy); font-size: 13px; line-height: 1.4; }
+.trenink__duvod { display: block; font-size: 13px; line-height: 1.4; color: var(--red); }
+.trenink--zruseno .trenink__cas, .trenink--zruseno .trenink__popis, .trenink--zruseno .trenink__skupiny { text-decoration: line-through; color: var(--muted); }
+.trenink--zruseno .trenink__nazev { color: var(--muted); }
+.trenink__skupiny { list-style: none; margin: 3px 0 0; padding: 0; font-size: 13.5px; line-height: 1.45; color: var(--grey); }
+.trenink__skupiny li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.trenink__skupiny .trenink__cas { min-width: 92px; font-size: 14px; }
+.trenink__skupiny li.zrusena > span:not(.stitek):not(.trenink__duvod) { text-decoration: line-through; color: var(--muted); }
+.trenink__skupiny .trenink__duvod { flex-basis: 100%; padding-left: 100px; }
+/* pořadí skupin u rozděleného tréninku: A → B */
+.poradi { display: inline-flex; align-items: center; gap: 3px; vertical-align: 0; white-space: nowrap; }
+.sk {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px;
+  font-size: 12px; font-weight: 700; line-height: 1; background: var(--blue-soft); color: var(--blue); text-decoration: none;
+}
+.sk--zruseno { background: var(--red-soft); color: var(--red); text-decoration: line-through; }
+.poradi__sipka { color: var(--muted); font-size: 12px; }
 .stitek {
   display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; line-height: 1.3;
   padding: 2px 8px; border-radius: 999px; background: var(--orange-soft); color: #8a4a00; vertical-align: 1px; white-space: nowrap;
