@@ -390,28 +390,23 @@ function stitkyTreninku(t) {
   return s.join(" ");
 }
 
-// Jeden trénink = jeden blok, i když v něm trénují skupiny zvlášť.
+// Jeden trénink = jeden blok, vždy stejně: čas, pod ním co a kde, pak podrobnosti.
+// Když skupiny trénují každá jindy, nahoře je celkový čas a časy skupin až v podrobnostech.
 // Led na zimáku místo neuvádí (je ve sloupci „na ledě“). Zrušená skupina se přeškrtne jen sama.
 function htmlTreninku(t) {
   var f = forma(t), zruseno = t.stav === "zruseno";
   var co = '<span class="trenink__nazev">' + esc(nazevTreninku(t)) + "</span>" + (f === "rozdeleny" ? " " + htmlPoradi(t) : "");
   if (!(t.typ === "led" && t.misto === "zs")) co += " · " + mistoTreninku(t);
-  var hlava, skupiny = "";
-  if (f === "skupiny") {
-    hlava = '<span class="trenink__popis trenink__popis--hlava">' + co + "</span> " + stitkyTreninku(t);
-    skupiny = '<ul class="trenink__skupiny">' + t.casti.map(function (c) {
-      var pryc = c.stav === "zruseno" && !zruseno;
-      return '<li class="' + (pryc ? "zrusena" : "") + '"><span class="trenink__cas">' + esc(bezNuly(c.od) + " – " + bezNuly(c.do)) + "</span>" +
-        "<span>" + esc(c.skupina) + "</span>" + (pryc ? ' <span class="stitek stitek--zruseno">zrušeno</span>' : "") +
-        (pryc && c.poznamka ? '<span class="trenink__duvod">' + esc(c.poznamka) + "</span>" : "") + "</li>";
-    }).join("") + "</ul>";
-  } else {
-    hlava = '<span class="trenink__cas">' + esc(casTreninku(t)) + "</span> " + stitkyTreninku(t) +
-      '<span class="trenink__popis">' + co + "</span>";
-  }
+  var hlava = '<span class="trenink__cas">' + esc(casTreninku(t)) + "</span> " + stitkyTreninku(t) +
+    '<span class="trenink__popis">' + co + "</span>";
+  var skupiny = f !== "skupiny" ? "" : '<ul class="trenink__skupiny">' + t.casti.map(function (c) {
+    var pryc = c.stav === "zruseno" && !zruseno;
+    return '<li class="' + (pryc ? "zrusena" : "") + '"><span class="trenink__skupina-cas">' + esc(bezNuly(c.od) + " – " + bezNuly(c.do)) + "</span>" +
+      "<span>" + esc(c.skupina) + "</span>" + (pryc ? ' <span class="stitek stitek--zruseno">zrušeno</span>' : "") +
+      (pryc && c.poznamka ? '<span class="trenink__duvod">' + esc(c.poznamka) + "</span>" : "") + "</li>";
+  }).join("") + "</ul>";
   // u zrušeného tréninku se důvod nepřeškrtává, proto stojí samostatně
   var pozn = t.poznamka ? '<span class="' + (zruseno ? "trenink__duvod" : "trenink__pozn") + '">' + esc(t.poznamka) + "</span>" : "";
-  if (t.navazuje && !zruseno) pozn = '<span class="trenink__navazuje">navazuje na předchozí trénink</span>' + pozn;
   return '<div class="trenink trenink--' + (t.typ === "led" ? "led" : "sucho") + (zruseno ? " trenink--zruseno" : "") + '">' +
     hlava + skupiny + htmlZrusenychSkupin(t) + pozn + "</div>";
 }
