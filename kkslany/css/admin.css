@@ -44,6 +44,9 @@ body.admin { background: var(--bg); min-height: 100vh; }
   border: 1px solid #d3dbe3; border-radius: 10px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease;
 }
 .pole textarea { resize: vertical; line-height: 1.5; }
+.a-fotka { display: flex; gap: 14px; align-items: center; }
+.a-fotka img { width: 60px; height: 80px; object-fit: cover; border-radius: 6px; flex: none; background: var(--zebra); }
+.pole .a-fotka input[type=file] { border: 0; padding: 0; min-width: 0; font-size: 14px; }
 .pole input:focus, .pole select:focus, .pole textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 102, 204, .14); }
 .pole input:disabled, .pole select:disabled, .pole textarea:disabled { background: var(--zebra); color: var(--muted); }
 
@@ -156,6 +159,8 @@ body.admin { background: var(--bg); min-height: 100vh; }
 .a-tabulka tr:last-child td { border-bottom: 0; }
 .a-tabulka strong { font-weight: 500; }
 .a-tabulka__akce { text-align: right; white-space: nowrap; }
+.a-tabulka__fotka { width: 36px; padding-right: 0 !important; }
+.a-tabulka__fotka img { display: block; width: 36px; height: 48px; object-fit: cover; border-radius: 4px; background: var(--zebra); }
 .a-tabulka__akce .a-tl + .a-tl { margin-left: 6px; }
 .a-tabulka--prava td:not(:first-child), .a-tabulka--prava th:not(:first-child) { text-align: center; width: 110px; }
 .a-tabulka--prava .ano .svg { width: 18px; height: 18px; color: #1f9d55; }

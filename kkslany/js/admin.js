@@ -76,7 +76,9 @@ var Uloziste = {
       localStorage.setItem(ULOZISTE_ADMINU, JSON.stringify(this.data));
       oznam("Uloženo: " + popis);
     } catch (e) {
-      oznam("Změnu se nepodařilo uložit – prohlížeč nepovoluje ukládání.");
+      oznam(e.name === "QuotaExceededError"
+        ? "Změnu se nepodařilo uložit – úložiště prohlížeče je plné (ukázka v něm drží i fotky)."
+        : "Změnu se nepodařilo uložit – prohlížeč nepovoluje ukládání.");
     }
   },
   // změnil se web? (přihlášky a uživatelé na webu vidět nejsou)
@@ -203,6 +205,10 @@ function htmlPole(p, hodnota) {
   var spolecne = ' name="' + p.k + '"' + (p.povinne ? " required" : "") + (p.zamknout ? " disabled" : "");
   if (p.typ === "textarea") {
     vstup = "<textarea" + spolecne + ' rows="' + (p.radky || 4) + '">' + esc(h) + "</textarea>";
+  } else if (p.typ === "fotka") {
+    // hodnota je cesta k obrázku nebo data: URL nově vybrané fotky (skryté pole)
+    vstup = '<div class="a-fotka"><img src="' + esc(h || "img/logo-velke.png") + '" alt="" width="60" height="80">' +
+      '<input type="file" accept="image/*" data-fotka="' + p.k + '"><input type="hidden" name="' + p.k + '" value="' + esc(h) + '"></div>';
   } else if (p.typ === "select") {
     vstup = "<select" + spolecne + ">" + p.moznosti.map(function (m) {
       return '<option value="' + esc(m[0]) + '"' + (String(m[0]) === String(h) ? " selected" : "") + ">" + esc(m[1]) + "</option>";
@@ -258,6 +264,37 @@ document.getElementById("okno-formular").addEventListener("submit", function (e)
   vykresli();
 });
 document.querySelector("#okno [data-zavrit]").addEventListener("click", function () { document.getElementById("okno").close(); });
+
+// vybraná fotka se ořízne na výšku 3 : 4 (jako karty na webu) a zmenší, aby se vešla do úložiště
+var FOTKA_SIRKA = 450, FOTKA_VYSKA = 600;
+document.getElementById("okno-pole").addEventListener("change", function (e) {
+  var vstup = e.target, soubor = vstup.files && vstup.files[0];
+  if (!vstup.dataset.fotka || !soubor) return;
+  var obal = vstup.closest(".a-fotka"), ok = document.getElementById("okno-ok"), chyba = document.getElementById("okno-chyba");
+  var obrazek = new Image(), adresa = URL.createObjectURL(soubor);
+  ok.disabled = true;
+  chyba.textContent = "";
+  obrazek.onload = function () {
+    var platno = document.createElement("canvas"), pomer = FOTKA_SIRKA / FOTKA_VYSKA;
+    var sirka = obrazek.naturalWidth, vyska = obrazek.naturalHeight;
+    var vyrezS = Math.min(sirka, vyska * pomer), vyrezV = vyrezS / pomer;
+    platno.width = FOTKA_SIRKA;
+    platno.height = FOTKA_VYSKA;
+    platno.getContext("2d").drawImage(obrazek, (sirka - vyrezS) / 2, (vyska - vyrezV) / 2, vyrezS, vyrezV, 0, 0, FOTKA_SIRKA, FOTKA_VYSKA);
+    var data = platno.toDataURL("image/jpeg", 0.82);
+    obal.querySelector("input[type=hidden]").value = data;
+    obal.querySelector("img").src = data;
+    URL.revokeObjectURL(adresa);
+    ok.disabled = false;
+  };
+  obrazek.onerror = function () {
+    URL.revokeObjectURL(adresa);
+    vstup.value = "";
+    chyba.textContent = "Tuhle fotku prohlížeč neumí otevřít. Zkuste ji uložit jako JPG nebo PNG.";
+    ok.disabled = false;
+  };
+  obrazek.src = adresa;
+});
 
 // ---------- přihlašovací obrazovka ----------
 
@@ -1292,7 +1329,7 @@ var SEZNAM_TRENERU = zaregistrujSeznam({
       { k: "jmeno", nazev: "Jméno a příjmení", povinne: true },
       { k: "kvalifikace", nazev: "Kvalifikace", povinne: true, napoveda: "Např. trenér II. třídy" },
       { k: "role", nazev: "Role (nepovinné)", napoveda: "Např. Hlavní trenérka, Základna" },
-      { k: "foto", nazev: "Fotka", napoveda: "Cesta k fotce na webu, např. img/treneri/pavla.jpg. Nahrávání fotek přibude s databází." }
+      { k: "foto", nazev: "Fotka", typ: "fotka", napoveda: "Ořízne se na výšku (3 : 4) podle středu." }
     ];
   }
 });
@@ -1320,11 +1357,13 @@ function upravZavodnika(index) {
       { k: "kategorie", nazev: "Kategorie", povinne: true, pul: true, seznam: data.zavodnici.map(function (x) { return x.kategorie; }).filter(function (k, i, p) { return p.indexOf(k) === i; }) },
       { k: "rocnik", nazev: "Ročník", typ: "number", povinne: true, pul: true },
       { k: "odRoku", nazev: "V klubu od roku", typ: "number", pul: true },
-      { k: "trenerka", nazev: "Trenérka", typ: "select", moznosti: treneri, pul: true }
+      { k: "trenerka", nazev: "Trenérka", typ: "select", moznosti: treneri, pul: true },
+      { k: "foto", nazev: "Fotka", typ: "fotka", napoveda: "Ořízne se na výšku (3 : 4) podle středu." }
     ],
     ulozit: function (h) {
-      var cil = z || { foto: "img/logo-velke.png" };
-      ["jmeno", "kategorie", "rocnik", "odRoku", "trenerka"].forEach(function (k) { cil[k] = h[k]; });
+      var cil = z || {};
+      ["jmeno", "kategorie", "rocnik", "odRoku", "trenerka", "foto"].forEach(function (k) { cil[k] = h[k]; });
+      if (!cil.foto) cil.foto = "img/logo-velke.png";
       if (!z) data.zavodnici.push(cil);
       Uloziste.uloz("zavodnici", data, (z ? "Upraven" : "Přidán") + " závodník: " + cil.jmeno);
     }
@@ -1346,9 +1385,9 @@ VYKRESLENI.zavodnici = function () {
   var data = Uloziste.dej("zavodnici");
   return hlavicka("Závodníci", "Soupiska pro sezónu " + esc(data.sezona) + " – " + data.zavodnici.length + " závodníků.", tl(A_IKONY.plus + "Přidat závodníka", "zavodnik", "", "lide", "a-tl--hlavni")) +
     poznamkaPrav({ pravoUpravit: "lide", pravoSmazat: "lide" }) +
-    '<section class="a-karta"><table class="a-tabulka"><thead><tr><th>Jméno</th><th>Kategorie</th><th>Ročník</th><th>Trenérka</th><th></th></tr></thead><tbody>' +
+    '<section class="a-karta"><table class="a-tabulka"><thead><tr><th></th><th>Jméno</th><th>Kategorie</th><th>Ročník</th><th>Trenérka</th><th></th></tr></thead><tbody>' +
     data.zavodnici.map(function (z, i) {
-      return "<tr><td><strong>" + esc(z.jmeno) + "</strong></td><td>" + esc(z.kategorie) + "</td><td>" + esc(z.rocnik) + "</td><td>" + esc(z.trenerka) + "</td>" +
+      return '<tr><td class="a-tabulka__fotka"><img src="' + esc(z.foto) + '" alt="" width="36" height="48" loading="lazy"></td><td><strong>' + esc(z.jmeno) + "</strong></td><td>" + esc(z.kategorie) + "</td><td>" + esc(z.rocnik) + "</td><td>" + esc(z.trenerka) + "</td>" +
         '<td class="a-tabulka__akce">' + tl("Upravit", "zavodnik-upravit", i, "lide", "a-tl--male") + tl("Odebrat", "zavodnik-smazat", i, "lide", "a-tl--male a-tl--cervene") + "</td></tr>";
     }).join("") + "</tbody></table></section>";
 };
