@@ -131,157 +131,8 @@ window.KK = {
    "do": "2027-03-31"
   },
   "zimakOk": true,
-  "aktualizovano": "2026-11-01T23:08+01:00",
+  "aktualizovano": "2026-11-02T07:19+01:00",
   "tydny": [
-   {
-    "tyden": 44,
-    "pondeli": "2026-10-26",
-    "zimak": "zverejneno",
-    "led": [
-     {
-      "datum": "2026-10-26",
-      "od": "17:00",
-      "do": "18:30"
-     },
-     {
-      "datum": "2026-10-27",
-      "od": "17:00",
-      "do": "18:45"
-     },
-     {
-      "datum": "2026-10-29",
-      "od": "06:00",
-      "do": "07:00"
-     },
-     {
-      "datum": "2026-10-31",
-      "od": "07:00",
-      "do": "08:30"
-     }
-    ],
-    "dny": [
-     {
-      "datum": "2026-10-26",
-      "treninky": [
-       {
-        "id": "po-led",
-        "typ": "led",
-        "misto": "zs",
-        "od": "17:00",
-        "do": "18:30",
-        "casti": [
-         {
-          "skupina": "A"
-         },
-         {
-          "skupina": "B"
-         }
-        ],
-        "zdroj": "zimak"
-       },
-       {
-        "id": "po-bios",
-        "typ": "sucho",
-        "misto": "bios",
-        "navazuje": "po-led",
-        "od": "19:00",
-        "do": "20:00",
-        "poznamka": "Podzimní prázdniny – suchá příprava není.",
-        "stav": "zruseno"
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-27",
-      "treninky": [
-       {
-        "id": "ut-led",
-        "typ": "led",
-        "misto": "zs",
-        "poznamka": "+ 20 min docvičení s Radkou",
-        "od": "17:00",
-        "do": "18:45",
-        "casti": [
-         {
-          "skupina": "A"
-         },
-         {
-          "skupina": "B"
-         }
-        ],
-        "zdroj": "zimak"
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-28",
-      "treninky": []
-     },
-     {
-      "datum": "2026-10-29",
-      "treninky": [
-       {
-        "id": "ct-led",
-        "typ": "led",
-        "misto": "zs",
-        "od": "06:00",
-        "do": "07:00",
-        "zdroj": "zimak"
-       },
-       {
-        "id": "ct-pohyb",
-        "typ": "pohyb",
-        "misto": "haje",
-        "popis": "Pohybovka s Radkou",
-        "od": "17:00",
-        "do": "19:30",
-        "casti": [
-         {
-          "skupina": "1. sk. + základna",
-          "od": "17:00",
-          "do": "18:15"
-         },
-         {
-          "skupina": "2. sk.",
-          "od": "18:00",
-          "do": "19:30"
-         }
-        ]
-       }
-      ]
-     },
-     {
-      "datum": "2026-10-30",
-      "treninky": []
-     },
-     {
-      "datum": "2026-10-31",
-      "treninky": [
-       {
-        "id": "so-led",
-        "typ": "led",
-        "misto": "zs",
-        "poznamka": "+ 20 min docvičení s Radkou",
-        "od": "07:00",
-        "do": "08:30",
-        "casti": [
-         {
-          "skupina": "B"
-         },
-         {
-          "skupina": "A"
-         }
-        ],
-        "zdroj": "zimak"
-       }
-      ]
-     },
-     {
-      "datum": "2026-11-01",
-      "treninky": []
-     }
-    ]
-   },
    {
     "tyden": 45,
     "pondeli": "2026-11-02",
@@ -992,6 +843,132 @@ window.KK = {
      },
      {
       "datum": "2026-12-06",
+      "treninky": []
+     }
+    ]
+   },
+   {
+    "tyden": 50,
+    "pondeli": "2026-12-07",
+    "zimak": "nezverejneno",
+    "led": null,
+    "dny": [
+     {
+      "datum": "2026-12-07",
+      "treninky": [
+       {
+        "id": "po-led",
+        "typ": "led",
+        "misto": "zs",
+        "od": "17:00",
+        "do": "18:30",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
+        "stav": "predbezne"
+       },
+       {
+        "id": "po-bios",
+        "typ": "sucho",
+        "misto": "bios",
+        "navazuje": "po-led",
+        "od": "19:00",
+        "do": "20:00"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-08",
+      "treninky": [
+       {
+        "id": "ut-led",
+        "typ": "led",
+        "misto": "zs",
+        "poznamka": "+ 20 min docvičení s Radkou",
+        "od": "17:00",
+        "do": "18:45",
+        "casti": [
+         {
+          "skupina": "A"
+         },
+         {
+          "skupina": "B"
+         }
+        ],
+        "stav": "predbezne"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-09",
+      "treninky": []
+     },
+     {
+      "datum": "2026-12-10",
+      "treninky": [
+       {
+        "id": "ct-led",
+        "typ": "led",
+        "misto": "zs",
+        "od": "06:00",
+        "do": "07:00",
+        "stav": "predbezne"
+       },
+       {
+        "id": "ct-pohyb",
+        "typ": "pohyb",
+        "misto": "haje",
+        "popis": "Pohybovka s Radkou",
+        "od": "17:00",
+        "do": "19:30",
+        "casti": [
+         {
+          "skupina": "1. sk. + základna",
+          "od": "17:00",
+          "do": "18:15"
+         },
+         {
+          "skupina": "2. sk.",
+          "od": "18:00",
+          "do": "19:30"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-11",
+      "treninky": []
+     },
+     {
+      "datum": "2026-12-12",
+      "treninky": [
+       {
+        "id": "so-led",
+        "typ": "led",
+        "misto": "zs",
+        "poznamka": "+ 20 min docvičení s Radkou",
+        "od": null,
+        "do": null,
+        "casti": [
+         {
+          "skupina": "B"
+         },
+         {
+          "skupina": "A"
+         }
+        ],
+        "stav": "predbezne"
+       }
+      ]
+     },
+     {
+      "datum": "2026-12-13",
       "treninky": []
      }
     ]
