@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Příprava na ústní část zkoušky odborné způsobilosti ČKAIT – odborná rozprava nad předloženou dokumentací, obor technologická zařízení staveb.">
+<title>Rozprava ČKAIT TZS</title>
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#FFFFFF; --bg-2:#F7F7F8; --ink:#0A0A0B; --ink-2:#43464B; --ink-3:#83868C;
+  --line:#DEDFE3; --line-2:#B9BCC2;
+  --ok:#066E4A; --ok-bg:#E9F5F0; --bad:#C62A1E; --bad-bg:#FCECEA; --accent:#1433FF;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#08090A; --bg-2:#111315; --ink:#F5F6F7; --ink-2:#A8ACB2; --ink-3:#6B6F75;
+    --line:#202327; --line-2:#383C42;
+    --ok:#4FC38D; --ok-bg:#10231B; --bad:#FF7A6B; --bad-bg:#2A1512; --accent:#8CA0FF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08090A; --bg-2:#111315; --ink:#F5F6F7; --ink-2:#A8ACB2; --ink-3:#6B6F75;
+  --line:#202327; --line-2:#383C42;
+  --ok:#4FC38D; --ok-bg:#10231B; --bad:#FF7A6B; --bad-bg:#2A1512; --accent:#8CA0FF;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:Archivo,system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;
+}
+.sheet{max-width:58rem;margin:0 auto;padding:28px 20px 80px}
+.head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:10px}
+h1{font-weight:700;font-size:clamp(1.5rem,4.5vw,2rem);letter-spacing:-.035em;line-height:1;margin:0}
+.sub{font-family:"DM Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 0 auto}
+.intro{font-size:.9rem;color:var(--ink-2);margin:12px 0 0;max-width:72ch}
+.back{font-family:"DM Mono",monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2)}
+.back:hover{color:var(--ink);border-bottom-color:var(--ink)}
+
+/* ---- ovládání ---- */
+.tools{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:12px 0;margin-top:18px}
+.pbtn{
+  font-family:"DM Mono",monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  background:none;border:0;border-bottom:1px solid var(--line-2);color:var(--ink);
+  padding:6px 0;cursor:pointer;
+}
+.pbtn:hover{border-bottom-color:var(--ink)}
+.pbtn.on{color:var(--accent);border-bottom-color:var(--accent)}
+.progress{margin-left:auto;font-family:"DM Mono",monospace;font-size:.75rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.progress b{color:var(--ok);font-weight:500}
+
+/* ---- bloky ---- */
+h2{
+  font-family:"DM Mono",monospace;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink);margin:34px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line-2);
+  display:flex;justify-content:space-between;gap:8px;
+}
+h2 b{color:var(--ink-3);font-weight:400}
+ul.facts{list-style:none;margin:0;padding:0}
+ul.facts li{font-size:.88rem;line-height:1.45;padding:5px 0;border-bottom:1px solid var(--line)}
+ul.facts li:last-child{border-bottom:0}
+ul.facts li>b{font-weight:600}
+ul.facts li>span{color:var(--ink-2)}
+.n{font-family:"DM Mono",monospace;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pitch{font-size:.95rem;line-height:1.6;border-left:3px solid var(--ink);padding:4px 0 4px 16px;margin:6px 0 0;max-width:72ch}
+
+/* ---- otázky ---- */
+details.qa{border-bottom:1px solid var(--line)}
+details.qa>summary{
+  list-style:none;cursor:pointer;display:grid;grid-template-columns:2.2rem 1fr auto;gap:10px;
+  align-items:baseline;padding:13px 0;
+}
+details.qa>summary::-webkit-details-marker{display:none}
+.qn{font-family:"DM Mono",monospace;font-size:.75rem;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.qt{font-weight:600;font-size:1rem;line-height:1.35;letter-spacing:-.015em}
+details.qa>summary:hover .qt{color:var(--accent)}
+details[open].qa>summary .qt{color:var(--ink)}
+.known{display:inline-flex;align-items:center;gap:6px;font-family:"DM Mono",monospace;font-size:.66rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);cursor:pointer;white-space:nowrap}
+.known input{accent-color:var(--ok);width:15px;height:15px;margin:0}
+details.qa.done .qt{color:var(--ink-3)}
+details.qa.done .known{color:var(--ok)}
+.ans{padding:0 0 18px 3.2rem;display:flex;flex-direction:column;gap:10px;max-width:76ch}
+.ans p{margin:0}
+.lbl{font-family:"DM Mono",monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:2px}
+.say{font-size:.95rem;line-height:1.6}
+.say ul{margin:4px 0 0;padding-left:1.1rem}
+.say li{margin:2px 0}
+.calc{
+  font-family:"DM Mono",monospace;font-size:.8rem;line-height:1.6;white-space:pre-wrap;margin:0;
+  background:var(--bg-2);border-left:3px solid var(--line-2);padding:10px 12px;overflow-x:auto;color:var(--ink)
+}
+.no{font-size:.86rem;background:var(--bad-bg);border-left:3px solid var(--bad);padding:8px 12px}
+.no b{color:var(--bad)}
+.yes{font-size:.86rem;background:var(--ok-bg);border-left:3px solid var(--ok);padding:8px 12px}
+.yes b{color:var(--ok)}
+.src{font-size:.78rem;color:var(--ink-3)}
+.check{font-size:.82rem;color:var(--ink-2);border-left:3px solid var(--accent);padding:6px 12px}
+.check b{color:var(--accent);font-weight:600}
+.hl{animation:hl 1.6s ease}
+@keyframes hl{0%{background:var(--bg-2)}100%{background:transparent}}
+
+/* ---- říkej / neříkej ---- */
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line)}
+.pairs div{font-size:.86rem;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+.pairs .h{font-family:"DM Mono",monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase}
+.pairs .h.n1{color:var(--bad)} .pairs .h.y1{color:var(--ok)}
+.pairs .n2{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--bad)}
+
+.foot{margin-top:28px;border-top:1px solid var(--line);padding-top:8px;font-size:.76rem;color:var(--ink-3);max-width:72ch}
+
+@media (max-width:560px){
+  .sheet{padding:20px 16px 72px}
+  .ans{padding-left:0}
+  details.qa>summary{grid-template-columns:1.8rem 1fr;}
+  .known{grid-column:2}
+  .pairs{grid-template-columns:1fr}
+  .pairs .h.y1{display:none}
+  .progress{margin-left:0;width:100%}
+}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff;color:#000}
+  :root{--bg:#fff;--bg-2:#f3f3f3;--ink:#000;--ink-2:#222;--ink-3:#555;--line:#ccc;--line-2:#888;--ok:#046046;--bad:#A81E14;--ok-bg:#fff;--bad-bg:#fff}
+  .sheet{max-width:none;padding:0}
+  body{font-size:9pt}
+  .tools,.known,.back{display:none!important}
+  details.qa{break-inside:avoid}
+  .ans{padding-left:0}
+  .say{font-size:9pt}.calc{font-size:8pt}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="sheet">
+
+  <div class="head">
+    <h1>Rozprava u komise</h1>
+    <p class="sub">ČKAIT · technologická zařízení staveb · ústní část</p>
+  </div>
+  <p class="intro">Otázky, na které se komise u odborné rozpravy nad tvou dokumentací nejspíš zeptá, a vzorové odpovědi postavené na tvých projektech (Valeč, Pohledy, Žichlínek, Bohušov, Senička, Bílovec II). Nejdřív odpověz nahlas, pak rozklikni a porovnej. Co umíš, si odškrtni – stav se pamatuje v tomto prohlížeči. <a class="back" href="./">← zpět na test</a></p>
+
+  <div class="tools" id="tools">
+    <button class="pbtn" id="open-all">Rozbalit vše</button>
+    <button class="pbtn" id="close-all">Sbalit vše</button>
+    <button class="pbtn" id="random">Náhodná otázka</button>
+    <button class="pbtn" id="only-todo">Jen neumím</button>
+    <button class="pbtn" id="reset">Vynulovat</button>
+    <button class="pbtn" onclick="window.print()">Tisk</button>
+    <button class="pbtn" id="theme">Režim</button>
+    <span class="progress" id="progress"></span>
+  </div>
+
+  <h2>Jak ústní část probíhá <b>závazné pokyny ČKAIT</b></h2>
+  <ul class="facts">
+    <li><b>Posudek</b> <span>jeden člen pětičlenné komise si předem projde tvoji dokumentaci a sepíše k ní posudek a otázky. Rozpravu pak obvykle vede on.</span></li>
+    <li><b>Průběh</b> <span>předseda tě vyzve, abys dokumentaci představil → rozprava nad dokumentací → otázky z oboru, které s ní už souviset nemusí → kontrolní otázky z předpisů. Doporučená délka do <span class="n">45 min</span>.</span></li>
+    <li><b>Co přinést</b> <span>dokumentaci v listinné podobě, ne starší než <span class="n">7 let</span> (Brniště 2017 tedy ne). Ideálně Valeč (realizováno a zkolaudováno) + Pohledy (povolení 2026) + jedna DPS (Senička).</span></li>
+    <li><b>Hodnocení</b> <span>komise může chtít doplnění ústně, písemně nebo náčrtem. O výsledku hlasuje bez tebe, rozhoduje většina hlasů.</span></li>
+    <li><b>Co ověřují</b> <span>jestli umíš teorii ze studia použít v praxi a jestli jsi připravený nést odpovědnost autorizované osoby. Neověřují, jestli umíš zkonstruovat stroj.</span></li>
+  </ul>
+
+  <h2>Úvodní představení <b>cca 2 minuty, nauč se volně</b></h2>
+  <p class="pitch">Jmenuji se [jméno], vystudoval jsem obor Technologická zařízení staveb na Technické fakultě ČZU. Devět let, od června 2017 do července 2026, jsem pracoval ve firmě PAWLICA jako projektant technologie posklizňových linek a skladů obilovin. Zpracovával jsem technologickou část – provozní soubor – projektových dokumentací pro povolení stavby i pro provádění stavby. Z požadavků investora, tedy kolik potřebuje uskladnit, jak rychle sklízí a jaké plodiny, jsem navrhoval koncepci linky: příjem, čištění, sušení, akumulaci, skladování a expedici. Vybíral jsem typové velikosti zařízení, navrhoval dopravní cesty a dispozici a ověřoval kapacity a výkonnosti. Z technologie jsem pak dělal požadavky na stavbu – zatěžovací údaje pro statika, stavební připravenost, nároky na energie – a podklady k vlivu na životní prostředí. Dnes vám představím posklizňovou linku Valeč: šest sil o celkovém objemu 23 400 m³, sušárnu 2,4 MW a příjem 2 × 120 t/h. Linka je realizovaná a v prosinci 2023 získala kolaudační souhlas.</p>
+
+  <h2>Čísla z mých projektů <b>nauč se nazpaměť</b></h2>
+  <ul class="facts">
+    <li><b>Valeč</b> <span>AGROCHEMA, DSP 03–06/2022 · 6 × BROCK E-05421 po 3 900 m³ = <span class="n">23 400 m³</span> (18 252 t pšenice) · 2 akumulační sila 594 m³ (463 t) · 4 expediční zásobníky 168 m³ · 2 příjmové koše <span class="n">2 × 120 t/h</span> · čistička RUBERG RVS 120 · sušárna STELA GDB-XN 1/7 S, hořák MAXON <span class="n">2 400 kW</span>, LPG, 74 000 m³/h vzduchu, el. příkon 75 kW · předáno 20. 9. 2023, kolaudační souhlas 5. 12. 2023 (MěÚ Hrotovice).</span></li>
+    <li><b>Pohledy</b> <span>Farma Pohledy, DSP 08–12/2025 · rozšíření o 3 × BROCK E-05417 (Ø 16,39 m, výška 18,14 m) = <span class="n">9 648 m³</span> (7 525 t) · příjem 100 t/h · povolení stavby 7. 1. 2026 (MěÚ Březová nad Svitavou, už podle nového stavebního zákona).</span></li>
+    <li><b>Žichlínek</b> <span>ZOD Žichlínek, rekonstrukce, 07/2023 · 4 × FBIN 14/13 = <span class="n">10 440 m³</span> (8 143 t) · akumulační BIN K200/7 300 m³ · RVS 80 · sušárna STELA GDB-TN 1/6 S (20,6 t/h) · příjem 80 t/h.</span></li>
+    <li><b>Bohušov</b> <span>Farma V., DSP 2021 · 3 sila BIN = <span class="n">2 647 m³</span> (2 065 t) · RVS 60 · sušárna STELA GDB-TN 1/4 S (13,8 t/h) · příjem 60 t/h · protokol o určení vnějších vlivů 01/2022 (byl jsem člen komise).</span></li>
+    <li><b>Senička</b> <span>ZD Senice na Hané, DPS 01–04/2024 (ASET studio) · 5 sil <span class="n">13 245 m³</span> (10 300 t) · krytý příjmový koš, čistička s komorou lehkých nečistot, 4 expediční zásobníky · deska sil na pilotách Ø 900 mm, L = 10 m.</span></li>
+    <li><b>Bílovec II</b> <span>RenoFarma, DSP 03–06/2025 (A4L stavby) · 3 × E-03323 + 2 × E-04222 = <span class="n">9 459 m³</span> (7 378 t) · předčistička RUV 100 · výška 21,49 m · instalovaný příkon <span class="n">189,6 kW</span>.</span></li>
+    <li><b>Objemové hmotnosti</b> <span>pšenice <span class="n">780 kg/m³</span> · kukuřice 680–750 · ječmen 650 · řepka 600–680 kg/m³.</span></li>
+  </ul>
+
+  <div id="cards">
+
+  <h2>1 · Moje role a odpovědnost <b>tady se rozhoduje</b></h2>
+
+  <details class="qa" id="r1"><summary><span class="qn">1.1</span><span class="qt">Co jste na předložených projektech dělal konkrétně vy?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Zpracovával jsem technologickou část projektové dokumentace, provozní soubor PS 01. Konkrétně:
+      <ul>
+        <li>převedl jsem požadavky investora (kapacita skladu, denní objem sklizně, plodiny, vlhkost) na parametry linky,</li>
+        <li>navrhl jsem koncepci a funkční bloky: příjem, čištění, sušení, akumulaci, skladování a expedici,</li>
+        <li>z výrobních řad jsem vybral typy a velikosti zařízení, navrhl dopravní cesty a dispozici a ověřil kapacity a výkonnosti,</li>
+        <li>kreslil jsem půdorysy, řezy a technologická schémata a psal technické zprávy,</li>
+        <li>zpracovával jsem zatěžovací údaje a stavební připravenost pro stavební a statickou část, bilanci energií a podklady k emisím a hluku,</li>
+        <li>koordinoval jsem se s hlavním projektantem a u Valče jsem se podílel i na realizaci až po předání.</li>
+      </ul></div>
+    <p class="yes"><b>Hlavní myšlenka:</b> „Dodavatel navrhl stroj, já jsem navrhl, jak z něj udělat funkční linku ve stavbě – a za tu část odpovídám.“</p>
+    <p class="src">Podklad: technické zprávy PS 01 (Valeč, Bohušov, Žichlínek, Pohledy, Bílovec), PoUVV Bohušov, předávací protokol Valeč.</p>
+  </div></details>
+
+  <details class="qa" id="r2"><summary><span class="qn">1.2</span><span class="qt">Ta zařízení jste navrhoval vy, nebo dodavatel?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Je potřeba rozlišit dvě úrovně návrhu. Strojní návrh, tedy konstrukci elevátoru, čističky nebo sila, dělá výrobce: odpovídá za ni, posuzuje shodu a vydává prohlášení o shodě s označením CE. Já jsem navrhoval technologii stavby. Rozhodoval jsem, jaká zařízení, v jaké velikosti, kolik kusů, jak budou propojena a kde budou stát, aby linka splnila požadavky investora. Kontroloval jsem návaznost výkonností, aby žádný stroj nebrzdil ostatní, a hlídal kapacity, energie, bezpečnost a dopady na okolí. Takhle se technologie staveb navrhuje běžně: z typových výrobků, ne od nuly.</div>
+    <p class="no"><b>Neříkej:</b> „My jsme nic nenavrhovali, jen jsme to instalovali.“ Komise to vyloží tak, že za dokumentaci neumíš převzít odpovědnost.</p>
+  </div></details>
+
+  <details class="qa" id="r3"><summary><span class="qn">1.3</span><span class="qt">Kdo spočítal příkony motorů a výkon sušárny?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Štítkové hodnoty určuje výrobce. Já je přebíral do projektu a ověřoval kontrolním výpočtem, jestli odpovídají požadovanému výkonu (viz okruh 3). Pak jsem je sečetl do bilance energií a předal elektro a plynové profesi jako podklad pro přípojku, jištění a rozvody. Kdyby údaj nedával smysl, řeším to s dodavatelem, ne až na stavbě.</div>
+    <p class="no"><b>Neříkej:</b> „To počítal dodavatel, to nevím.“ Řekni: „Hodnotu jsem převzal od výrobce a ověřil takto…“ – a spočítej to.</p>
+  </div></details>
+
+  <details class="qa" id="r4"><summary><span class="qn">1.4</span><span class="qt">Za co odpovídáte, když do dokumentace převezmete údaje od výrobce?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Autorizovaná osoba odpovídá za odbornou úroveň své činnosti (autorizační zákon, § 12 odst. 1). Projektant odpovídá za správnost, celistvost a úplnost dokumentace, kterou zpracoval. Převzaté údaje proto musím posoudit pro konkrétní stavbu: lokalitu, vítr a sníh, české normy, návaznost na ostatní části. Výrobce odpovídá za shodu a bezpečnost svého výrobku. Já odpovídám za to, že je správně zvolený, správně zapojený do celku a že stavba s ním splní požadavky.</div>
+    <p class="src">Podklad: Působnost autorizované osoby (ČKAIT) – v 01_Formulare_CKAIT/podklady.</p>
+  </div></details>
+
+  <details class="qa" id="r5"><summary><span class="qn">1.5</span><span class="qt">Kdo vaši dokumentaci autorizoval a jak to, že jste ji mohl zpracovat bez autorizace?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Pracoval jsem pod odborným vedením AČ, autorizovaného technika v oboru technologická zařízení staveb (TT00). Podle pravidel ČKAIT může neautorizovaná osoba zpracovat dílčí část projektové dokumentace pod odborným vedením autorizované osoby a ta ji pak opatří svým razítkem a podpisem. Autorizovaný technik smí zpracovávat části dokumentace, které patří do jeho oboru (§ 19 autorizačního zákona). U Bílovce II podepsal výkresy hlavní projektant JJ.</div>
+    <p class="check"><b>Pozor:</b> v razítkách výkresů je „AČ, AI“, ale v seznamu ČKAIT je veden jako autorizovaný <b>technik</b>. Když se zeptají, řekni to správně.</p>
+    <p class="no"><b>Neříkej:</b> „On to jen orazítkoval.“ Razítko znamená, že dokumentace vznikla pod jeho vedením a on za ni ručí.</p>
+  </div></details>
+
+  <details class="qa" id="r6"><summary><span class="qn">1.6</span><span class="qt">Proč žádáte o autorizovaného inženýra, a ne technika?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Mám magisterské vzdělání přímo v oboru technologická zařízení staveb a devět let praxe v projektování. Autorizovaný inženýr smí zpracovat projektovou dokumentaci celé stavby, kde je technologie určující. Ke stavbě, která patří do jeho oboru, může zpracovat i oborově vydělené části: techniku prostředí staveb, statiku a dynamiku, geotechniku a požární bezpečnost. Technik smí jen části ve svém oboru. Chci samostatně vést technologické stavby a nést za ně odpovědnost.</div>
+    <p class="src">Podklad: § 18 a § 19 autorizačního zákona, dokument ČKAIT „Působnost autorizované osoby“.</p>
+  </div></details>
+
+  <h2>2 · Kapacity a výkonnosti</h2>
+
+  <details class="qa" id="k1"><summary><span class="qn">2.1</span><span class="qt">Jak jste stanovil kapacitu skladu ve Valči?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Vycházel jsem z požadavku investora na množství a druhy komodit. Objem sila je dán typem z řady výrobce. Na tuny ho přepočítám objemovou hmotností plodiny. Počet sil je kompromis mezi oddělením komodit (každá plodina a kvalita zvlášť), místem v areálu, výškou a cenou.</div>
+<pre class="calc">1 silo BROCK E-05421 = 3 900 m³
+pšenice  3 900 × 0,78 t/m³ = 3 042 t     kukuřice 3 900 × 0,68 = 2 652 t
+6 sil    23 400 m³  →  18 252 t pšenice  /  15 912 t kukuřice</pre>
+    <p class="check"><b>Doptání:</b> „Proč počítáte kukuřici s menší hmotností?“ – kukuřičné zrno je větší a mezi zrny je víc vzduchu, sypná hmotnost je nižší. Silo plné kukuřice proto pojme méně tun.</p>
+  </div></details>
+
+  <details class="qa" id="k2"><summary><span class="qn">2.2</span><span class="qt">Podle čeho jste dimenzoval výkon příjmu?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Podle toho, kolik investor za den sklidí a přiveze. Příjem musí denní sklizeň stihnout, jinak stojí kombajny a odvozové soupravy čekají. U Brniště je to v technické zprávě přímo vidět:</div>
+<pre class="calc">sklizeň obilovin bez sušení: 14 400 t za 5 dní = 2 880 t/den
+2 880 t / 24 h = 120 t/h   →  příjmová cesta 120 t/h, čistička RVS 120
+vyklopení návěsu 25 t při 120 t/h ≈ 12–13 min</pre>
+    <p class="say">Za příjmem musí stejnou výkonnost mít čistička, elevátory a dopravníky na hlavní cestě do sil.</p>
+  </div></details>
+
+  <details class="qa" id="k3"><summary><span class="qn">2.3</span><span class="qt">Kde je úzké hrdlo linky a k čemu jsou akumulační sila?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Úzkým hrdlem je sušárna. Ve Valči sušárna zvládne 33,7 t/h pšenice (z 19 na 15 %), ale příjem běží rychlostí 120 t/h. Akumulační sila proto oddělují příjem od sušení: vlhké zrno se rychle přijme a sušárna ho pak plynule zpracovává, i v noci.</div>
+<pre class="calc">akumulace Valeč: 2 × 297 m³ = 594 m³ ≈ 463 t pšenice
+plnění při současném sušení: 463 / (120 − 33,7) ≈ 5,4 h příjmu
+vyprázdnění sušárnou: 463 / 33,7 ≈ 14 h  → přes noc se dosuší</pre>
+    <p class="check"><b>Doptání:</b> „Čím je výkon sušárny omezen?“ – odpařenou vodou za hodinu. Čím větší rozdíl vlhkostí, tím menší průchod: řepka z 13 na 9 % jde 25,3 t/h, pšenice z 19 na 15 % 33,7 t/h.</p>
+  </div></details>
+
+  <details class="qa" id="k4"><summary><span class="qn">2.4</span><span class="qt">Proč má Valeč dva příjmové koše?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Dva koše po 120 t/h umožní vyklápět dvě soupravy současně a zkrátit čekání ve špičce sklizně. Hlavně ale můžeš přijímat dvě komodity, nebo vlhké a suché zrno, každou svou cestou. Jedna jde přes čistění a sušárnu, druhá přes čištění rovnou do skladu. Čistička RVS 120 má 120 t/h, takže obě cesty naplno současně přes jednu čistící linku nepojedou.</div>
+    <p class="check"><b>Doplň skutečný důvod</b> z projektu Valeč (zadání investora, schéma dopravních cest), ať tu odpověď máš podloženou vlastním výkresem.</p>
+  </div></details>
+
+  <details class="qa" id="k5"><summary><span class="qn">2.5</span><span class="qt">K čemu jsou expediční zásobníky a jak jste je dimenzoval?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Do expedičních zásobníků se zrno ze sil připraví předem a nákladní auto se pak plní gravitačně za pár minut, bez čekání na dopravní cesty. Ty mezitím můžou dělat jinou práci. Velikost jednoho zásobníku odpovídá zhruba jednomu návěsu.</div>
+<pre class="calc">Valeč: 4 zásobníky, celkem 168 m³ ≈ 131 t pšenice ≈ 5 návěsů po 25–27 t</pre>
+  </div></details>
+
+  <details class="qa" id="k6"><summary><span class="qn">2.6</span><span class="qt">Proč se výkon čističky liší podle plodiny?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Čistička je limitovaná průchodem objemu přes síta a aspirací. Lehčí a drobnější plodina zabírá na tunu víc objemu a síta se zatěžují víc, proto výkon v t/h klesá. RVS 120 ve Valči má u pšenice 120 t/h, u ječmene 100, u kukuřice 105 a u řepky 90 t/h. Linku proto navrhuji na plodinu, která je pro danou cestu rozhodující.</div>
+  </div></details>
+
+  <h2>3 · Sušení, energie, ventilace</h2>
+
+  <details class="qa" id="e1"><summary><span class="qn">3.1</span><span class="qt">Jak ověříte, že hořák sušárny 2,4 MW stačí?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Přes množství odpařené vody a měrnou spotřebu tepla sušárny.</div>
+<pre class="calc">odpar W = 33,7 t/h × (19 − 15) / (100 − 15) ≈ 1,59 t/h vody
+měrná spotřeba kontinuální sušárny ≈ 4–5 MJ/kg odpařené vody
+  (samotné výparné teplo ≈ 2,5 MJ/kg, zbytek ohřev zrna a ztráty odpadním vzduchem)
+Q ≈ 1 590 kg/h × 4,5 MJ/kg = 7 150 MJ/h ≈ 2,0 MW  →  hořák 2,4 MW má rezervu
+kontrola vzduchem: 74 000 m³/h = 20,6 m³/s × 1,2 kg/m³ × 1,005 kJ/kgK
+  ΔT = 2 000 kW / 24,8 kW/K ≈ 80 K  → ohřev vzduchu o ~80 K, odpovídá sušení pšenice</pre>
+    <p class="say">Rezerva je potřeba pro kukuřici a nízké venkovní teploty. Výrobce uvádí maximální ohřev až o 150 K.</p>
+  </div></details>
+
+  <details class="qa" id="e2"><summary><span class="qn">3.2</span><span class="qt">Kolik spotřebuje sušárna plynu a co z toho plyne pro stavbu?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+<pre class="calc">LPG, výhřevnost ≈ 46 MJ/kg, hustota kapalné fáze ≈ 0,51 kg/l
+při ~2,0 MW: 7 150 / 46 ≈ 155 kg/h ≈ 300 l/h;  při plných 2,4 MW ≈ 190 kg/h
+20 dní kampaně × 16 h ≈ 50 t LPG (orientačně)</pre>
+    <div class="say"><span class="lbl">Odpověz</span>Pro stavbu z toho plyne:
+      <ul>
+        <li>zásobník LPG je tlakové zařízení, rozvod a hořák jsou plynové zařízení. Obojí patří mezi vyhrazená technická zařízení (zákon 250/2021 Sb.) a musí mít revize a obsluhu s odbornou způsobilostí,</li>
+        <li>zásobník LPG se umisťuje s bezpečnostními odstupy a ochranným pásmem (ČSN 38 6460) a jeho velikost určuje četnost závozů,</li>
+        <li>u zemního plynu potřebuješ přípojku a regulaci tlaku. Bohušov měl plynofikaci sušárny v harmonogramu jako samostatnou položku.</li>
+      </ul></div>
+    <p class="check"><b>Ověř</b> výhřevnost a hustotu LPG pro směs, kterou dodavatel paliva skutečně vozí (propan / propan-butan).</p>
+  </div></details>
+
+  <details class="qa" id="e3"><summary><span class="qn">3.3</span><span class="qt">Jak zkontrolujete příkon elevátoru?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+<pre class="calc">P = ṁ · g · H = (Q / 3,6) · 9,81 · H  [W]   →   P ≈ Q · H / 367  [kW]   (Q v t/h, H v m)
+Bílovec, elevátor 28,5 m, 100 t/h:  100 × 28,5 / 367 ≈ 7,8 kW zvedání
+  + účinnost pohonu, tření, nabírání v patě, rozběh  (η ≈ 0,6–0,7)  → 11–13 kW
+  navržen motor 15 kW ✓
+elevátor 18,5 m, 100 t/h: 5,0 kW / 0,6 ≈ 8,4 kW  → navrženo 9,2 kW ✓</pre>
+    <div class="say">U řetězových dopravníků (redlerů) rozhoduje hlavně délka a výkon. Tam beru hodnotu z tabulek výrobce a kontroluji, že roste s délkou: 30 m a 100 t/h má 7,5 kW, 12 m a 100 t/h má 5,5 kW.</div>
+  </div></details>
+
+  <details class="qa" id="e4"><summary><span class="qn">3.4</span><span class="qt">Jaký příkon má linka a jak ho předáte elektro profesi?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>V seznamu strojů sečtu instalované příkony. U Bílovce II je to 189,6 kW, z toho 75 kW provětrávací ventilátory sil. Současně ale neběží všechno. Ventilátory jedou hlavně při skladování, dopravníky při příjmu a expedici. S koeficientem soudobosti zhruba 0,6–0,7 vychází soudobý příkon kolem 115–135 kW. Elektroprojektant z toho navrhne rozváděč, jištění, kabely a ověří, jestli stačí stávající areálová přípojka. Bílovec se napojoval na stávající rozvody NN.</div>
+  </div></details>
+
+  <details class="qa" id="e5"><summary><span class="qn">3.5</span><span class="qt">Proč mají sila ventilátory a teploměrné kabely?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Zrno dýchá a samo se zahřívá. Bez chlazení hrozí plísně, škůdci a v krajním případě samovznícení. Provětrávací ventilátor (u Bílovce 15 kW na silo) foukne vzduch do provzdušňovacího dna sila a střešní ventilátor odvádí vlhký vzduch. Teploměrné kabely ukazují teplotu v různých výškách a podle nich obsluha spouští ventilaci, nejlépe v noci, kdy je vzduch chladný.</div>
+    <p class="check"><b>Navazující otázka:</b> „A co hluk v noci?“ → ventilátory běží právě v noci, kdy je hlukový limit nejpřísnější. Viz 5.2.</p>
+  </div></details>
+
+  <h2>4 · Zatížení a vazba na stavební část</h2>
+
+  <details class="qa" id="z1"><summary><span class="qn">4.1</span><span class="qt">Co obsahují vaše zatěžovací údaje a komu slouží?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Slouží statikovi a projektantovi stavební části jako vstup pro návrh základů a konstrukcí. Obsahují:
+      <ul>
+        <li>polohu, rozměry a hmotnosti zařízení prázdných i v provozu,</li>
+        <li>reakce sil od vlastní tíhy, náplně, větru a sněhu a kotevní plán výrobce,</li>
+        <li>dynamické účinky (vibrační čistička, ventilátory, pohony elevátorů),</li>
+        <li>jámy a prohlubně (elevátorová jáma u Bílovce −3,65 m, příjmový koš), prostupy, kanály provzdušňovacího dna,</li>
+        <li>požadavky na rovinnost a výškové úrovně,</li>
+        <li>podjezdné výšky a průjezdy, např. příjmová hala Valeč 9 m kvůli zadnímu sklápění návěsů.</li>
+      </ul></div>
+  </div></details>
+
+  <details class="qa" id="z2"><summary><span class="qn">4.2</span><span class="qt">Jak velké zatížení přenáší plné silo do základu?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+<pre class="calc">Valeč, silo Ø ≈ 16,4 m, plné pšenice 3 042 t → tíha náplně ≈ 30 MN
+plocha dna π/4 · 16,4² ≈ 211 m²  → průměrně ≈ 140 kPa jen od zrna
++ vlastní tíha sila, střecha se sněhem, vítr (klopný moment, posun)</pre>
+    <div class="say"><span class="lbl">Odpověz</span>Část tíhy zrna se třením přenáší do stěn sila (Janssenova teorie), takže stěny a prstenec základu nesou svislou sílu a dno nedostane plnou hydrostatiku. Zatížení sil se navrhuje podle ČSN EN 1991-4. Nebezpečné je nesymetrické vyprazdňování: proto se vyprazdňuje středovou výpustí, boční výpusti jen podle výrobce, a v silu je rotační vybírací šnek. Při velkém zatížení a slabém podloží se zakládá na pilotách, jako v Seničce (Ø 900 mm, L = 10 m).</div>
+  </div></details>
+
+  <details class="qa" id="z3"><summary><span class="qn">4.3</span><span class="qt">Sila BROCK jsou navržená podle amerických norem. Jak to obstojí v ČR?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>V podkladu výrobce pro Pohledy stojí, že standardní sila jsou navržena podle ASCE 7-10 na náraz větru 105 mph (169 km/h, 3sekundový náraz). To se nedá porovnat přímo s naší výchozí základní rychlostí větru podle ČSN EN 1991-1-4. U nás se počítá desetiminutová střední rychlost podle větrné oblasti a kategorie terénu. Proto se odolnost sila a hlavně kotvení a základ ověřují pro konkrétní lokalitu. Sníh se ověřuje podle sněhové oblasti. To dělá statik stavební části z reakcí a kotevního plánu, které jsem předal. Výrobce dokládá shodu výrobku.</div>
+    <p class="no"><b>Neříkej:</b> „Silo je typové, to se nepočítá.“</p>
+  </div></details>
+
+  <details class="qa" id="z4"><summary><span class="qn">4.4</span><span class="qt">Je silo stavba? A technologie?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Ano. Stavba je stavební dílo vzniklé stavební nebo montážní činností a nemusí být pevně spojená se zemí. Silo se montuje na místě na železobetonový základ, takže je stavbou a podléhá povolení. V Pohledech byla tři sila BROCK E-05417 výslovně předmětem povoleného záměru. Strojní technologie je součástí záměru jako technologické zařízení (provozní soubor) a v dokumentaci má svou část.</div>
+  </div></details>
+
+  <details class="qa" id="z5"><summary><span class="qn">4.5</span><span class="qt">Kdo odpovídá za založení sila?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Statik stavební části na základě inženýrskogeologického průzkumu. V Seničce to byl JF, u Bílovce JJ. Moje odpovědnost je dodat správné a úplné vstupy: zatížení, rozměry, kotvení, jámy a prostupy. Pak kontroluji, že stavební část s technologií souhlasí, tedy výškové úrovně, polohy kotev a prostupy.</div>
+  </div></details>
+
+  <h2>5 · Prach, požár, vyhrazená zařízení, životní prostředí</h2>
+
+  <details class="qa" id="b1"><summary><span class="qn">5.1</span><span class="qt">Jaké nebezpečí představuje obilný prach a jak jste ho řešil?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Obilný prach je hořlavý a jako rozvířený oblak může vybuchnout. Typicky hrozí v elevátorech a sušárnách. Opatření v projektu:
+      <ul>
+        <li>aspirace a odloučení prachu v čističce, cyklonový odlučovač a uzavřená komora nečistot,</li>
+        <li>uzavřené a utěsněné dopravníky a elevátory, odsávání příjmové cesty ventilátorem předčističky,</li>
+        <li>čištění zrna ještě před sušárnou a sily,</li>
+        <li>elektrická zařízení v provedení pro danou zónu, pospojení a uzemnění proti statické elektřině,</li>
+        <li>čidla otáček, vybočení pásu a teploty ložisek u elevátorů (ověř, co měly konkrétní stroje),</li>
+        <li>úklid usazeného prachu v provozním řádu.</li>
+      </ul></div>
+    <p class="say"><span class="lbl">Zóny pro hořlavý prach</span><b>20</b> – výbušná atmosféra trvale, dlouhodobě nebo často · <b>21</b> – příležitostně za normálního provozu · <b>22</b> – za normálního provozu nepravděpodobně, a když, tak krátce. Prostředí s nebezpečím výbuchu prachu se určuje podle ČSN EN 60079-10-2.</p>
+  </div></details>
+
+  <details class="qa" id="b2"><summary><span class="qn">5.2</span><span class="qt">V protokolu Bohušov máte všude zónu 22. Není uvnitř elevátoru spíš 21 nebo 20?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Komise pro určení vnějších vlivů zařadila vnitřky sil, dopravních cest, čističky a sušárny do zóny 22. Zdůvodnila to tím, že zrno jde do sil vždy až po aspiračním čištění a že příjmové redlery a elevátor s nevyčištěným zrnem jsou hermeticky uzavřené a odsávané ventilátorem předčističky. Souhlasím ale, že zařazení závisí na stupni úniku a účinnosti odsávání. U paty elevátoru s nevyčištěným zrnem, nebo kdyby odsávání nefungovalo, by bylo namístě zvážit přísnější zónu. Zóny navrhuje odborná komise a provozovatel je pak promítá do dokumentace o ochraně před výbuchem (NV 406/2004 Sb.). Elektro zařízení do zón musí splňovat NV 116/2016 Sb. (ATEX).</div>
+    <p class="check"><b>Slabé místo:</b> protokol odkazuje na ČSN EN 60079-15 a ČSN 33 2000-4-41. Prachové zóny se určují podle ČSN EN 60079-10-2 a kódy vnějších vlivů (AA–CB) jsou z ČSN 33 2000-5-51. Když se zeptají, uveď to správně. Nehádej se, ukaž, že víš, kde to je.</p>
+    <p class="src">Podklad: Protokol č. 20-13/JV/2022, Bohušov – předseda JV, já jako člen (odpovědný projektant technologie).</p>
+  </div></details>
+
+  <details class="qa" id="b3"><summary><span class="qn">5.3</span><span class="qt">Co je protokol o určení vnějších vlivů a kdo ho dělá?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Je to podklad pro návrh elektroinstalace. Odborná komise v něm určí, jakým vlivům prostředí budou elektrická zařízení vystavena: teplotě, vodě, prachu, vibracím, živočichům, větru, nebezpečí požáru (BE2) a podobně, a podle toho se volí krytí a provedení. Komisi tvoří projektant (u nás elektro jako předseda), projektant technologie, zástupce provozovatele a další. V Bohušově to byl předseda JV, jednatel investora, já a OB. Pro Bohušov jsme určili například AL2 (nebezpečný výskyt živočichů – myši, ptáci) a AS3 (silný vítr).</div>
+  </div></details>
+
+  <details class="qa" id="b4"><summary><span class="qn">5.4</span><span class="qt">Jak je řešená požární bezpečnost, hlavně u sušárny?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Sušárna je na posklizňové lince nejčastější zdroj požáru. Hoří usazené plevy a přehřáté zrno. Obrana:
+      <ul>
+        <li>teplotní čidla v sušárně s automatickým odstavením hořáku,</li>
+        <li>možnost rychlého vyprázdnění sušárny,</li>
+        <li>suchovod pro hašení (ve Valči byl protokol o zkoušce a těsnosti suchovodu součástí předání),</li>
+        <li>čištění zrna před sušením,</li>
+        <li>odstupy od ostatních objektů.</li>
+      </ul>
+      Požárně bezpečnostní řešení zpracovává specialista (v Seničce PK). Já mu dodávám vstupy: hořlavé látky, výkony, zóny a provozní režimy.</div>
+  </div></details>
+
+  <details class="qa" id="b5"><summary><span class="qn">5.5</span><span class="qt">Která vyhrazená technická zařízení na lince máte?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Podle zákona 250/2021 Sb. a jeho nařízení vlády:
+      <ul>
+        <li><b>elektrická</b> (NV 190/2022 Sb.): rozváděče, motory, rozvody – výchozí revize při předání (ve Valči revize elektro součástí předávací dokumentace),</li>
+        <li><b>plynová</b> (NV 191/2022 Sb.): hořák sušárny a plynový rozvod,</li>
+        <li><b>tlaková</b> (NV 192/2022 Sb.): zásobník LPG,</li>
+        <li><b>zdvihací</b> (NV 193/2022 Sb.): na lince běžně nejsou. Elevátor je dopravník, ne zdvihací zařízení.</li>
+      </ul>
+      Odbornou způsobilost pro elektro řeší NV 194/2022 Sb. Dozor má Státní úřad inspekce práce, odborné úkoly plní Technická inspekce ČR.</div>
+  </div></details>
+
+  <details class="qa" id="v1"><summary><span class="qn">5.6</span><span class="qt">Jaké emise má sušárna a co to znamená pro povolení?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Sušárna s přímým ohřevem spalinami je stacionární zdroj znečišťování ovzduší podle zákona 201/2012 Sb. Vyjmenované zdroje (příloha č. 2 zákona) potřebují závazné stanovisko krajského úřadu k umístění a povolení stavby a pak povolení provozu. Podkladem je emisní sdělení výrobce. Ve Valči: hořák MAXON 2 400 kW na LPG, CO 20–25 ppm, NOx 5–8 ppm a tuhé znečišťující látky na výstupu z ventilátoru do 20 mg/m³. Prach z čištění zachycuje cyklon.</div>
+    <p class="check"><b>Ověř si</b> v příloze č. 2 zákona 201/2012 Sb., pod jaký kód a od jakého příkonu sušárna spadá (spalování paliv i sušení zemědělských produktů). Komise se může zeptat přesně na tohle.</p>
+    <p class="say">Emisní limit = co smí jít ze zdroje ven. Imise = výsledný stav ovzduší v okolí.</p>
+  </div></details>
+
+  <details class="qa" id="v2"><summary><span class="qn">5.7</span><span class="qt">Jak jste řešil hluk?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Hlavní zdroje jsou ventilátory sil, ventilátor sušárny a aspirace čističky. Limity pro chráněný venkovní prostor staveb stanoví NV 272/2011 Sb.: pro stacionární zdroje 50 dB ve dne a 40 dB v noci (L<sub>Aeq</sub>). Protože se sila provětrávají hlavně v noci, rozhoduje noční limit. Hlukové parametry dodává výrobce, posouzení dělá hluková studie a vyjadřuje se krajská hygienická stanice. Opatřením je umístění zdrojů a výdechů od zástavby, volba tišších ventilátorů nebo časový režim provozu.</div>
+  </div></details>
+
+  <details class="qa" id="v3"><summary><span class="qn">5.8</span><span class="qt">Proč se u Valče dělalo posouzení krajinného rázu?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Sila jsou vysoké stavby, kolem 20 m, a v otevřené krajině působí jako dominanty. Podle § 12 zákona 114/1992 Sb. o ochraně přírody a krajiny se k umístění staveb, které mohou snížit nebo změnit krajinný ráz, vyžaduje souhlas orgánu ochrany přírody. Podkladem bylo posouzení Studia B&amp;M (květen 2022), které jsme jako zhotovitel technologie zadali.</div>
+  </div></details>
+
+  <h2>6 · Stavební zákon, dokumentace, razítko</h2>
+
+  <details class="qa" id="s1"><summary><span class="qn">6.1</span><span class="qt">Jaký je rozdíl mezi DSP a DPS? A kde je realizační dokumentace?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>
+      <ul>
+        <li><b>DSP</b> – dokumentace pro povolení stavby. Prokazuje, že záměr splňuje požadavky na výstavbu: umístění, napojení, vliv na okolí, požární bezpečnost. Podle ní úřad povoluje.</li>
+        <li><b>DPS</b> – dokumentace pro provádění stavby. Je podrobnější a podle ní se staví a oceňuje.</li>
+        <li><b>RDS</b> (realizační, dílenská) – zpracovává zhotovitel nebo dodavatel pro výrobu a montáž. U Valče jsou výkresy PAWLICA vedené jako RDS.</li>
+      </ul>
+      Rozsah a členění dokumentace stanoví vyhláška 131/2024 Sb. o dokumentaci staveb: A průvodní list, B souhrnná technická zpráva, C situační výkresy, D dokumentace objektů a technických a technologických zařízení, kam patří technologie jako provozní soubor (PS).</div>
+    <p class="check"><b>Bonus:</b> u svých projektů vidíš obě vyhlášky. Senička (DPS 01/2024) má ještě „průvodní zprávu“ podle staré vyhlášky 499/2006 Sb., Bílovec (DSP 06/2025) už „průvodní list“ podle 131/2024 Sb. Valeč povoloval a kolaudoval úřad podle starého stavebního zákona 183/2006 Sb., Pohledy už podle nového zákona 283/2021 Sb.</p>
+  </div></details>
+
+  <details class="qa" id="s2"><summary><span class="qn">6.2</span><span class="qt">Kdo je hlavní projektant a kdo projektant části?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Hlavní projektant koordinuje všechny části dokumentace a odpovídá za jejich vzájemný soulad a celistvost. Projektant části odpovídá za svou část. U Bílovce byl hlavním projektantem JJ (A4L stavby, IS00 + IP00) a já jsem v průvodním listu uvedený jako projektant technologie. U Seničky vedl projekt JT (ASET studio) a technologické řešení zpracovali AČ, já a kolegové. Hlavní projektant odpovídá i za výběr spolupracujících projektantů.</div>
+  </div></details>
+
+  <details class="qa" id="s3"><summary><span class="qn">6.3</span><span class="qt">Co stvrzujete autorizačním razítkem?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Razítkem a vlastnoručním podpisem stvrzuji, že dokumentaci jsem zpracoval já, nebo vznikla pod mým odborným vedením, a že za ni odpovídám. Opatřený dokument má povahu veřejné listiny: předpokládá se, že je pravý a správný. Razítkem smím označit jen činnosti v rozsahu svého oboru. Části, které zpracovaly jiné autorizované osoby, nesou jejich razítka. Podrobnosti upravují „Pravidla pro používání autorizačního razítka“ ČKAIT. Existuje i elektronické autorizační razítko.</div>
+    <p class="no"><b>Neříkej:</b> nic, z čeho by vyplynulo, že razítko dáváš na cizí práci, kterou jsi neviděl.</p>
+  </div></details>
+
+  <details class="qa" id="s4"><summary><span class="qn">6.4</span><span class="qt">Jak probíhalo předání a kolaudace ve Valči?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Technologii jsme předali 20. 9. 2023 předávacím protokolem ke smlouvě o dílo. Investor dostal návod k obsluze a údržbě, prohlášení o shodě na technologický soubor, revizi elektro, protokol o proškolení obsluhy, protokol o zkoušce a těsnosti suchovodu a protokol o uvedení do provozu. S těmito doklady požádal investor o kolaudační souhlas a MěÚ Hrotovice ho vydal 5. 12. 2023 (podle § 122 tehdejšího stavebního zákona).</div>
+  </div></details>
+
+  <details class="qa" id="s5"><summary><span class="qn">6.5</span><span class="qt">Co je prohlášení o shodě a co se mění pro strojní zařízení?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Výrobce jím prohlašuje, že výrobek splňuje požadavky předpisů, a označí ho CE. U strojních zařízení dnes platí NV 176/2008 Sb. (evropská směrnice o strojních zařízeních). Od 20. 1. 2027 ji nahrazuje nařízení EU 2023/1230 o strojních zařízeních, které platí přímo. U technologického souboru, který vzniká sestavením strojů na místě, je důležité, kdo za soubor jako celek prohlášení vydá. Ve Valči ho vydal dodavatel PAWLICA.</div>
+    <p class="check"><b>Ověř</b> si datum použitelnosti nařízení 2023/1230 a to, jak se posuzuje shoda „souboru strojních zařízení“. Na to se komise TZS ráda ptá.</p>
+  </div></details>
+
+  <details class="qa" id="s6"><summary><span class="qn">6.6</span><span class="qt">Co je dozor projektanta a technický dozor stavebníka?</span><label class="known"><input type="checkbox">umím</label></summary>
+  <div class="ans">
+    <div class="say"><span class="lbl">Odpověz</span>Dozor projektanta je průběžná kontrola projektanta, že se staví podle dokumentace. Patří mezi vybrané činnosti a stavebník ho musí zajistit u vyhrazených staveb. Technický dozor stavebníka hlídá stavbu za investora: kvalitu, cenu a termíny. Mezi vybrané činnosti nepatří, jen u staveb z veřejných peněz ho musí dělat autorizovaná osoba.</div>
+  </div></details>
+
+  </div>
+
+  <h2>Říkej × neříkej</h2>
+  <div class="pairs">
+    <div class="h n1">Neříkej</div><div class="h y1">Řekni místo toho</div>
+    <div class="n2">My jsme nic nenavrhovali, jen instalovali.</div><div>Navrhoval jsem technologii stavby z typových zařízení a ověřoval ji výpočtem.</div>
+    <div class="n2">To počítal dodavatel.</div><div>Hodnotu jsem převzal od výrobce a ověřil takto: …</div>
+    <div class="n2">To dělal statik, do toho nevidím.</div><div>Statikovi jsem dodal tato zatížení a kontroloval jsem soulad se stavební částí.</div>
+    <div class="n2">Silo je typové, to se nepočítá.</div><div>Typové silo se ověřuje pro konkrétní lokalitu – vítr, sníh, základ.</div>
+    <div class="n2">On to jen orazítkoval.</div><div>Pracoval jsem pod jeho odborným vedením a on za dokumentaci odpovídal.</div>
+    <div class="n2">To nevím.</div><div>Přesnou hodnotu z hlavy nevím, ale postupoval bych takto / najdu ji v …</div>
+  </div>
+
+  <p class="foot">Vzorové odpovědi jsou sestavené z tvých projektových dokumentací a dokumentů ČKAIT (Závazné pokyny ke zkoušce, Působnost autorizované osoby). Čísla předpisů a hodnoty jsou ověřené jen do míry uvedené u otázek. Body označené „Ověř“ si před zkouškou dohledej v platném znění. Od 1. 1. 2027 platí novela stavebního zákona a nová sada otázek ČKAIT.</p>
+</div>
+
+<script>
+const root=document.documentElement;
+function applyTheme(t){ if(t) root.setAttribute("data-theme",t); else root.removeAttribute("data-theme"); }
+let st=null; try{ st=localStorage.getItem("tzs-theme"); }catch(e){}
+applyTheme(st);
+document.getElementById("theme").onclick=()=>{
+  const dark=root.getAttribute("data-theme")==="dark"
+    || (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+  const n=dark?"light":"dark"; applyTheme(n);
+  try{ localStorage.setItem("tzs-theme",n); }catch(e){}
+};
+
+const KEY="tzs-rozprava-umim";
+const cards=[...document.querySelectorAll("details.qa")];
+let known={}; try{ known=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ known={}; }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(known)); }catch(e){} }
+let onlyTodo=false;
+function paint(){
+  let n=0;
+  cards.forEach(c=>{
+    const k=!!known[c.id]; if(k) n++;
+    c.classList.toggle("done",k);
+    c.querySelector(".known input").checked=k;
+    c.hidden = onlyTodo && k;
+  });
+  document.getElementById("progress").innerHTML=`umím <b>${n}</b> / ${cards.length}`;
+}
+cards.forEach(c=>{
+  const box=c.querySelector(".known input");
+  box.addEventListener("change",()=>{ known[c.id]=box.checked; if(!box.checked) delete known[c.id]; save(); paint(); });
+});
+document.getElementById("open-all").onclick=()=>cards.forEach(c=>c.open=true);
+document.getElementById("close-all").onclick=()=>cards.forEach(c=>c.open=false);
+document.getElementById("only-todo").onclick=e=>{ onlyTodo=!onlyTodo; e.currentTarget.classList.toggle("on",onlyTodo); paint(); };
+document.getElementById("reset").onclick=()=>{ if(confirm("Vynulovat všechna „umím“?")){ known={}; save(); paint(); } };
+document.getElementById("random").onclick=()=>{
+  const pool=cards.filter(c=>!known[c.id]); const list=pool.length?pool:cards;
+  cards.forEach(c=>c.open=false);
+  const c=list[Math.random()*list.length|0];
+  c.hidden=false;
+  const y=c.getBoundingClientRect().top+scrollY-document.getElementById("tools").offsetHeight-8;
+  scrollTo({top:y,behavior:"smooth"});
+  c.classList.remove("hl"); void c.offsetWidth; c.classList.add("hl");
+};
+window.addEventListener("beforeprint",()=>cards.forEach(c=>{c.dataset.wasOpen=c.open; c.open=true;}));
+window.addEventListener("afterprint",()=>cards.forEach(c=>{c.open=c.dataset.wasOpen==="true";}));
+paint();
+</script>
+
+</body>
+</html>
