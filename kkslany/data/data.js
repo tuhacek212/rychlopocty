@@ -131,7 +131,7 @@ window.KK = {
    "do": "2027-03-31"
   },
   "zimakOk": true,
-  "aktualizovano": "2026-11-09T12:44+01:00",
+  "aktualizovano": "2026-11-09T23:27+01:00",
   "tydny": [
    {
     "tyden": 46,
@@ -577,8 +577,29 @@ window.KK = {
    {
     "tyden": 49,
     "pondeli": "2026-11-30",
-    "zimak": "nezverejneno",
-    "led": null,
+    "zimak": "zverejneno",
+    "led": [
+     {
+      "datum": "2026-11-30",
+      "od": "17:00",
+      "do": "18:30"
+     },
+     {
+      "datum": "2026-12-01",
+      "od": "17:00",
+      "do": "18:45"
+     },
+     {
+      "datum": "2026-12-03",
+      "od": "06:00",
+      "do": "07:00"
+     },
+     {
+      "datum": "2026-12-05",
+      "od": "07:00",
+      "do": "08:30"
+     }
+    ],
     "dny": [
      {
       "datum": "2026-11-30",
@@ -597,7 +618,7 @@ window.KK = {
           "skupina": "B"
          }
         ],
-        "stav": "predbezne"
+        "zdroj": "zimak"
        },
        {
         "id": "po-bios",
@@ -627,7 +648,7 @@ window.KK = {
           "skupina": "B"
          }
         ],
-        "stav": "predbezne"
+        "zdroj": "zimak"
        }
       ]
      },
@@ -644,7 +665,7 @@ window.KK = {
         "misto": "zs",
         "od": "06:00",
         "do": "07:00",
-        "stav": "predbezne"
+        "zdroj": "zimak"
        },
        {
         "id": "ct-pohyb",
@@ -680,8 +701,8 @@ window.KK = {
         "typ": "led",
         "misto": "zs",
         "poznamka": "+ 20 min docvičení s Radkou",
-        "od": null,
-        "do": null,
+        "od": "07:00",
+        "do": "08:30",
         "casti": [
          {
           "skupina": "A"
@@ -690,7 +711,7 @@ window.KK = {
           "skupina": "B"
          }
         ],
-        "stav": "predbezne"
+        "zdroj": "zimak"
        }
       ]
      },
