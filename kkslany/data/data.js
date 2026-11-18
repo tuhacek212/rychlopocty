@@ -131,7 +131,7 @@ window.KK = {
    "do": "2027-03-31"
   },
   "zimakOk": true,
-  "aktualizovano": "2026-11-18T12:52+01:00",
+  "aktualizovano": "2026-11-18T21:38+01:00",
   "tydny": [
    {
     "tyden": 47,
